@@ -27,7 +27,14 @@ function attempt(step: () => void): void {
 /** Connects to Telegram when the page runs inside it; null in a plain browser. */
 export function startTelegram(): Launch | null {
   if (!isTMA()) return null
-  init()
+  try {
+    init()
+  } catch (error) {
+    // Launch parameters with no Telegram around them, such as a launch URL opened in a
+    // browser: show the way to Telegram rather than a blank page.
+    console.warn('Not inside Telegram', error)
+    return null
+  }
   attempt(() => {
     miniApp.mount()
     miniApp.bindCssVars()
@@ -41,14 +48,16 @@ export function startTelegram(): Launch | null {
   })
   // In fullscreen, Telegram draws its buttons over the page: the layout pads by the
   // insets this binds as CSS variables (ADR-0003).
-  viewport
-    .mount()
-    .then(() => {
-      attempt(() => viewport.bindCssVars())
-    })
-    .catch((error: unknown) => {
-      console.warn('Telegram viewport unavailable', error)
-    })
+  attempt(() => {
+    viewport
+      .mount()
+      .then(() => {
+        attempt(() => viewport.bindCssVars())
+      })
+      .catch((error: unknown) => {
+        console.warn('Telegram viewport unavailable', error)
+      })
+  })
   attempt(() => {
     miniApp.ready()
   })
