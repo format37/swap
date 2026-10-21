@@ -24,6 +24,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0013](0013-deep-links.md) | Deep links: the bot's buttons open `startapp=<kind>_<id>` | Accepted |
 | [0014](0014-notifications-outbox.md) | Notifications: an outbox row per recipient, worded and sent by the worker | Accepted |
 | [0015](0015-georgian-without-intl-data.md) | Georgian numbers and dates borrow Russian's rules; Georgian dates stay numeric | Accepted |
+| [0016](0016-orders.md) | Orders: four statuses, one set of payment kinds, visibility as one predicate | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the
