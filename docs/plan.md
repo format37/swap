@@ -85,7 +85,8 @@ notifications.
 
 **PR 1.6 — Deals: the state machine** (ADR-0018)
 - [x] Migration: `deals`, `deal_legs`, `events` with its append-only trigger, and the
-      deferred trigger that refuses a status change without its event (ADR-0002).
+      trigger that refuses a status change without its event (ADR-0002; it fires at
+      once, ADR-0018).
 - [x] The state-machine service. Every transition of Q-B1 is tested, and so is every
       illegal one, cancel requests and disputes included (their screens are slice 4).
 - [x] api: propose, accept, decline, withdraw, sent, received, cancel. Remainders
@@ -94,13 +95,14 @@ notifications.
 - [x] Notifications for every deal event above.
 
 **PR 1.7 — Deals: the proposal and the deal card**
-- [ ] The proposal: an amount slider within the remainder, the counter currency, who
+- [x] The proposal: an amount slider within the remainder, the counter currency, who
       goes first, due dates, payment details picked or added on the spot, and the
       rounding tick (Q-B4).
-- [ ] The deal card: both legs, a status line that says what to do next, and actions
+- [x] The deal card: both legs, a status line that says what to do next, and actions
       behind `showConfirm`. The payer sees the details in full once the deal is
-      accepted (Q-B8), with «Скопировать».
-- [ ] Home: my active deals, so the demo can find them without the bot.
+      accepted (Q-B8), with «Скопировать». An open card polls every 10 s until the
+      deal is over, so the other side's step shows without reopening the app.
+- [x] Home: my active deals, so the demo can find them without the bot.
 
 **Demo.** Deploy, then stop and ask the owner to invite one or two people.
 
