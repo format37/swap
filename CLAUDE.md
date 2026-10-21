@@ -25,8 +25,8 @@ When both look wrong, write a question before building around it.
 
 ## Status
 
-Phase 0 (skeleton) since 2026-10-21. `docs/plan.md` has the checklist and what is
-left of it.
+Phase 0 (skeleton) since 2026-10-21. It is live at https://swap.latentstate.dev and
+waits for the owner's phone check. `docs/plan.md` has the checklist.
 
 ## Commands
 

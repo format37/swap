@@ -25,7 +25,8 @@ Phase 0 is done when (the kickoff's DoD and §12, with the owner's answers of
 - [x] Log the bot out of the cloud Bot API (2026-10-21).
 - [x] BotFather: groups off; Main Mini App on, fullscreen, at
       `https://swap.latentstate.dev` (2026-10-21).
-- [ ] DNS: an A record for `swap.latentstate.dev` → the VPS, DNS only (grey cloud).
+- [x] DNS: an A record for `swap.latentstate.dev` → the VPS, DNS only (grey cloud). I
+      created it on 2026-10-21 with the owner's Edit-DNS token.
 - [ ] Once it is deployed: open the app from the bot on your phone, and say whether
       phase 0 is accepted.
 
@@ -71,10 +72,12 @@ README and the licence.
 - [x] `deploy/docker-compose.vps.yml`: api on `mcp-shared`; the worker in the host's
       network on `127.0.0.1:8707`; the db published on `127.0.0.1:5436` for it.
       Add `deploy/Caddyfile-swap.caddy` and `deploy/vps.sh`.
-- [ ] On the VPS: clone, write `.env`, deploy.
-- [ ] Register the bot in `bots.json` and restart the relay, then check every bot's
-      webhook.
-- [ ] Append the Caddy block, validate, reload, and probe every site before and after.
+- [x] On the VPS: clone, write `.env`, deploy (2026-10-21).
+- [x] Register the bot in `bots.json` and restart the relay, then check every bot's
+      webhook. All five came back within 2 s, with nothing pending.
+- [x] Append the Caddy block, validate, reload, and probe every site before and after.
+      All 17 other sites answered exactly as before. Let's Encrypt issued Swap's
+      certificate within 4 s.
 
 Expected later in phase 1, not now: a rate limit on auth, a session cleanup job,
 plurals, and backups (slice 7).

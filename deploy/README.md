@@ -18,7 +18,9 @@ also restore the newest dump:
 
 ## First deploy
 
-Done once. The steps stay here as the record.
+Done once, on 2026-10-21. The steps stay here as the record. Backups of the shared
+files from that day sit beside them: `Caddyfile.bak-20261021-swap` and
+`bots.json.bak-20261021-swap`.
 
 1. **DNS.** An A record for `swap.latentstate.dev` pointing at the VPS, DNS only
    (grey cloud).
