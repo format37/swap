@@ -1,6 +1,6 @@
 # 0002. Schema conventions: names, keys, statuses, money, indexes, a guarded journal
 
-Status: Proposed · Date: 2026-10-21 · Spec: §5, §7 «Целостность», §13 row 2
+Status: Accepted (amended on acceptance) · Date: 2026-10-21 · Spec: §5, §7 «Целостность», §13 row 2
 
 ## Context
 
@@ -31,22 +31,24 @@ and that breaks "downgrade the last migration".
 **Numbers.** Money is `numeric(18,2)` with `CHECK (amount > 0)`, `Decimal` in Python
 and a string in JSON. Rates are not money and use `numeric(20,10)`: RUB→GEL ≈ 0.0339
 doesn't survive two decimals. Markup is `numeric(3,1)` with a CHECK between −5 and 5.
-Currency is `char(3)` and country `char(2)`, each with an upper-case CHECK. Which
-currencies are allowed is configuration (FR-2.2), not schema.
+An asset is `varchar(8)` with CHECK `~ '^[A-Z]{3,5}$'`: ISO 4217 codes plus the
+stablecoins USDT and USDC (ADR-0010). Country is `char(2)` with an upper-case CHECK.
+Which assets are allowed is configuration (FR-2.2), not schema.
 
 **MVP tables.** Key columns only; the rest arrive migration by migration.
 
 | Table | Notes |
 |---|---|
-| `users` | `telegram_id` is unique and becomes NULL on deletion; the row stays as «Удалённый участник», so closed deals keep a counterparty. Unique `lower(username)` where not null. `display_name`, `locale`, `tz`, `can_message` (the bot may write to them) |
-| `sessions` | `token_hash` unique (the token is never stored), `user_id`, `expires_at`, `last_used_at` for the sliding 30 days |
+| `users` | `telegram_id` is unique and becomes NULL on deletion; the row stays as «Удалённый участник», so closed deals keep a counterparty. Unique `lower(username)` where not null. `display_name`, `locale` (chosen in the app; NULL means Telegram's, ADR-0009), `tz`, `can_message` (the bot may write to them) |
+| `sessions` | `token_hash` unique (the token is never stored), `user_id`, `expires_at`, 24 h after the launch that opened it (ADR-0011) |
 | `links` | One row per pair: CHECK `user_lo_id < user_hi_id` plus a unique pair. `status` is pending / active / declined / removed / blocked, with `requested_by`, `blocked_by`, and `declined_at` for the 7-day cooldown (FR-1.2) |
-| `invites` | `token_hash` unique, `created_by`, `expires_at`, `used_by`, `used_at`, `revoked_at` |
+| `invites` | `token_hash` unique, `created_by`, `expires_at`, `used_by`, `used_at`, `revoked_at`. The link is a bot deep link, `t.me/peertopeerswapbot?start=<token>` (Q-B12) |
 | `orders` | Spec fields with CHECKs `0 < amount_min ≤ amount_max`, `0 ≤ amount_remaining ≤ amount_max`, `available_from ≤ available_until`. `payout_methods text[]`, `rate_spec jsonb` (ADR-0004) |
 | `order_wants` | Rows of `(order_id, currency, country)` instead of a JSON array, so v1 matching is an indexed join |
 | `order_visibility` | PK `(order_id, user_id)`. No rows means all active links (§3) |
 | `deals` | Spec fields, plus the `rate_spec` snapshot, `rate_quote_id`, `expires_at`, `cancel_requested_by`, and dispute and resolution columns. CHECK `proposer_id <> acceptor_id` |
-| `deal_legs` | Unique `(deal_id, seq)`, CHECK `seq IN (1, 2)` and `payer_id <> payee_id`. `recipient_details jsonb` holds the encrypted envelope (ADR-0004) |
+| `deal_legs` | Unique `(deal_id, seq)`, CHECK `seq IN (1, 2)` and `payer_id <> payee_id`. `recipient_details jsonb` holds the encrypted copy of the payee's chosen payment details (ADR-0004, ADR-0010) |
+| `payment_methods` | A user's saved payment details: `user_id`, `asset`, `kind` (bank / card / phone / crypto / cash / other), `title` in the clear, `details` as an encrypted envelope. Deleting one is a real delete, because deals keep their own copy (ADR-0010) |
 | `documents` | Unique `(leg_id, sha256)`, so a screenshot sent twice is stored once |
 | `rate_quotes` | `source`, `base`, `quote`, `value`, `fetched_at`, and `entered_by` for manual rates |
 | `events` | `deal_id` or `order_id` (CHECK exactly one), `actor_id` (NULL means the system), `type`, `payload jsonb` |

@@ -1,6 +1,6 @@
 # 0003. Own UI primitives on Tailwind, Telegram-native controls, no component library
 
-Status: Proposed · Date: 2026-10-21 · Spec: §8, §11, §13 row 3
+Status: Accepted (amended on acceptance) · Date: 2026-10-21 · Spec: §8, §11, §13 row 3
 
 ## Context
 
@@ -28,6 +28,17 @@ the native `showConfirm`, and each screen's main action sits in Telegram's
 - Telegram draws the heavy chrome itself: `MainButton`, `SecondaryButton` and
   `BackButton`, `showConfirm` / `showPopup`, and `HapticFeedback`. Those cost us no
   bytes.
+- **Readable without reading** (the owner, 2026-10-21). Every action and status pairs
+  a word with an icon, and colour is never the only signal. Icons are Lucide
+  (`lucide-react`, ISC), imported one by one so only the used ones ship. An asset
+  always shows its symbol and code together (₽ RUB, ₾ GEL, $ USD, ₮ USDT). Fiat
+  assets also show their country's flag as an inline SVG, because Windows renders
+  flag emoji as two letters. The language switch lists each language in its own
+  script behind a globe icon (ADR-0009).
+- **Fullscreen.** The owner set the Main Mini App to open fullscreen, where Telegram
+  draws its close and menu buttons over the top of the page. The layout pads the
+  top by the safe-area and content-safe-area insets, which the SDK exposes as CSS
+  variables, so nothing sits under those buttons.
 - Budget. The libraries the spec already names (React 18 with React DOM, TanStack
   Query, react-hook-form, zod, the Telegram SDK per Q-A8, and the API client) come to
   roughly

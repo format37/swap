@@ -1,6 +1,6 @@
-# 0007. The TypeScript client is generated from FastAPI's OpenAPI: openapi-typescript + openapi-fetch + openapi-react-query
+# 0007. The TypeScript client is generated from FastAPI's OpenAPI: openapi-typescript + openapi-fetch
 
-Status: Proposed · Date: 2026-10-21 · Spec: §8 «Состояние и данные», §10, §13 row 7
+Status: Accepted (amended on acceptance) · Date: 2026-10-21 · Spec: §8 «Состояние и данные», §10, §13 row 7
 
 ## Context
 
@@ -17,11 +17,11 @@ and money crosses JSON as a string (ADR-0004).
   - adds the `Authorization` header (Q-A4);
   - turns `application/problem+json` into a typed `ApiError` carrying the machine
     `code` (`deal.invalid_transition`, …), which the UI maps to a dictionary string.
-- **`openapi-react-query`** (0.5.x, pinned: the 1.0.0 on npm is a deprecated bad
-  publish) binds the client to TanStack Query:
-  `$api.useQuery('get', '/api/v1/deals/{deal_id}', { params: { path: { deal_id } } })`.
-  Query keys derive from path and params, so invalidating after a mutation is
-  predictable.
+- **TanStack Query is used directly.** Each resource gets a small hook in
+  `frontend/src/api/` (`useMe()`, …) whose `queryFn` calls the typed client, so query
+  keys and invalidation live in one place per resource. The first draft used
+  `openapi-react-query`, which saves a line per hook but is one more 0.x package with
+  slow maintenance (below), and the owner asked for no overengineering.
 - **The schema is exported without a running server**
   (`uv run python -m swap.tools.openapi > frontend/openapi.json`), and
   `npm run gen:api` regenerates `schema.d.ts`. Both files are committed, so a PR's
@@ -42,11 +42,10 @@ and money crosses JSON as a string (ADR-0004).
 - The generated code is one declaration file, with nothing to review line by line and
   nothing added to the bundle.
 - Amounts stay strings end to end. There is no number parsing anywhere in the client.
-- **Maintenance risk.** `openapi-fetch` and `openapi-react-query` are still 0.x, and
-  their shared repository has seen only dependency bumps since March 2026; in July a
-  maintainer said it is maintained but that he is "swamped". Both are small (a vendored
-  copy would be a few hundred lines, MIT). The contract is `openapi.json`, not these
-  libraries, so if they stall, the fallback is Orval generating from the same file.
+- **Maintenance risk.** `openapi-fetch` is still 0.x, and its repository has seen only dependency bumps since March 2026; in July a
+  maintainer said it is maintained but that he is "swamped". It is small (a vendored
+  copy would be a few hundred lines, MIT). The contract is `openapi.json`, not this
+  library, so if it stalls, the fallback is Orval generating from the same file.
   That swap touches only `frontend/src/api/`.
 
 ## Alternatives considered

@@ -1,6 +1,6 @@
-# 0005. APScheduler in a singleton worker; every job is an idempotent sweep over database state
+# 0005. APScheduler in one worker; every job is an idempotent sweep over database state
 
-Status: Proposed · Date: 2026-10-21 · Spec: §7 «Фоновые задачи», §8, §9 «Потоки», §13 row 5
+Status: Accepted (amended on acceptance) · Date: 2026-10-21 · Spec: §7 «Фоновые задачи», §8, §9 «Потоки», §13 row 5
 
 ## Context
 
@@ -24,9 +24,14 @@ process; §13 leaves `pg_cron` as the alternative.
   never in the scheduler. So a restart, a crash or a missed tick loses nothing: the
   next sweep picks up whatever is still due. Every job runs with `coalesce=True` and
   `max_instances=1`.
-- **One worker at a time.** At start the worker takes a Postgres advisory lock.
-  Without the lock it idles and retries, so two containers overlapping during a
-  deploy cannot send twice.
+- **One worker, and no lock.** Compose stops the old container before starting the
+  new one, and on the VPS the worker binds `127.0.0.1:8707` in the host's network, so
+  a second copy can't start beside it. Every job claims its rows with `SKIP LOCKED`
+  anyway, so even an overlap would not send twice. An advisory lock comes only if a
+  job ever needs exclusivity (the owner: no overengineering).
+- **The worker owns Telegram** (ADR-0008). It receives the relay's forwards on
+  `/message` and makes every Bot API call: replies, the outbox, reminders, file
+  downloads. The api only queues.
 - **Timed state changes go through the state machine.** Proposal expiry calls the
   same service as user actions, so it is journaled like everything else (ADR-0002).
 

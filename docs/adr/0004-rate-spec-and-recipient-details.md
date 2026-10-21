@@ -1,6 +1,6 @@
 # 0004. `rate_spec` and `recipient_details`: versioned JSONB, the second one encrypted
 
-Status: Proposed · Date: 2026-10-21 · Spec: §5, FR-3.1–3.5, §7 «Безопасность», §13 row 4
+Status: Accepted (amended on acceptance) · Date: 2026-10-21 · Spec: §5, FR-3.1–3.5, §7 «Безопасность», §13 row 4
 
 ## Context
 
@@ -50,33 +50,33 @@ Nothing is recalculated afterwards (FR-3.5).
 
 ## Decision: `deal_legs.recipient_details`
 
-- The plaintext is a small typed object, `{"kind": "card", "card_number": "…",
-  "holder": "…", "bank": "…"}`, with the fields varying by kind (card, SBP, bank,
-  cash, other). In memory it is held as Pydantic `SecretStr`, so a stray `repr` or log
-  call prints stars.
+- The plaintext is the free text of the payment details the payee chose (ADR-0010).
+  Their kind and title stay in the clear beside the envelope. In memory the text is
+  held as Pydantic `SecretStr`, so a stray `repr` or log call prints stars.
 - It is encrypted in the app with AES-256-GCM (`cryptography`'s `AESGCM`), using a
   random 96-bit nonce. The associated data is
   `swap/deal_leg/<leg_id>/recipient_details/v1`, which binds the ciphertext to its row:
-  copied into another leg, it fails to decrypt.
+  copied into another leg, it fails to decrypt. A saved entry uses
+  `swap/payment_method/<id>/details/v1`.
 - It is stored as a JSONB envelope: `{"v": 1, "kid": "k1", "nonce": "…", "ct": "…",
-  "mask": "•••• 5678"}`. The mask is made at write time from the plaintext (last four
-  digits of a card, last two of a phone, «•••» for free text), so the api can show it
-  without decrypting.
+  "mask": "•••• 5678"}`. The mask is made at write time from the plaintext (the last four
+  digits of its longest run of digits, otherwise «•••»), so the api can show it without
+  decrypting.
 - Keys come from the environment (`RECIPIENT_KEYS=k1:<base64url>,…`,
   `RECIPIENT_KEY_ID=k1`), never from the database. To rotate, add a key id, make it
   active, and let a worker job re-encrypt the old rows.
 - The api returns `{"masked": …, "full": null}` to anyone who isn't allowed to see
   the full value; Q-B8 says who is. Logs go through a structlog processor that
-  replaces a denylist of keys (`recipient_details`, `card_number`, `phone`, `holder`,
+  replaces a denylist of keys (`recipient_details`, `details`, `text`,
   `init_data`, `token`), and request and response bodies are never logged.
 - A worker job sets `recipient_details` to NULL 30 days after the deal closes (§5).
+  Saved entries live until their owner deletes them or the account (ADR-0010).
 
 ## Consequences
 
 - A stolen database dump or backup holds ciphertext only, because the key isn't in
   it. The flip side: if the key is lost, so are the details. That is acceptable for
-  data that lives at most 30 days past a deal. The owner keeps a copy of the key
-  outside the server.
+  data a user can re-enter. The owner keeps a copy of the key outside the server.
 - Decimals pass through JSON as strings end to end. The UI formats them with
   `Intl.NumberFormat`, which accepts decimal strings without a float round trip.
 - Fixed rates for two wanted currencies are two numbers the author types. The wizard
