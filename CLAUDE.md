@@ -29,12 +29,23 @@ Phase 0 (skeleton) started on 2026-10-21; `docs/plan.md` has the checklist.
 
 ## Commands
 
-The phase-0 PRs add them here, following the owner's house scripts: `./compose.sh`,
-`./logs.sh <service>`, `./test.sh [backend|frontend] [pytest args]`, and Alembic
-through `docker compose exec api alembic …`.
+- `./test.sh` runs every suite; `./test.sh backend [pytest args]` runs the backend's.
+  It starts the compose db (`127.0.0.1:5436`) and uses a `swap_test` database that
+  the suite migrates from scratch on every run.
+- In `backend/`: `uv run ruff check . && uv run ruff format --check .`, `uv run mypy`,
+  and `uv run python -m swap.tools.openapi` (prints the schema).
+- Migrations: `DATABASE_URL=postgresql+asyncpg://swap:swap@127.0.0.1:5436/swap uv run
+  alembic upgrade head`, and `uv run alembic check` to compare models with the schema.
+- Run `git config core.hooksPath .githooks` once per clone. The pre-commit hook then
+  refuses staged bot tokens and `.env` values.
 
-Python runs through uv 0.13 (pinned in CI and in the Dockerfile). This box has uv
-0.7.2, so run `uvx --from uv==0.13.4 uv …` here.
+Python runs through uv 0.13 (pinned in CI and in the Dockerfile, and required by
+`backend/pyproject.toml`). This box has uv 0.7.2, so here prefix commands with
+`UV="uvx --from uv==0.13.4 uv"` for `./test.sh`, or run `uvx --from uv==0.13.4 uv …`
+directly.
+
+PRs 4–5 add `./compose.sh` and `./logs.sh <service>`, following the owner's house
+scripts.
 
 ## Hard rules
 

@@ -1,0 +1,63 @@
+[project]
+name = "swap"
+version = "0.1.0"
+description = "Swap's backend: the Mini App API, the worker and the bot"
+requires-python = "==3.12.*"
+license = "MIT"
+dependencies = [
+    "aiogram>=3.22",
+    "alembic>=1.16",
+    "apscheduler>=3.11,<4",
+    "asyncpg>=0.30",
+    "fastapi>=0.118",
+    "pydantic-settings>=2.10",
+    "sqlalchemy[asyncio]>=2.0.43",
+    "structlog>=25.4",
+    "uvicorn[standard]>=0.37",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "mypy>=1.18",
+    "pytest>=8.4",
+    "pytest-asyncio>=1.2",
+    "ruff>=0.14",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["swap"]
+
+[tool.uv]
+required-version = ">=0.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "ASYNC", "S", "RUF", "N", "C4", "PT", "DTZ", "PL"]
+ignore = [
+    "PLR2004",  # magic numbers: HTTP statuses and limits read better inline
+    "PLR0913",  # FastAPI handlers take their dependencies as arguments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR0913"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["swap"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
