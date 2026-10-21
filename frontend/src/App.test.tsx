@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { afterEach, expect, it, vi } from 'vitest'
 
 import type { Me } from './api/client'
 import { App } from './App'
-import { I18nProvider } from './i18n/I18n'
-import type { Locale } from './i18n/locale'
 import { Home } from './screens/Home'
+import { fakeApi, json } from './test/api'
+import { renderScreen } from './test/render'
+
+vi.mock('./telegram', () => ({ useMainButton: vi.fn() }))
 
 const me: Me = {
   id: '6f1c9a52-0d7e-4d53-9d0c-8f6f3e2b7c11',
@@ -17,15 +19,16 @@ const me: Me = {
   tz: 'Asia/Tbilisi',
 }
 
-function home(locale: Locale) {
-  return render(
-    <I18nProvider locale={locale}>
-      <MemoryRouter>
-        <Home me={me} />
-      </MemoryRouter>
-    </I18nProvider>,
-  )
+function quietApi() {
+  fakeApi({
+    'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
+    'GET /api/v1/orders': () => json(200, []),
+  })
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 it('outside Telegram, points to the bot in the browser’s language', () => {
   render(<App launch={null} />)
@@ -35,7 +38,8 @@ it('outside Telegram, points to the bot in the browser’s language', () => {
 })
 
 it('greets the user by name, in their language', () => {
-  home('ru')
+  quietApi()
+  renderScreen(<Home me={me} />)
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Привет, Alex!')
   expect(screen.getByText('@format37')).toBeInTheDocument()
   // The language row names the current language in its own script.
@@ -43,7 +47,8 @@ it('greets the user by name, in their language', () => {
 })
 
 it('speaks Georgian when asked to', () => {
-  home('ka')
+  quietApi()
+  renderScreen(<Home me={me} />, { locale: 'ka' })
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('გამარჯობა, Alex!')
   expect(screen.getByRole('button', { name: /ენა.*ქართული/ })).toBeInTheDocument()
 })

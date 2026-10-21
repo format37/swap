@@ -1,6 +1,5 @@
-"""Live previews of a counter-amount, for the wizard and the proposal (ADR-0004).
-
-The UI never does money arithmetic, so it asks here, debounced.
+"""What the wizard and the proposal need about money: the assets, and live previews of a
+counter-amount (ADR-0004). The UI never does money arithmetic, so it asks here, debounced.
 """
 
 from decimal import Decimal
@@ -8,7 +7,7 @@ from decimal import Decimal
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
 
-from swap.api.deps import CurrentUser
+from swap.api.deps import AppSettings, CurrentUser
 from swap.api.errors import Problem
 from swap.money import Asset, Money
 from swap.rates import FixedRate, convert
@@ -38,3 +37,9 @@ async def quote(body: QuoteRequest, user: CurrentUser) -> QuoteResult:
         body.amount, body.rate_spec, body.give_currency, body.want_currency, whole=body.whole
     )
     return QuoteResult(amount=amount)
+
+
+@router.get("/assets")
+async def list_assets(user: CurrentUser, settings: AppSettings) -> list[str]:
+    """What orders may give and want (FR-2.2). Config, so the app asks rather than knows."""
+    return settings.assets

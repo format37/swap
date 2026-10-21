@@ -11,5 +11,19 @@ export function formatDate(locale: Locale, iso: string, month: 'short' | 'long' 
     locale === 'ka'
       ? { day: '2-digit', month: '2-digit', year: month === 'long' ? 'numeric' : undefined }
       : { day: 'numeric', month }
-  return new Intl.DateTimeFormat(INTL_LOCALES[locale], options).format(new Date(iso))
+  return new Intl.DateTimeFormat(INTL_LOCALES[locale], options).format(toDate(iso))
+}
+
+/**
+ * A calendar date, «2026-10-25», is that day where the reader is. `new Date()` would take
+ * it as midnight UTC, which is the day before anywhere west of Greenwich.
+ */
+function toDate(iso: string): Date {
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(iso)
+}
+
+/** «25 окт. – 8 нояб.», «25.10 – 08.11». */
+export function formatDates(locale: Locale, from: string, until: string): string {
+  return `${formatDate(locale, from)} – ${formatDate(locale, until)}`
 }

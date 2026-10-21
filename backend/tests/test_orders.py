@@ -442,3 +442,10 @@ def test_today_is_in_the_authors_time_zone() -> None:
     for tz in ("Pacific/Kiritimati", "Pacific/Pago_Pago", None):
         user: Any = SimpleNamespace(tz=tz)
         assert today(user) == datetime.now(ZoneInfo(tz or "UTC")).date()
+
+
+async def test_the_assets_come_from_config(client: AsyncClient) -> None:
+    alex = await person(client, ALEX)
+    response = await client.get("/api/v1/assets", headers=alex)
+    assert response.json() == ["RUB", "GEL", "USD", "EUR", "TRY", "KZT", "AMD", "USDT", "USDC"]
+    assert (await client.get("/api/v1/assets")).status_code == 401
