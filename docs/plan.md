@@ -44,15 +44,15 @@ invisible without a notification (ADR-0014). Each later PR sends its own
 notifications.
 
 **PR 1.1 — Links by invitation** (ADR-0012, ADR-0013, ADR-0015)
-- [ ] Migration: `links` and `invites`.
-- [ ] api: create and revoke an invite (at most 10 outstanding), list links, view one
+- [x] Migration: `links` and `invites`.
+- [x] api: create and revoke an invite (at most 10 outstanding), list links, view one
       with the mutual-links count, accept, decline, and break or withdraw.
       Authorization tests come first: a stranger gets 404 on everything.
-- [ ] Bot: `/start inv_<token>` turns the invite into a request, then greets the
+- [x] Bot: `/start inv_<token>` turns the invite into a request, then greets the
       invitee with the inviter's name and «Открыть».
-- [ ] App: the tab bar; the «Связи» tab; the invite sheet with share and copy; the
+- [x] App: the tab bar; the «Связи» tab; the invite sheet with share and copy; the
       request screen; deep links from `startapp`.
-- [ ] Dev: the Telegram mock draws MainButton, BackButton and popups, so they can be
+- [x] Dev: the Telegram mock draws MainButton, BackButton and popups, so they can be
       clicked in Chrome.
 
 **PR 1.2 — The outbox, and requests by @username** (ADR-0014)
