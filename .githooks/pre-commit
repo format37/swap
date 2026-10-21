@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Refuse a commit whose staged changes hold a bot token or a value from .env.
+# The repository is public, so a pushed secret is a leaked one; CI's gitleaks
+# would only notice after the push. Enable once per clone:
+#   git config core.hooksPath .githooks
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+staged=$(git diff --cached --no-color --unified=0)
+
+if grep -qE '(^|[^0-9])[0-9]{6,12}:[A-Za-z0-9_-]{30,}' <<<"$staged"; then
+    echo "pre-commit: the staged changes hold something shaped like a bot token." >&2
+    exit 1
+fi
+
+if [ -f .env ]; then
+    while IFS='=' read -r key value; do
+        # Short values (dev, json, a port) would match innocent text.
+        [ "${#value}" -ge 12 ] || continue
+        if grep -qF -- "$value" <<<"$staged"; then
+            echo "pre-commit: the staged changes hold the value of $key from .env." >&2
+            exit 1
+        fi
+    done < <(grep -E '^[A-Z][A-Z0-9_]*=' .env)
+fi
