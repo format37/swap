@@ -35,40 +35,40 @@ Phase 0 is done when (the kickoff's DoD and §12, with the owner's answers of
 README and the licence.
 
 **PR 2 — backend skeleton and CI**
-- [ ] `backend/`: a uv project on Python 3.12; a FastAPI app factory; pydantic-settings;
+- [x] `backend/`: a uv project on Python 3.12; a FastAPI app factory; pydantic-settings;
       structlog with redaction; RFC 9457 problems with machine codes; the security
       headers (ADR-0001); `/healthz`.
-- [ ] SQLAlchemy 2 async and Alembic with the naming convention. Migration 0001 creates
+- [x] SQLAlchemy 2 async and Alembic with the naming convention. Migration 0001 creates
       `users`, `sessions` and `service_heartbeats`.
-- [ ] pytest on real Postgres with a transaction per test; mypy strict.
-- [ ] CI: ruff, ruff format, mypy, pytest, `alembic upgrade → downgrade → upgrade`,
+- [x] pytest on real Postgres with a transaction per test; mypy strict.
+- [x] CI: ruff, ruff format, mypy, pytest, `alembic upgrade → downgrade → upgrade`,
       gitleaks.
 
 **PR 3 — auth, bot, worker**
-- [ ] `initData` validation, tests first: a valid string, a tampered field, the wrong
+- [x] `initData` validation, tests first: a valid string, a tampered field, the wrong
       token, a missing hash, duplicate keys, too old, from the future, URL-encoding
       edge cases, and `signature` kept in the check string.
-- [ ] `POST /api/v1/auth/telegram`, `GET /api/v1/me`, and `PATCH /api/v1/me` for the
+- [x] `POST /api/v1/auth/telegram`, `GET /api/v1/me`, and `PATCH /api/v1/me` for the
       language.
-- [ ] The worker: Starlette with an APScheduler heartbeat, `/healthz`, and the relay
+- [x] The worker: Starlette with an APScheduler heartbeat, `/healthz`, and the relay
       endpoint `/message`. `/start` answers with an «Открыть Swap» button in the
       user's language. At start the worker sets the bot's profile texts and its menu
       button (ADR-0008, ADR-0009).
 
 **PR 4 — frontend**
-- [ ] Vite, React 18, strict TypeScript, Tailwind v4 on Telegram's theme variables,
+- [x] Vite, React 18, strict TypeScript, Tailwind v4 on Telegram's theme variables,
       TanStack Query, react-router 7 (memory router), and `@tma.js/sdk-react` 3.x for
       theme, BackButton and fullscreen safe areas.
-- [ ] ru/en/ka dictionaries and the language switch; the hello screen; «Откройте в
+- [x] ru/en/ka dictionaries and the language switch; the hello screen; «Откройте в
       Telegram» everywhere else.
-- [ ] The generated API client (ADR-0007). CI: eslint, prettier, tsc, vitest, build, the
+- [x] The generated API client (ADR-0007). CI: eslint, prettier, tsc, vitest, build, the
       300 KB budget and the OpenAPI drift check.
 
 **PR 5 — Docker, compose, deploy**
-- [ ] One image. `docker-compose.yml` runs caddy, api, worker and postgres on
+- [x] One image. `docker-compose.yml` runs caddy, api, worker and postgres on
       10.89.91.0/24. Add `compose.sh`, `logs.sh`, `test.sh`, and
       `swap.tools.dev_launch` for testing in Chrome.
-- [ ] `deploy/docker-compose.vps.yml`: api on `mcp-shared`; the worker in the host's
+- [x] `deploy/docker-compose.vps.yml`: api on `mcp-shared`; the worker in the host's
       network on `127.0.0.1:8707`; the db published on `127.0.0.1:5436` for it.
       Add `deploy/Caddyfile-swap.caddy` and `deploy/vps.sh`.
 - [ ] On the VPS: clone, write `.env`, deploy.

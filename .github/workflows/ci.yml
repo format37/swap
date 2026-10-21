@@ -97,6 +97,19 @@ jobs:
       - name: both committed files must be what the api produces
         run: git diff --exit-code -- frontend/openapi.json frontend/src/api/schema.d.ts
 
+  image:
+    # The VPS builds this same Dockerfile, so a broken one should fail here first.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   secrets:
     runs-on: ubuntu-24.04
     steps:

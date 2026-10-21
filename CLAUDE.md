@@ -25,7 +25,8 @@ When both look wrong, write a question before building around it.
 
 ## Status
 
-Phase 0 (skeleton) started on 2026-10-21; `docs/plan.md` has the checklist.
+Phase 0 (skeleton) since 2026-10-21. `docs/plan.md` has the checklist and what is
+left of it.
 
 ## Commands
 
@@ -55,8 +56,12 @@ Python runs through uv 0.13 (pinned in CI and in the Dockerfile, and required by
 `UV="uvx --from uv==0.13.4 uv"` for `./test.sh`, or run `uvx --from uv==0.13.4 uv …`
 directly.
 
-PRs 4–5 add `./compose.sh` and `./logs.sh <service>`, following the owner's house
-scripts.
+- `./compose.sh [--fresh]` builds and starts the local stack: Caddy on
+  http://127.0.0.1:8030, api, worker and Postgres, with migrations on every start.
+  `./logs.sh [service]` follows its logs. Outside Telegram the app shows its stub;
+  open it with a signed launch URL (above) to see more.
+- Deploying: `deploy/README.md`. The routine is `./deploy/vps.sh --pull` on the VPS,
+  with the owner's go.
 
 ## Hard rules
 
