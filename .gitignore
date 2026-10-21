@@ -1,0 +1,27 @@
+# Secrets: only .env.example is ever committed (kickoff "Hard rules").
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local data and editor noise
+/data/
+/backups/
+.DS_Store
+.idea/
+.vscode/
