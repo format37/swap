@@ -1,7 +1,8 @@
-/** Where each kind of start parameter leads (ADR-0013). Deals come with their card. */
+/** Where each kind of start parameter leads (ADR-0013). */
 const BY_KIND: Partial<Record<string, (id: string) => string>> = {
   link: (id) => `/links/${id}`,
   order: (id) => `/orders/${id}`,
+  deal: (id) => `/deals/${id}`,
 }
 
 const START_PARAM = /^([a-z]+)_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/

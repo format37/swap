@@ -3,7 +3,10 @@ import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { fullName } from '../api/links'
+import type { Me } from '../api/client'
+import { useDeals } from '../api/deals'
 import { useCloseOrder, useOrder, type Order } from '../api/orders'
+import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
 import { formatDates } from '../i18n/format'
@@ -11,7 +14,7 @@ import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { formatRate } from '../money/format'
 import { KINDS } from '../money/kinds'
-import { confirmAction, hapticNotify } from '../telegram'
+import { confirmAction, hapticNotify, useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Loading } from '../ui/Loading'
@@ -20,7 +23,7 @@ import { Section } from '../ui/Section'
 import { Problem } from './Problem'
 
 /** An order: what, how much remains, for what, how, when, and who sees it (§11). */
-export function OrderCard() {
+export function OrderCard({ me }: { me: Me }) {
   const { id = '' } = useParams()
   const order = useOrder(id)
   if (order.isPending)
@@ -30,7 +33,7 @@ export function OrderCard() {
       </Screen>
     )
   if (order.isError) return <Problem error={order.error} retry={() => void order.refetch()} />
-  return <Shown order={order.data} />
+  return <Shown order={order.data} me={me} />
 }
 
 function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
@@ -44,10 +47,18 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   )
 }
 
-function Shown({ order }: { order: Order }) {
+function Shown({ order, me }: { order: Order; me: Me }) {
   const { t, tn, locale } = useI18n()
   const navigate = useNavigate()
   const close = useCloseOrder()
+  const deals = useDeals('active', order.id)
+
+  // Someone else's open order: the main action is a proposal (§11).
+  useMainButton(
+    !order.mine && order.status === 'open'
+      ? { text: t('order.propose'), onClick: () => void navigate(`/orders/${order.id}/propose`) }
+      : null,
+  )
   const name = fullName(order.author)
   const give = order.give_currency
   const money = (amount: string) => <Money locale={locale} amount={amount} code={give} />
@@ -139,6 +150,19 @@ function Shown({ order }: { order: Order }) {
                   names: order.visibility.people.map(fullName).join(', '),
                 })}
           </Row>
+        </Section>
+      )}
+
+      {deals.data && deals.data.length > 0 && (
+        <Section title={t('order.deals')}>
+          {deals.data.map((deal) => (
+            <DealRow
+              key={deal.id}
+              deal={deal}
+              me={me.id}
+              onOpen={() => void navigate(`/deals/${deal.id}`)}
+            />
+          ))}
         </Section>
       )}
 

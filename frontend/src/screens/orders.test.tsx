@@ -264,7 +264,7 @@ describe('the order card', () => {
 
   it('shows what remains, for what, how and when', async () => {
     fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order()) })
-    renderScreen(<OrderCard />, { route, path })
+    renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText(/Осталось/)).toHaveTextContent('Осталось: 150 000₽RUB')
     expect(screen.getByText(/за одну сделку/)).toHaveTextContent('От 10 000₽RUB за одну сделку')
     const wants = screen.getByRole('heading', { name: 'Хочет взамен' }).parentElement
@@ -286,7 +286,7 @@ describe('the order card', () => {
       [`POST /api/v1/orders/${ORDER_ID}/close`]: () =>
         json(200, order({ mine: true, status: 'closed' })),
     })
-    renderScreen(<OrderCard />, { route, path })
+    renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText('Видно только: Nino B')).toBeInTheDocument()
     vi.mocked(confirmAction).mockResolvedValueOnce(false)
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть заявку' }))
@@ -302,7 +302,7 @@ describe('the order card', () => {
 
   it('tells a stranger only that there is no such order', async () => {
     fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => problem(404, 'order.not_found') })
-    renderScreen(<OrderCard />, { route, path })
+    renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText('Заявка не найдена.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull()
   })
