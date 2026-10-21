@@ -44,6 +44,10 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "ASYNC", "S", "RUF", "N", "C4", 
 ignore = [
     "PLR2004",  # magic numbers: HTTP statuses and limits read better inline
     "PLR0913",  # FastAPI handlers take their dependencies as arguments
+    # Homoglyph checks: our strings are Russian and Georgian on purpose (ADR-0009).
+    "RUF001",
+    "RUF002",
+    "RUF003",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -54,6 +58,11 @@ python_version = "3.12"
 strict = true
 files = ["swap"]
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# APScheduler 3 ships no type information; 4.0, which does, is still an alpha.
+module = ["apscheduler.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
