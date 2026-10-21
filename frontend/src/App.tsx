@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router'
 
 import { ApiError, type Me } from './api/client'
+import { backOverride } from './back'
 import { useDeviceTimeZone, useMe } from './api/me'
 import { I18nProvider } from './i18n/I18n'
 import { resolveLocale } from './i18n/locale'
@@ -15,6 +16,8 @@ import { Invite } from './screens/Invite'
 import { Language } from './screens/Language'
 import { LinkScreen } from './screens/LinkScreen'
 import { Links } from './screens/Links'
+import { NewOrder } from './screens/NewOrder'
+import { OrderCard } from './screens/OrderCard'
 import { OutsideTelegram } from './screens/OutsideTelegram'
 import { Problem } from './screens/Problem'
 import type { Launch } from './telegram'
@@ -47,7 +50,11 @@ function BackButtonSync() {
       return
     }
     backButton.show()
-    return backButton.onClick(() => void navigate(-1))
+    return backButton.onClick(() => {
+      const stepBack = backOverride()
+      if (stepBack) stepBack()
+      else void navigate(-1)
+    })
   }, [pathname, navigate])
   return null
 }
@@ -81,6 +88,8 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
         <Route path="/links" element={<Links />} />
         <Route path="/links/invite" element={<Invite />} />
         <Route path="/links/:id" element={<LinkScreen />} />
+        <Route path="/orders/new" element={<NewOrder />} />
+        <Route path="/orders/:id" element={<OrderCard />} />
         <Route path="/language" element={<Language />} />
       </Routes>
       <Tabs />

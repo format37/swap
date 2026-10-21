@@ -5,7 +5,7 @@ import { useI18n } from '../i18n/useI18n'
 import { Screen } from '../ui/Screen'
 
 // Trying again won't change these.
-const FINAL = new Set(['error.reopen', 'error.link_not_found'])
+const FINAL = new Set(['error.reopen', 'error.link_not_found', 'error.order_not_found'])
 
 /** What a failed request leaves on screen: the problem in words, and a way to retry. */
 export function Problem({ error, retry }: { error: unknown; retry: () => void }) {
