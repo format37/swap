@@ -17,12 +17,13 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0006](0006-mvp-build-order.md) | MVP build order: vertical slices, link + order + deal first | Accepted |
 | [0007](0007-openapi-client.md) | openapi-typescript + openapi-fetch; contract drift fails CI | Accepted |
 | [0008](0008-telegram-through-the-vps-bot-api-server.md) | Telegram through the VPS's Bot API server and relay; the worker does all of it | Accepted |
-| [0009](0009-languages.md) | Russian, English and Georgian from the start | Accepted |
+| [0009](0009-languages.md) | Russian, English and Georgian from the start | Accepted; formats amended by 0015 |
 | [0010](0010-payment-details.md) | Payment details: saved free text per asset, copied into the deal | Accepted |
 | [0011](0011-phase-0-platform.md) | Phase-0 platform: sessions, router, tooling, logs, deploy | Accepted |
 | [0012](0012-links-and-invites.md) | Links: one pending request, whether it came by invite or by @username | Accepted |
 | [0013](0013-deep-links.md) | Deep links: the bot's buttons open `startapp=<kind>_<id>` | Accepted |
 | [0014](0014-notifications-outbox.md) | Notifications: an outbox row per recipient, worded and sent by the worker | Accepted |
+| [0015](0015-georgian-without-intl-data.md) | Georgian numbers and dates borrow Russian's rules; Georgian dates stay numeric | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the
