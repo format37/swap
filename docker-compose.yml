@@ -1,6 +1,19 @@
-# The local stack. PR 5 adds caddy, api and worker; for now it is the database
-# that the tests and the dev server use.
+# The local stack: Caddy on http://127.0.0.1:8030 in front of api, plus the worker
+# and Postgres. ./compose.sh builds and starts it. Nothing here talks to Telegram:
+# TELEGRAM_API_BASE stays unset off the VPS (ADR-0008).
 name: swap
+
+x-app: &app
+  build: .
+  image: swap-app:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    APP_ENV: ${APP_ENV:-dev}
+    LOG_FORMAT: ${LOG_FORMAT:-console}
+    DATABASE_URL: postgresql+asyncpg://swap:${POSTGRES_PASSWORD:-swap}@db:5432/swap
+  restart: unless-stopped
 
 services:
   db:
@@ -18,6 +31,50 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+    restart: unless-stopped
+
+  # `alembic upgrade head` on every start; api and worker wait for it.
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 6
+
+  worker:
+    <<: *app
+    command: ["uvicorn", "swap.worker.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8001"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8001/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 6
+
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - "127.0.0.1:8030:80"
+    volumes:
+      - ./deploy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:

@@ -1,0 +1,16 @@
+# The local stack's Caddy: deploy/Caddyfile-swap.caddy without TLS, so dev and
+# production route the same way. Keep the two in step.
+:80 {
+	encode zstd gzip
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy api:8000 {
+		lb_try_duration 30s
+		lb_try_interval 500ms
+		request_buffers 1MB
+	}
+	handle_errors {
+		respond "Swap is restarting, try again in a minute · Swap обновляется, попробуйте через минуту · Swap ახლდება, სცადეთ ერთ წუთში" 503
+	}
+}
