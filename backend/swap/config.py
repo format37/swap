@@ -23,8 +23,11 @@ class Settings(BaseSettings):
     # the cloud API and starve the relay.
     telegram_api_base: str | None = None
     webapp_url: str = "https://swap.latentstate.dev"
+    # The bot's links (invites and deep links) are t.me/<this>.
+    telegram_bot_username: str = "peertopeerswapbot"
     init_data_max_age_s: int = 3600
     session_ttl_s: int = 24 * 3600
+    invite_ttl_s: int = 72 * 3600
     # The built frontend; the api serves it when this is set (ADR-0001).
     static_dir: str | None = None
     log_format: Literal["json", "console"] = "json"

@@ -43,16 +43,16 @@ The outbox moves up from step 4 into links, because a request to an @username is
 invisible without a notification (ADR-0014). Each later PR sends its own
 notifications.
 
-**PR 1.1 — Links by invitation** (ADR-0012, ADR-0013)
-- [ ] Migration: `links` and `invites`.
-- [ ] api: create and revoke an invite (at most 10 outstanding), list links, view one
+**PR 1.1 — Links by invitation** (ADR-0012, ADR-0013, ADR-0015)
+- [x] Migration: `links` and `invites`.
+- [x] api: create and revoke an invite (at most 10 outstanding), list links, view one
       with the mutual-links count, accept, decline, and break or withdraw.
       Authorization tests come first: a stranger gets 404 on everything.
-- [ ] Bot: `/start inv_<token>` turns the invite into a request, then greets the
+- [x] Bot: `/start inv_<token>` turns the invite into a request, then greets the
       invitee with the inviter's name and «Открыть».
-- [ ] App: the tab bar; the «Связи» tab; the invite sheet with share and copy; the
+- [x] App: the tab bar; the «Связи» tab; the invite sheet with share and copy; the
       request screen; deep links from `startapp`.
-- [ ] Dev: the Telegram mock draws MainButton, BackButton and popups, so they can be
+- [x] Dev: the Telegram mock draws MainButton, BackButton and popups, so they can be
       clicked in Chrome.
 
 **PR 1.2 — The outbox, and requests by @username** (ADR-0014)
@@ -62,7 +62,7 @@ notifications.
 - [ ] Notifications for a link request and an established link.
 - [ ] api and app: a request to an @username, with the 7-day cooldown (Q-E1).
 
-**PR 1.3 — Orders: model, visibility, rates** (ADR-0015, written with it)
+**PR 1.3 — Orders: model, visibility, rates** (ADR-0016, written with it)
 - [ ] Migration: `orders`, `order_wants`, `order_visibility`, and `events` with its
       append-only trigger; `users.tz`, taken from the device.
 - [ ] `rate_spec` v1 (fixed), and `swap/domain/rates.py` with its tests.
@@ -83,7 +83,7 @@ notifications.
       no log line holds them.
 - [ ] App: a profile screen behind the avatar with name, language and «Реквизиты».
 
-**PR 1.6 — Deals: the state machine** (ADR-0016, written with it)
+**PR 1.6 — Deals: the state machine** (ADR-0017, written with it)
 - [ ] Migration: `deals`, `deal_legs`, and the deferred trigger that refuses a status
       change without its event (ADR-0002).
 - [ ] The state-machine service. Every transition of Q-B1 is tested, and so is every

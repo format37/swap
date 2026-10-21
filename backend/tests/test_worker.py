@@ -2,7 +2,8 @@
 
 import asyncio
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -24,7 +25,10 @@ from starlette.applications import Starlette
 
 from swap.bot.setup import configure_bot
 from swap.config import Settings
-from swap.models import ServiceHeartbeat, User
+from swap.i18n import t
+from swap.links import create_invite
+from swap.models import Link, LinkStatus, ServiceHeartbeat, User
+from swap.users import upsert_user
 from swap.worker.app import create_app
 from swap.worker.jobs import beat
 from tests.conftest import TEST_BOT_TOKEN
@@ -197,6 +201,85 @@ async def test_the_language_picked_in_the_app_beats_telegrams(
     [sent] = telegram.calls
     assert isinstance(sent, SendMessage)
     assert sent.text.startswith("Hi, Nino!")
+
+
+async def invite_from(sessions: Sessions, telegram_id: int, first_name: str) -> str:
+    """An invite's token, made by someone who has pressed /start before."""
+    profile = SimpleNamespace(
+        id=telegram_id,
+        first_name=first_name,
+        last_name=None,
+        username=first_name.lower(),
+        language_code="ru",
+    )
+    async with sessions() as db:
+        inviter = await upsert_user(db, profile, can_message=True)
+        _, token = await create_invite(db, inviter.id, timedelta(hours=72))
+        await db.commit()
+    return token
+
+
+async def test_an_invite_names_the_inviter_and_opens_the_request(
+    worker: tuple[AsyncClient, Starlette], telegram: RecordingSession, sessionmaker: Sessions
+) -> None:
+    client, app = worker
+    token = await invite_from(sessionmaker, 1001, "Alex")
+    await client.post("/message", json=message(f"/start inv_{token}"), headers=RELAY)
+    await settle(app)
+
+    [sent] = telegram.calls
+    assert isinstance(sent, SendMessage)
+    assert sent.chat_id == 2001
+    assert sent.text.startswith("Alex (@alex) приглашает вас в Swap.")
+    async with sessionmaker() as db:
+        link = await db.scalar(select(Link))
+        nino = await db.scalar(select(User).where(User.telegram_id == 2001))
+    assert link is not None
+    assert link.status == LinkStatus.PENDING
+    assert nino is not None
+    assert nino.can_message is True
+    # «Открыть» opens the Main Mini App on the request itself (ADR-0013).
+    [[button]] = sent.reply_markup.inline_keyboard  # type: ignore[union-attr]
+    assert button.text == "Открыть"
+    assert button.url == f"https://t.me/peertopeerswapbot?startapp=link_{link.id}"
+
+
+@pytest.mark.parametrize(
+    ("payload", "key"),
+    [("inv_not-a-token", "invite.invalid"), ("inv_", "invite.invalid"), ("own", "invite.own")],
+)
+async def test_an_invite_that_links_nobody_says_why(
+    worker: tuple[AsyncClient, Starlette],
+    telegram: RecordingSession,
+    sessionmaker: Sessions,
+    settings: Settings,
+    payload: str,
+    key: str,
+) -> None:
+    client, app = worker
+    if payload == "own":
+        payload = f"inv_{await invite_from(sessionmaker, 2001, 'Nino')}"
+    await client.post("/message", json=message(f"/start {payload}"), headers=RELAY)
+    await settle(app)
+    [sent] = telegram.calls
+    assert isinstance(sent, SendMessage)
+    assert sent.text == t("ru", key)
+    [[button]] = sent.reply_markup.inline_keyboard  # type: ignore[union-attr]
+    assert button.web_app is not None
+    assert button.web_app.url == settings.webapp_url
+    async with sessionmaker() as db:
+        assert await db.scalar(select(Link)) is None
+
+
+async def test_another_start_payload_gets_the_greeting(
+    worker: tuple[AsyncClient, Starlette], telegram: RecordingSession
+) -> None:
+    client, app = worker
+    await client.post("/message", json=message("/start hello"), headers=RELAY)
+    await settle(app)
+    [sent] = telegram.calls
+    assert isinstance(sent, SendMessage)
+    assert sent.text.startswith("Привет, Nino!")
 
 
 async def test_a_reduced_callback_query_is_accepted(

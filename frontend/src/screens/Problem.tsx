@@ -1,28 +1,23 @@
 import { RotateCw, TriangleAlert } from 'lucide-react'
 
-import { ApiError } from '../api/client'
+import { errorMessage } from '../i18n/errors'
 import { useI18n } from '../i18n/useI18n'
-import type { MessageKey } from '../i18n/ru'
 import { Screen } from '../ui/Screen'
 
-function messageFor(error: unknown): MessageKey {
-  if (!(error instanceof ApiError)) return 'error.generic'
-  if (error.code === 'init_data_expired') return 'error.reopen'
-  if (error.code === 'network') return 'error.network'
-  return 'error.generic'
-}
+// Trying again won't change these.
+const FINAL = new Set(['error.reopen', 'error.link_not_found'])
 
 /** What a failed request leaves on screen: the problem in words, and a way to retry. */
 export function Problem({ error, retry }: { error: unknown; retry: () => void }) {
   const { t } = useI18n()
-  const message = messageFor(error)
+  const message = errorMessage(error)
   return (
     <Screen>
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
         <TriangleAlert aria-hidden className="size-12 text-hint" />
         <h1 className="text-xl font-semibold">{t('error.title')}</h1>
         <p className="text-hint">{t(message)}</p>
-        {message !== 'error.reopen' && (
+        {!FINAL.has(message) && (
           <button
             type="button"
             onClick={retry}

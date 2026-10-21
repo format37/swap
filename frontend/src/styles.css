@@ -66,3 +66,18 @@ body {
   padding-left: var(--tg-viewport-safe-area-inset-left, env(safe-area-inset-left, 0px));
   padding-right: var(--tg-viewport-safe-area-inset-right, env(safe-area-inset-right, 0px));
 }
+
+/* A tab screen leaves room for the tab bar, which sits clear of the home indicator. */
+.screen.has-tab-bar {
+  padding-bottom: calc(
+    var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+      var(--tg-viewport-content-safe-area-inset-bottom, 0px) + 4.5rem
+  );
+}
+
+.tab-bar {
+  padding-bottom: calc(
+    var(--tg-viewport-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+      var(--tg-viewport-content-safe-area-inset-bottom, 0px)
+  );
+}

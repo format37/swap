@@ -68,3 +68,13 @@ async def upsert_user(db: AsyncSession, profile: TelegramProfile, *, can_message
     if user is None:  # pragma: no cover - RETURNING always yields the row
         raise RuntimeError("upsert returned no row")
     return user
+
+
+def full_name(user: User) -> str:
+    return " ".join(part for part in (user.first_name, user.last_name) if part)
+
+
+def person_label(user: User) -> str:
+    """How the bot names someone: «Alex Iurasov (@format37)»."""
+    name = full_name(user)
+    return f"{name} (@{user.username})" if user.username else name

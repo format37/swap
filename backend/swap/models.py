@@ -2,15 +2,18 @@
 
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import (
     BigInteger,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
     LargeBinary,
     MetaData,
     Text,
+    UniqueConstraint,
     false,
     func,
 )
@@ -31,6 +34,12 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     # SQLAlchemy's documented way to map types; it is read once, never mutated.
     type_annotation_map = {datetime: DateTime(timezone=True)}  # noqa: RUF012
+
+
+def one_of(column: str, values: type[StrEnum]) -> str:
+    """The CHECK that keeps a text status column to its enum's values (ADR-0002)."""
+    listed = ", ".join(f"'{value}'" for value in values)
+    return f"{column} IN ({listed})"
 
 
 class User(Base):
@@ -83,3 +92,65 @@ class ServiceHeartbeat(Base):
 
     name: Mapped[str] = mapped_column(Text, primary_key=True)
     beat_at: Mapped[datetime]
+
+
+class LinkStatus(StrEnum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    DECLINED = "declined"
+    REMOVED = "removed"
+
+
+class Link(Base):
+    """One row per pair of users, whatever happened between them (ADR-0002, ADR-0012).
+
+    A request by invite or by @username is `pending`, with `requested_by` the one who
+    asked. The pair keeps this row through declines, breaks and new requests.
+    """
+
+    __tablename__ = "links"
+    __table_args__ = (
+        UniqueConstraint("user_lo_id", "user_hi_id"),
+        CheckConstraint("user_lo_id < user_hi_id", name="ordered_pair"),
+        CheckConstraint("requested_by IN (user_lo_id, user_hi_id)", name="requested_by_pair"),
+        CheckConstraint(one_of("status", LinkStatus), name="status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # The unique pair's index covers user_lo_id.
+    user_lo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    user_hi_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(Text)
+    requested_by: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    requested_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    # When the link was established: the date the lists show (FR-1.3).
+    accepted_at: Mapped[datetime | None]
+    # Starts the requester's 7-day cooldown (FR-1.2, Q-E1).
+    declined_at: Mapped[datetime | None]
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+
+class Invite(Base):
+    """A one-time bot link, t.me/<bot>?start=inv_<token> (ADR-0012).
+
+    Only the token's SHA-256 is kept, so a database read hands out no working invite.
+    """
+
+    __tablename__ = "invites"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[bytes] = mapped_column(LargeBinary, unique=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    expires_at: Mapped[datetime]
+    used_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    used_at: Mapped[datetime | None]
+    revoked_at: Mapped[datetime | None]

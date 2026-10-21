@@ -13,7 +13,7 @@ export function Home({ me }: { me: Me }) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
   return (
-    <Screen>
+    <Screen tabs>
       <header className="flex items-center gap-4 px-6 pt-4">
         <Avatar name={me.first_name} />
         <div className="min-w-0">

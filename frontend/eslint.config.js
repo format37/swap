@@ -27,6 +27,11 @@ export default defineConfig([
     },
   },
   {
+    // Tests and their helpers are never hot-reloaded.
+    files: ['src/test/**', '**/*.test.{ts,tsx}'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     files: ['*.js', 'scripts/**/*.mjs'],
     extends: [js.configs.recommended],
     languageOptions: { globals: globals.node },
