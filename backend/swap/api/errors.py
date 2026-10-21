@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from swap.errors import DomainError
+
 PROBLEM_JSON = "application/problem+json"
 
 
@@ -25,7 +27,10 @@ class Problem(BaseModel):
 
 
 class ApiError(Exception):
-    """Raise anywhere in a request to answer with a problem response."""
+    """Raise anywhere in a request to answer with a problem response.
+
+    Domain code raises `DomainError` instead, which is answered the same way.
+    """
 
     def __init__(self, status: int, code: str, detail: str | None = None) -> None:
         super().__init__(code)
@@ -52,6 +57,10 @@ def problem_response(
 def install_problem_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def on_api_error(request: Request, exc: ApiError) -> JSONResponse:
+        return problem_response(exc.status, exc.code, exc.detail)
+
+    @app.exception_handler(DomainError)
+    async def on_domain_error(request: Request, exc: DomainError) -> JSONResponse:
         return problem_response(exc.status, exc.code, exc.detail)
 
     @app.exception_handler(StarletteHTTPException)
