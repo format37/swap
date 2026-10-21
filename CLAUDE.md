@@ -26,8 +26,8 @@ When both look wrong, write a question before building around it.
 ## Status
 
 The owner accepted phase 0 (skeleton) on 2026-10-22; it is live at
-https://swap.latentstate.dev. Phase 1 (MVP) is next, slice 1 first (ADR-0006).
-Its checklist goes into `docs/plan.md`.
+https://swap.latentstate.dev. Phase 1 (MVP) started on 2026-10-22, slice 1 first
+(ADR-0006). Its checklist, PR by PR, is in `docs/plan.md`.
 
 ## Commands
 
