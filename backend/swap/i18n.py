@@ -61,6 +61,26 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "Это приглашение больше не действует: оно истекло, отозвано или уже "
             "использовано. Попросите прислать новое."
         ),
+        "deal.proposed": (
+            "{name} предлагает сделку по вашей заявке: вы отдаёте {amount} {currency}, получаете "
+            "{counter_amount} {counter_currency}. Откройте, чтобы принять или отклонить; "
+            "предложение действует 48 часов."
+        ),
+        "deal.accepted": (
+            "Сделка принята — {name}. Откройте её: там видно, кто, что и когда отправляет."
+        ),
+        "deal.declined": "Предложение отклонено — {name}.",
+        "deal.withdrawn": "Предложение отозвано — {name}.",
+        "deal.expired": "Предложение истекло без ответа — {name}.",
+        "deal.cancelled": "Сделка отменена — {name}.",
+        "deal.proposal_closed": (
+            "Предложение отменено: заявка закрыта или её остатка не хватает — {name}."
+        ),
+        "deal.sent": (
+            "Отправлено: {amount} {currency} — {name}. Проверьте поступление и отметьте «Получено»."
+        ),
+        "deal.received": "Получение подтверждено: {amount} {currency} — {name}.",
+        "deal.settled": "Сделка завершена: получение {amount} {currency} подтверждено — {name}.",
         "bot.command.start": "Открыть Swap",
         "bot.short_description": (
             "Обмен деньгами между странами с людьми, которых вы знаете. Swap планирует "
@@ -108,6 +128,24 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "This invitation no longer works: it expired, was revoked or has already been "
             "used. Ask for a new one."
         ),
+        "deal.proposed": (
+            "{name} proposes a deal on your offer: you give {amount} {currency} and get "
+            "{counter_amount} {counter_currency}. Open it to accept or decline; the proposal "
+            "stands for 48 hours."
+        ),
+        "deal.accepted": "Deal accepted — {name}. Open it to see who sends what, and when.",
+        "deal.declined": "Proposal declined — {name}.",
+        "deal.withdrawn": "Proposal withdrawn — {name}.",
+        "deal.expired": "Proposal expired unanswered — {name}.",
+        "deal.cancelled": "Deal cancelled — {name}.",
+        "deal.proposal_closed": (
+            "Proposal cancelled: the offer is closed or has too little left — {name}."
+        ),
+        "deal.sent": (
+            "Sent: {amount} {currency} — {name}. Check it has arrived and mark it “Received”."
+        ),
+        "deal.received": "Receipt confirmed: {amount} {currency} — {name}.",
+        "deal.settled": "Deal complete: receipt of {amount} {currency} confirmed — {name}.",
         "bot.command.start": "Open Swap",
         "bot.short_description": (
             "Swap money across countries with people you know. Swap plans and records; "
@@ -157,6 +195,26 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         "invite.invalid": (
             "ეს მოწვევა აღარ მოქმედებს: ვადა გაუვიდა, გაუქმდა ან უკვე გამოყენებულია. სთხოვეთ ახალი."
         ),
+        "deal.proposed": (
+            "{name} გთავაზობთ გარიგებას თქვენს განცხადებაზე: გასცემთ {amount} {currency}, მიიღებთ "
+            "{counter_amount} {counter_currency}. გახსენით, რომ მიიღოთ ან უარყოთ; შეთავაზება 48 "
+            "საათი მოქმედებს."
+        ),
+        "deal.accepted": (
+            "გარიგება მიღებულია — {name}. გახსენით, რომ ნახოთ, ვინ რას და როდის აგზავნის."
+        ),
+        "deal.declined": "შეთავაზება უარყოფილია — {name}.",
+        "deal.withdrawn": "შეთავაზება გაუქმებულია — {name}.",
+        "deal.expired": "შეთავაზებას ვადა პასუხის გარეშე გაუვიდა — {name}.",
+        "deal.cancelled": "გარიგება გაუქმდა — {name}.",
+        "deal.proposal_closed": (
+            "შეთავაზება გაუქმდა: განცხადება დახურულია ან მისი ნაშთი არ ჰყოფნის — {name}."
+        ),
+        "deal.sent": (
+            "გაგზავნილია: {amount} {currency} — {name}. შეამოწმეთ ჩარიცხვა და მონიშნეთ „მიღებულია“."
+        ),
+        "deal.received": "მიღება დადასტურებულია: {amount} {currency} — {name}.",
+        "deal.settled": "გარიგება დასრულდა: მიღება დადასტურებულია, {amount} {currency} — {name}.",
         "bot.command.start": "Swap-ის გახსნა",
         "bot.short_description": (
             "ფულის გაცვლა ქვეყნებს შორის ნაცნობებთან. Swap გეგმავს და აღრიცხავს, ფულს არ ინახავს."
