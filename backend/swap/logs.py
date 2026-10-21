@@ -107,3 +107,5 @@ def configure_logging(level: str = "INFO", fmt: str = "json", secrets: Iterable[
     for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
         logging.getLogger(name).handlers.clear()
         logging.getLogger(name).propagate = True
+    # Two INFO lines per run of every job, every 30 seconds, say nothing a failure won't.
+    logging.getLogger("apscheduler").setLevel(logging.WARNING)
