@@ -11,6 +11,7 @@ import { I18nProvider } from './i18n/I18n'
 import { resolveLocale } from './i18n/locale'
 import { useI18n } from './i18n/useI18n'
 import { startRoute } from './routes'
+import { DealCard } from './screens/DealCard'
 import { Home } from './screens/Home'
 import { Invite } from './screens/Invite'
 import { Language } from './screens/Language'
@@ -19,6 +20,7 @@ import { Links } from './screens/Links'
 import { NewOrder } from './screens/NewOrder'
 import { OrderCard } from './screens/OrderCard'
 import { PaymentMethodCard } from './screens/PaymentMethodCard'
+import { ProposeDeal } from './screens/ProposeDeal'
 import { PaymentMethodForm } from './screens/PaymentMethodForm'
 import { Profile } from './screens/Profile'
 import { OutsideTelegram } from './screens/OutsideTelegram'
@@ -92,7 +94,9 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
         <Route path="/links/invite" element={<Invite />} />
         <Route path="/links/:id" element={<LinkScreen />} />
         <Route path="/orders/new" element={<NewOrder />} />
-        <Route path="/orders/:id" element={<OrderCard />} />
+        <Route path="/orders/:id" element={<OrderCard me={me} />} />
+        <Route path="/orders/:id/propose" element={<ProposeDeal />} />
+        <Route path="/deals/:id" element={<DealCard me={me} />} />
         <Route path="/profile" element={<Profile me={me} />} />
         <Route path="/profile/details/new" element={<PaymentMethodForm />} />
         <Route path="/profile/details/:id" element={<PaymentMethodCard />} />

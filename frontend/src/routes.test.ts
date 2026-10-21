@@ -5,6 +5,7 @@ const ID = '6f1c9a52-0d7e-4d53-9d0c-8f6f3e2b7c11'
 it.each([
   [`link_${ID}`, `/links/${ID}`],
   [`order_${ID}`, `/orders/${ID}`],
+  [`deal_${ID}`, `/deals/${ID}`],
   [undefined, null],
   ['', null],
   [`spaceship_${ID}`, null],

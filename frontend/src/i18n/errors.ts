@@ -13,19 +13,27 @@ const BY_CODE: Partial<Record<string, MessageKey>> = {
   'link.cooldown': 'error.link_cooldown',
   'order.not_found': 'error.order_not_found',
   'order.not_open': 'error.order_not_open',
+  'order.insufficient_remaining': 'error.order_short',
   'payment.unavailable': 'error.payment_unavailable',
   'payment.text_required': 'error.payment_text_required',
   'payment.limit': 'error.payment_limit',
   'payment.not_found': 'error.payment_not_found',
+  'deal.not_found': 'error.deal_not_found',
+  'deal.invalid_transition': 'error.deal_changed',
+  'deal.not_your_move': 'error.deal_not_yours',
+  'deal.expired': 'error.deal_expired',
 }
 
-/** Whatever else an order's refusal says, the wizard checked it before sending. */
-const ORDER_RULES = /^(order|rate)\./
+// Whatever else an order's or a deal's refusal says, its form checked before sending.
+const BY_PREFIX: [RegExp, MessageKey][] = [
+  [/^(order|rate)\./, 'error.order_invalid'],
+  [/^deal\./, 'error.deal_invalid'],
+]
 
 /** What to tell the user about a failed request. */
 export function errorMessage(error: unknown): MessageKey {
   if (!(error instanceof ApiError)) return 'error.generic'
-  return (
-    BY_CODE[error.code] ?? (ORDER_RULES.test(error.code) ? 'error.order_invalid' : 'error.generic')
-  )
+  const known = BY_CODE[error.code]
+  if (known) return known
+  return BY_PREFIX.find(([pattern]) => pattern.test(error.code))?.[1] ?? 'error.generic'
 }

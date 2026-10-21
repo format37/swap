@@ -6,6 +6,7 @@ import type { Order } from '../api/orders'
 import { backOverride } from '../back'
 import { confirmAction, useMainButton, type MainAction } from '../telegram'
 import { fakeApi, json, problem } from '../test/api'
+import { deal } from '../test/deals'
 import { renderScreen } from '../test/render'
 import { Home } from './Home'
 import { NewOrder } from './NewOrder'
@@ -95,6 +96,7 @@ describe('Home', () => {
     fakeApi({
       'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
       'GET /api/v1/orders': () => json(200, []),
+      'GET /api/v1/deals': () => json(200, []),
     })
     renderScreen(<Home me={me} />)
     expect(await screen.findByText('Как это работает')).toBeInTheDocument()
@@ -102,7 +104,7 @@ describe('Home', () => {
     expect(mainButton()?.text).toBe('Новая заявка')
   })
 
-  it('shows link requests, then orders open to me, then mine', async () => {
+  it('shows link requests, my deals, orders open to me, then mine', async () => {
     fakeApi({
       'GET /api/v1/links': () =>
         json(200, {
@@ -141,8 +143,11 @@ describe('Home', () => {
               }),
             ])
           : json(200, [order()]),
+      'GET /api/v1/deals': () => json(200, [deal({ role: 'acceptor' })]),
     })
     renderScreen(<Home me={me} />)
+    const deals = (await screen.findByRole('heading', { name: 'Мои сделки' })).parentElement
+    expect(deals).toHaveTextContent('Nino B · Новое предложение: примите его или отклоните')
     const requests = (await screen.findByRole('heading', { name: 'Запросы связи' })).parentElement
     expect(requests).toHaveTextContent('Nino B')
     const open = (await screen.findByRole('heading', { name: 'Открытые мне' })).parentElement
@@ -264,7 +269,7 @@ describe('the order card', () => {
 
   it('shows what remains, for what, how and when', async () => {
     fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order()) })
-    renderScreen(<OrderCard />, { route, path })
+    renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText(/Осталось/)).toHaveTextContent('Осталось: 150 000₽RUB')
     expect(screen.getByText(/за одну сделку/)).toHaveTextContent('От 10 000₽RUB за одну сделку')
     const wants = screen.getByRole('heading', { name: 'Хочет взамен' }).parentElement
@@ -286,7 +291,7 @@ describe('the order card', () => {
       [`POST /api/v1/orders/${ORDER_ID}/close`]: () =>
         json(200, order({ mine: true, status: 'closed' })),
     })
-    renderScreen(<OrderCard />, { route, path })
+    renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText('Видно только: Nino B')).toBeInTheDocument()
     vi.mocked(confirmAction).mockResolvedValueOnce(false)
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть заявку' }))
@@ -302,7 +307,7 @@ describe('the order card', () => {
 
   it('tells a stranger only that there is no such order', async () => {
     fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => problem(404, 'order.not_found') })
-    renderScreen(<OrderCard />, { route, path })
+    renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText('Заявка не найдена.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull()
   })
