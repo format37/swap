@@ -1,0 +1,16 @@
+# Never in the image: secrets, and nothing the build doesn't need.
+.env
+.env.*
+!.env.example
+.git
+.github
+.githooks
+docs
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+frontend/dist
+backend/tests

@@ -7,6 +7,7 @@
 #
 #   ./test.sh                  everything
 #   ./test.sh backend [args]   pytest only; extra args go to pytest
+#   ./test.sh frontend         vitest only
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -21,10 +22,15 @@ run_backend() {
     (cd backend && $UV run pytest "$@")
 }
 
+run_frontend() {
+    (cd frontend && npx vitest run)
+}
+
 target="${1:-all}"
 [ $# -gt 0 ] && shift || true
 case "$target" in
-    backend) run_backend "$@" ;;
-    all)     run_backend ;;
-    *)       echo "usage: ./test.sh [all|backend] [pytest args...]" >&2; exit 2 ;;
+    backend)  run_backend "$@" ;;
+    frontend) run_frontend ;;
+    all)      run_backend && run_frontend ;;
+    *)        echo "usage: ./test.sh [all|backend|frontend] [pytest args...]" >&2; exit 2 ;;
 esac

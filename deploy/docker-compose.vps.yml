@@ -1,0 +1,99 @@
+# Production on the VPS (ADR-0001, ADR-0008). Use it through deploy/vps.sh, which
+# passes the repo root's .env with an absolute --env-file.
+name: swap
+
+x-app: &app
+  build:
+    context: ..
+  image: swap-app:prod
+  env_file: ../.env
+  restart: unless-stopped
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: swap-db
+    environment:
+      POSTGRES_USER: swap
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: swap
+    volumes:
+      - swap-db:/var/lib/postgresql/data
+    # Loopback only, for the worker, which lives in the host's network.
+    ports:
+      - "127.0.0.1:5436:5432"
+    networks: [swap]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swap -d swap"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  migrate:
+    <<: *app
+    container_name: swap-migrate
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://swap:${POSTGRES_PASSWORD}@swap-db:5432/swap
+    networks: [swap]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    container_name: swap-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://swap:${POSTGRES_PASSWORD}@swap-db:5432/swap
+    # The shared Caddy reaches swap-api:8000 over mcp-shared; nothing is published.
+    networks: [swap, mcp-shared]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 6
+
+  worker:
+    <<: *app
+    container_name: swap-worker
+    # The Bot API server and the relay live on the host's loopback (ADR-0008). Bind
+    # 127.0.0.1 only: in the host's network, 0.0.0.0 would face the internet.
+    network_mode: host
+    command: ["uvicorn", "swap.worker.app:create_app", "--factory", "--host", "127.0.0.1", "--port", "8707"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://swap:${POSTGRES_PASSWORD}@127.0.0.1:5436/swap
+      TELEGRAM_API_BASE: http://127.0.0.1:8081
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8707/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 6
+
+networks:
+  swap:
+    ipam:
+      config:
+        - subnet: 10.89.91.0/24
+  mcp-shared:
+    external: true
+
+volumes:
+  swap-db:
