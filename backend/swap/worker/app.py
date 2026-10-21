@@ -26,10 +26,32 @@ from swap.config import Settings, get_settings
 from swap.db import Sessionmaker, create_engine, create_sessionmaker
 from swap.logs import configure_logging
 from swap.worker.jobs import beat
+from swap.worker.outbox import send_due
 
 log = structlog.get_logger("swap.worker")
 
 HEARTBEAT_EVERY_S = 30
+OUTBOX_EVERY_S = 5
+
+
+def _scheduler(sessionmaker: Sessionmaker, bot: Bot | None, settings: Settings) -> AsyncIOScheduler:
+    """The sweeps (ADR-0005). Each runs alone, and a missed run is not made up twice."""
+    scheduler = AsyncIOScheduler(timezone=UTC)
+    every = {"coalesce": True, "max_instances": 1, "next_run_time": datetime.now(UTC)}
+    scheduler.add_job(
+        beat, "interval", seconds=HEARTBEAT_EVERY_S, args=[sessionmaker], id="heartbeat", **every
+    )
+    if bot is not None:
+        # Without a bot, messages wait in the outbox (ADR-0014).
+        scheduler.add_job(
+            send_due,
+            "interval",
+            seconds=OUTBOX_EVERY_S,
+            args=[sessionmaker, bot, settings],
+            id="outbox",
+            **every,
+        )
+    return scheduler
 
 
 def create_app(
@@ -54,17 +76,7 @@ def create_app(
         dispatcher = Dispatcher(sessionmaker=sessionmaker, settings=settings)
         dispatcher.include_router(build_router())
 
-    scheduler = AsyncIOScheduler(timezone=UTC)
-    scheduler.add_job(
-        beat,
-        "interval",
-        seconds=HEARTBEAT_EVERY_S,
-        args=[sessionmaker],
-        id="heartbeat",
-        next_run_time=datetime.now(UTC),
-        coalesce=True,
-        max_instances=1,
-    )
+    scheduler = _scheduler(sessionmaker, bot, settings)
     # Updates being handled in the background; kept so none is garbage-collected
     # mid-flight, and so shutdown can wait for them.
     pending: set[asyncio.Task[object]] = set()

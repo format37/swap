@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from sqlalchemy import (
     BigInteger,
@@ -16,7 +17,9 @@ from sqlalchemy import (
     UniqueConstraint,
     false,
     func,
+    text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # One naming convention, so autogenerate and hand-written downgrades agree on the
@@ -154,3 +157,51 @@ class Invite(Base):
     )
     used_at: Mapped[datetime | None]
     revoked_at: Mapped[datetime | None]
+
+
+class NotificationStatus(StrEnum):
+    """Where a message stands with Telegram (ADR-0014)."""
+
+    PENDING = "pending"
+    SENT = "sent"
+    # Not sent, and never will be: the bot may not write to the recipient.
+    SKIPPED = "skipped"
+    # Telegram refused it for good, or every attempt failed.
+    FAILED = "failed"
+
+
+class Notification(Base):
+    """One message to one person: the Telegram outbox (ADR-0014).
+
+    It holds data, not text. The worker words it in the recipient's language when it
+    sends it.
+    """
+
+    __tablename__ = "notifications"
+    __table_args__ = (
+        CheckConstraint(one_of("tg_status", NotificationStatus), name="tg_status"),
+        # What the outbox sweep looks for every few seconds.
+        Index(
+            "ix_notifications_due",
+            "next_attempt_at",
+            postgresql_where=text("tg_status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    recipient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    # Also the key of its words in swap/i18n.py, such as "link.requested".
+    type: Mapped[str] = mapped_column(Text)
+    # What the words need: names, amounts as strings. Never payment details.
+    params: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    # The card «Открыть» opens, such as link_<uuid> (ADR-0013).
+    target: Mapped[str | None] = mapped_column(Text)
+    tg_status: Mapped[str] = mapped_column(Text, server_default=NotificationStatus.PENDING.value)
+    attempts: Mapped[int] = mapped_column(server_default=text("0"))
+    next_attempt_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    tg_message_id: Mapped[int | None] = mapped_column(BigInteger)
+    # Why the last attempt failed, for whoever reads the table.
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

@@ -2,22 +2,19 @@
 
 import asyncio
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from aiogram import Bot
-from aiogram.client.session.base import BaseSession
 from aiogram.methods import (
     SendMessage,
     SetChatMenuButton,
     SetMyCommands,
     SetMyDescription,
     SetMyShortDescription,
-    TelegramMethod,
 )
-from aiogram.types import Chat, Message
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -32,39 +29,10 @@ from swap.users import upsert_user
 from swap.worker.app import create_app
 from swap.worker.jobs import beat
 from tests.conftest import TEST_BOT_TOKEN
+from tests.telegram import RecordingSession
 
 Sessions = async_sessionmaker[AsyncSession]
 RELAY = {"Authorization": f"Bearer {TEST_BOT_TOKEN}"}
-
-
-class RecordingSession(BaseSession):
-    """Stands in for the Bot API server: records every call and answers as Telegram would."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.calls: list[TelegramMethod[Any]] = []
-
-    async def make_request(
-        self,
-        bot: Bot,
-        method: TelegramMethod[Any],
-        timeout: int | None = None,  # noqa: ASYNC109 - aiogram's BaseSession signature
-    ) -> Any:
-        self.calls.append(method)
-        if isinstance(method, SendMessage):
-            return Message(
-                message_id=len(self.calls),
-                date=datetime.now(UTC),
-                chat=Chat(id=int(method.chat_id), type="private"),
-                text=method.text,
-            )
-        return True
-
-    async def stream_content(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover
-        raise NotImplementedError
-
-    async def close(self) -> None:
-        return None
 
 
 @pytest.fixture
