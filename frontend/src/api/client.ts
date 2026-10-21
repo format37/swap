@@ -71,18 +71,26 @@ interface Result<T> {
   response: Response
 }
 
-/** The data of a successful response; an ApiError carrying the problem's code otherwise. */
-export async function unwrap<T>(request: Promise<Result<T>>): Promise<T> {
-  let result: Result<T>
+async function settle<T>(request: Promise<Result<T>>): Promise<Result<T>> {
   try {
-    result = await request
+    return await request
   } catch (error) {
     if (error instanceof ApiError) throw error
     throw new ApiError(0, 'network')
   }
-  const { data, error, response } = result
+}
+
+/** The data of a successful response; an ApiError carrying the problem's code otherwise. */
+export async function unwrap<T>(request: Promise<Result<T>>): Promise<T> {
+  const { data, error, response } = await settle(request)
   if (response.ok && data !== undefined) return data
   throw new ApiError(response.status, problemCode(error) ?? 'unknown')
+}
+
+/** For a response without a body, such as 204: resolves once it succeeded. */
+export async function done(request: Promise<Result<unknown>>): Promise<void> {
+  const { error, response } = await settle(request)
+  if (!response.ok) throw new ApiError(response.status, problemCode(error) ?? 'unknown')
 }
 
 function problemCode(body: unknown): string | undefined {
