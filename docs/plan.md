@@ -71,10 +71,10 @@ notifications.
       order's list.
 - [x] A notification: a new order is open to you.
 
-**PR 1.4 — Orders: the wizard, the card, Home**
-- [ ] The three-step wizard with a fixed rate and a live preview, and the order card.
-- [ ] Home: «Открытые мне» and «Мои»; the three-step empty state.
-- [ ] Assets with their symbol, code and flag (ADR-0003).
+**PR 1.4 — Orders: the wizard, the card, Home** (ADR-0017)
+- [x] The three-step wizard with a fixed rate and a live preview, and the order card.
+- [x] Home: «Открытые мне» and «Мои»; the three-step empty state.
+- [x] Assets with their symbol, code and flag (ADR-0003).
 
 **PR 1.5 — Payment details** (ADR-0010)
 - [ ] Migration: `payment_methods`. AES-GCM envelopes, with keys from the environment
@@ -83,7 +83,7 @@ notifications.
       no log line holds them.
 - [ ] App: a profile screen behind the avatar with name, language and «Реквизиты».
 
-**PR 1.6 — Deals: the state machine** (ADR-0017, written with it)
+**PR 1.6 — Deals: the state machine** (ADR-0018, written with it)
 - [ ] Migration: `deals`, `deal_legs`, `events` with its append-only trigger, and the
       deferred trigger that refuses a status change without its event (ADR-0002).
 - [ ] The state-machine service. Every transition of Q-B1 is tested, and so is every
