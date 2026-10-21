@@ -7,7 +7,7 @@ phase's checklist and the estimates. Phase 1's order is ADR-0006.
 A **session** here is one sitting of mine that ends in reviewable PRs with green CI,
 roughly 2–4 hours of wall-clock work.
 
-## Phase 0 — skeleton (started 2026-10-21)
+## Phase 0 — skeleton (accepted 2026-10-22)
 
 Phase 0 is done when (the kickoff's DoD and §12, with the owner's answers of
 2026-10-21):
@@ -27,8 +27,9 @@ Phase 0 is done when (the kickoff's DoD and §12, with the owner's answers of
       `https://swap.latentstate.dev` (2026-10-21).
 - [x] DNS: an A record for `swap.latentstate.dev` → the VPS, DNS only (grey cloud). I
       created it on 2026-10-21 with the owner's Edit-DNS token.
-- [ ] Once it is deployed: open the app from the bot on your phone, and say whether
-      phase 0 is accepted.
+- [x] Once it is deployed: open the app from the bot on your phone, and say whether
+      phase 0 is accepted. The owner signed in from his phone and accepted it on
+      2026-10-22.
 
 ### Me
 

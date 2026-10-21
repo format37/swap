@@ -25,3 +25,6 @@ coverage/
 .DS_Store
 .idea/
 .vscode/
+
+# Scratch space for the owner and the agent (kickoff drafts, notes): never committed.
+/temp/
