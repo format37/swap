@@ -1,5 +1,7 @@
 # Questions for the owner
 
+The owner answered parts A and B on 2026-10-21; each answer sits under its item.
+
 Each item ends with a proposed default. **"ok" accepts it**; anything else replaces
 it. Answer under **Answer:** or in the PR review. Once answered, an item is folded
 into an ADR (or the code) and marked here with the date. Nothing is deleted.
@@ -28,7 +30,11 @@ webhook set, nothing pending), and I will call nothing else with it.
    - Turn off «Allow Groups» on both bots (`/setjoingroups`). Today the production
      bot can be added to groups, and §10 says the bot ignores groups anyway.
 
-**Answer:**
+**Answer (the owner, 2026-10-21):** use the production bot for everything; no test
+bot for now. «Allow Groups» is off. The Main Mini App is on, fullscreen, at
+`https://swap.latentstate.dev`. The owner logged the bot out of the cloud Bot API the
+same day: it runs through the VPS's own Bot API server and relay, like gptaidbot.
+→ ADR-0008.
 
 ### Q-A2 · GitHub repository
 
@@ -36,7 +42,7 @@ webhook set, nothing pending), and I will call nothing else with it.
 `main`, protect `main` (PR and green CI required), and open these docs as the first
 PR.
 
-**Answer:**
+**Answer:** public and open source: `github.com/format37/swap`, MIT licence.
 
 ### Q-A3 · Production behind the existing `reverse-proxy`, not a Caddy of our own
 
@@ -54,7 +60,8 @@ PR.
   because Telegram Web shows Mini Apps in an iframe. CSP `frame-ancestors` does that
   job instead.
 
-**Answer:**
+**Answer:** ok, without breaking the other services. → ADR-0001, amended: the api
+sets its own security headers, so the shared Caddyfile is edited only once.
 
 ### Q-A4 · Session: a bearer token held in memory instead of a `SameSite=None` cookie
 
@@ -79,7 +86,7 @@ The app re-sends `initData` at every launch anyway (§10).
 - A 401 re-authenticates once with the launch's `initData`. If that is more than an
   hour old, the app asks the user to reopen it.
 
-**Answer:**
+**Answer:** ok. → ADR-0011: one session per launch, 24 h.
 
 ### Q-A5 · How a phone reaches the dev stack
 
@@ -98,7 +105,8 @@ It is stable, free and has no interstitial. From you it needs:
 
 Until then, the quick tunnel is the stopgap.
 
-**Answer:**
+**Answer:** no tunnel. I test in desktop Chrome with mobile emulation, and the owner
+tests in Telegram on the VPS. → ADR-0011.
 
 ### Q-A6 · Phase-0 acceptance: where, and on which devices
 
@@ -115,7 +123,8 @@ Until then, the quick tunnel is the stopgap.
 Please list the clients we can test on (iOS / Android / Desktop / Web). §13 asks
 for iOS, Android and Desktop at every stage.
 
-**Answer:**
+**Answer:** accepted on the VPS, with the production bot (A1). The device list is
+still to come; the owner tests in Telegram.
 
 ### Q-A7 · Backup storage (§13; needed by mid phase 1, not phase 0)
 
@@ -129,7 +138,7 @@ for iOS, Android and Desktop at every stage.
 - This differs from phonyx's on-box, unencrypted backups (your Decision 4 there).
   Swap's spec asks for off-box and encrypted, and I'll follow the spec.
 
-**Answer:**
+**Answer:** ok (part of «agree with everything else»). Needed by slice 7.
 
 ### Q-A8 · `@telegram-apps/sdk-react` has a successor
 
@@ -143,7 +152,7 @@ because the bridge is built in, so the "no third-party scripts" rule holds.
 **Proposed:** `@tma.js/sdk-react` 3.x, pinned. Move to 4.x once it is stable and has
 passed a phone check.
 
-**Answer:**
+**Answer:** ok.
 
 ## B. Before phase 1 (MVP)
 
@@ -177,7 +186,7 @@ their text is enough. Here is my reconstruction from scenario 7, FR-4.3–4.6 an
 
 **Proposed:** this table, or send me the original diagram.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B2 · The balance formula in §5 never returns to zero
 
@@ -195,7 +204,7 @@ scenario 3's «баланс снова нулевой» nor scenario 4's «Б д
   "frozen" means.
 - Amounts are summed per counterparty and currency.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B3 · What "manual rate" means in the MVP, and orders that want several currencies
 
@@ -214,7 +223,7 @@ pair.
 - The formula is `amount_want = amount_give × rate(give→want) × (1 + markup)`,
   rounded half-up to 2 decimals once, at the end.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B4 · Rounding the counter-amount
 
@@ -224,7 +233,7 @@ Cash rarely changes hands in tetri: 50 000 RUB at 29,20 is 1 712,33 GEL.
 to the nearest whole unit. The deal then shows the effective rate beside the formula.
 Without the tick, amounts are exact to 2 decimals.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B5 · What `amount_min` means
 
@@ -235,7 +244,7 @@ Without the tick, amounts are exact to 2 decimals.
 - A proposal must be at least min and at most the remainder.
 - When the remainder drops below min, the order becomes `fulfilled` (FR-2.3).
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B6 · Counter-proposal and quiet hours: §6 says MVP, §12 says later
 
@@ -246,7 +255,7 @@ lists counter-proposal under v1 and quiet hours under v2.
 change the terms, decline it and propose again. The MVP notification setting is
 "mute new orders from this link".
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B7 · Reminders can't be edits of the previous message
 
@@ -261,7 +270,7 @@ are 3 days apart.
   Otherwise its button is removed, so only the latest reminder is live.
 - Reminders go out at 10:00 in the recipient's time zone.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B8 · Who sees recipient details in full
 
@@ -275,7 +284,7 @@ The kickoff says masked everywhere except to the leg's payer.
 - Everyone else, every log line and every bot message gets the masked form
   (`•••• 5678`).
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B9 · Breaking a link while a proposal is pending
 
@@ -289,7 +298,7 @@ there are no automatic transitions except expiry.
 - Accepted deals run to the end.
 - The pair's orders stop being visible at once.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B10 · Deleting an account that has live deals
 
@@ -304,7 +313,7 @@ there are no automatic transitions except expiry.
 - For the user agreement: deleted data stays in the encrypted backups until their
   30-day retention runs out.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B11 · Users who have only pressed /start, and @username lookups
 
@@ -316,7 +325,7 @@ there are no automatic transitions except expiry.
 - A lookup that finds no one says «не найден — отправьте ссылку-приглашение». That
   reveals whether a username uses Swap, which seems acceptable among acquaintances.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B12 · The bot may not be allowed to message someone
 
@@ -328,7 +337,10 @@ receive messages from the bot until they allow it.
 - If they refuse or block the bot, they get in-app notifications only, and the other
   side of their deals sees «уведомления выключены».
 
-**Answer:**
+**Answer:** invitations go through the bot, `t.me/peertopeerswapbot?start=<token>`,
+so everyone presses /start and the bot may write to them (the owner).
+`requestWriteAccess` stays only as a fallback for someone who reaches the app another
+way.
 
 ### Q-B13 · A document sent to the bot before «Отправил»
 
@@ -341,7 +353,7 @@ often send the screenshot first.
 - Otherwise the bot lists the candidate deals as buttons.
 - An album of screenshots gets one question, not one per picture.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B14 · Four tabs for nine screens
 
@@ -351,7 +363,7 @@ often send the screenshot first.
 - The unread-event feed (FR-7.3) sits behind a bell beside the avatar. Its counter
   also shows on the «Главная» tab.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B15 · The user agreement
 
@@ -364,7 +376,7 @@ settlement and guarantees nothing.
 - It is shown once, at first launch, with «Принимаю».
 - You approve the text before acceptance.
 
-**Answer:**
+**Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
 ### Q-B16 · Confirm the spec's own defaults (§13)
 
@@ -379,7 +391,9 @@ settlement and guarantees nothing.
 
 **Proposed:** all four as written.
 
-**Answer:**
+**Answer:** ok, with two changes from the owner. Saved payment details are in the MVP
+(ADR-0010), though a deal's copy is still deleted 30 days after it closes. And the MVP
+speaks Russian, English and Georgian, with a switch (ADR-0009).
 
 ### Q-B17 · Smaller defaults I'll apply unless you object (one answer covers the list)
 
@@ -407,7 +421,8 @@ settlement and guarantees nothing.
   `swap.latentstate.dev` too. The external pinger from §9 is yours to pick, since it
   needs an account.
 
-**Answer:**
+**Answer:** ok. Payout methods gain «крипто», and the acceptor picks saved payment
+details instead of typing them (ADR-0010).
 
 ## C. Later phases (no answer needed now)
 
@@ -431,3 +446,18 @@ third-party scripts" rules out.
 
 **Proposed:** the widget's redirect flow through `oauth.telegram.org`, which returns
 signed user data to our page. No script is loaded. It needs `/setdomain` on the bot.
+
+## D. Decided by the owner on 2026-10-21
+
+These weren't questions of mine, but they change the plan, so they are recorded here
+too.
+
+- **A public, open-source repository** (A2), MIT.
+- **The production bot from day one** (A1), through the VPS's Bot API server and relay
+  (ADR-0008).
+- **Russian, English and Georgian**, with a language switch (ADR-0009).
+- **Saved payment details**: free text per asset, crypto included (ADR-0010).
+- **Invitations through /start** (Q-B12).
+- **Simple, native, readable without reading:** icons, symbols and flags carry the
+  meaning (ADR-0003).
+- **No overengineering.** The smallest thing that works, then iterate.
