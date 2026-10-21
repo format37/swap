@@ -35,7 +35,12 @@ def invite_reply(
     if opened.inviter is None or opened.link is None:
         key = "invite.own" if opened.outcome is Opened.OWN else "invite.invalid"
         return t(locale, key), open_app_keyboard(locale, settings.webapp_url)
-    text = t(locale, f"invite.{opened.outcome.value}", name=person_label(opened.inviter))
+    key = {
+        Opened.REQUESTED: "invite.requested",
+        Opened.LINKED: "link.established",
+        Opened.ALREADY_LINKED: "invite.already_linked",
+    }[opened.outcome]
+    text = t(locale, key, name=person_label(opened.inviter))
     card = target("link", opened.link.id)
     return text, open_card_keyboard(locale, settings.telegram_bot_username, card)
 

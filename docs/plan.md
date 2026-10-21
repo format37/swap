@@ -56,11 +56,11 @@ notifications.
       clicked in Chrome.
 
 **PR 1.2 — The outbox, and requests by @username** (ADR-0014)
-- [ ] Migration: `notifications`.
-- [ ] Worker: the outbox sweep every 5 s. It claims rows with `SKIP LOCKED`; a 429
+- [x] Migration: `notifications`.
+- [x] Worker: the outbox sweep every 5 s. It claims rows with `SKIP LOCKED`; a 429
       waits, a 403 turns `can_message` off, and other failures back off.
-- [ ] Notifications for a link request and an established link.
-- [ ] api and app: a request to an @username, with the 7-day cooldown (Q-E1).
+- [x] Notifications for a link request and an established link.
+- [x] api and app: a request to an @username, with the 7-day cooldown (Q-E1).
 
 **PR 1.3 — Orders: model, visibility, rates** (ADR-0016, written with it)
 - [ ] Migration: `orders`, `order_wants`, `order_visibility`, and `events` with its

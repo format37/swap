@@ -6,6 +6,7 @@ declines it, the requester may withdraw it, and either side breaks an active lin
 Only the two people of a pair ever see its row; anyone else gets 404.
 """
 
+import re
 import secrets
 import uuid
 from dataclasses import dataclass
@@ -16,12 +17,19 @@ from sqlalchemy import ColumnElement, Select, case, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from swap.deeplinks import target
 from swap.errors import DomainError
 from swap.models import Invite, Link, LinkStatus, User
+from swap.notifications import notify
 from swap.sessions import hash_token
+from swap.users import person_label
 
 # The rate limit on invites that §7 asks for (ADR-0012).
 MAX_OUTSTANDING_INVITES = 10
+# After a decline, how long the declined person can't ask again by @username (FR-1.2).
+COOLDOWN = timedelta(days=7)
+# Telegram usernames are 5 to 32 of these; a few bought ones are 4.
+_USERNAME = re.compile(r"[A-Za-z0-9_]{4,32}")
 
 
 def pair(a: uuid.UUID, b: uuid.UUID) -> tuple[uuid.UUID, uuid.UUID]:
@@ -53,19 +61,30 @@ async def mutual_count(db: AsyncSession, a: uuid.UUID, b: uuid.UUID) -> int:
 
 
 class Asked(StrEnum):
-    # A pending request now waits for the receiver.
+    # A new pending request now waits for the receiver.
     REQUESTED = "requested"
+    # The same request was already waiting.
+    ALREADY_ASKED = "already_asked"
     # The receiver had already asked the requester: both consented, so they are linked.
     LINKED = "linked"
     # Nothing to ask.
     ALREADY_LINKED = "already_linked"
 
 
-async def ask(db: AsyncSession, requester: uuid.UUID, receiver: uuid.UUID) -> tuple[Link, Asked]:
-    """Make `requester` ask `receiver` to link, reusing the pair's row if it has one."""
+async def ask(
+    db: AsyncSession,
+    requester: uuid.UUID,
+    receiver: uuid.UUID,
+    *,
+    cooldown: timedelta | None = None,
+) -> tuple[Link, Asked]:
+    """Make `requester` ask `receiver` to link, reusing the pair's row if it has one.
+
+    With `cooldown`, a requester whom the receiver declined that recently is refused.
+    """
     lo, hi = pair(requester, receiver)
     # Create the row if the pair has none, then lock it, so two requests at once agree.
-    await db.execute(
+    created = await db.scalar(
         insert(Link)
         .values(
             id=uuid.uuid4(),
@@ -75,6 +94,7 @@ async def ask(db: AsyncSession, requester: uuid.UUID, receiver: uuid.UUID) -> tu
             requested_by=requester,
         )
         .on_conflict_do_nothing(index_elements=[Link.user_lo_id, Link.user_hi_id])
+        .returning(Link.id)
     )
     link = await db.scalar(
         select(Link)
@@ -84,6 +104,8 @@ async def ask(db: AsyncSession, requester: uuid.UUID, receiver: uuid.UUID) -> tu
     )
     if link is None:  # pragma: no cover - the insert above guarantees the row
         raise RuntimeError("the pair's row vanished")
+    if created is not None:
+        return link, Asked.REQUESTED
     now = datetime.now(UTC)
     if link.status == LinkStatus.ACTIVE:
         return link, Asked.ALREADY_LINKED
@@ -92,7 +114,15 @@ async def ask(db: AsyncSession, requester: uuid.UUID, receiver: uuid.UUID) -> tu
             link.status = LinkStatus.ACTIVE
             link.accepted_at = now
             return link, Asked.LINKED
-        return link, Asked.REQUESTED
+        return link, Asked.ALREADY_ASKED
+    if (
+        cooldown is not None
+        and link.status == LinkStatus.DECLINED
+        and link.requested_by == requester
+        and link.declined_at is not None
+        and now - link.declined_at < cooldown
+    ):
+        raise DomainError(429, "link.cooldown")
     # Declined or removed: a new request, on the same row.
     link.status = LinkStatus.PENDING
     link.requested_by = requester
@@ -116,11 +146,36 @@ def _answerable(link: Link, me: uuid.UUID) -> None:
         raise DomainError(409, "link.invalid_state")
 
 
-async def accept(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID) -> Link:
-    link = await _lock_own(db, me, link_id)
-    _answerable(link, me)
+async def accept(db: AsyncSession, me: User, link_id: uuid.UUID) -> Link:
+    link = await _lock_own(db, me.id, link_id)
+    _answerable(link, me.id)
     link.status = LinkStatus.ACTIVE
     link.accepted_at = datetime.now(UTC)
+    _established(db, link, tell=link.requested_by, about=me)
+    return link
+
+
+def _established(db: AsyncSession, link: Link, *, tell: uuid.UUID, about: User) -> None:
+    notify(db, tell, "link.established", target=target("link", link.id), name=person_label(about))
+
+
+async def request_by_username(db: AsyncSession, me: User, username: str) -> Link:
+    """Ask someone who has used Swap to link, by their @username (FR-1.1, Q-B11)."""
+    name = username.strip().removeprefix("@")
+    receiver = None
+    if _USERNAME.fullmatch(name):
+        receiver = await db.scalar(select(User).where(func.lower(User.username) == name.lower()))
+    if receiver is None:
+        raise DomainError(404, "user.not_found")
+    if receiver.id == me.id:
+        raise DomainError(409, "link.self")
+    link, asked = await ask(db, me.id, receiver.id, cooldown=COOLDOWN)
+    if asked is Asked.REQUESTED:
+        notify(
+            db, receiver.id, "link.requested", target=target("link", link.id), name=person_label(me)
+        )
+    elif asked is Asked.LINKED:
+        _established(db, link, tell=receiver.id, about=me)
     return link
 
 
@@ -287,4 +342,8 @@ async def open_invite(db: AsyncSession, invitee: User, token: str) -> OpenedInvi
     if invite.used_by is None and asked is not Asked.ALREADY_LINKED:
         invite.used_by = invitee.id
         invite.used_at = datetime.now(UTC)
-    return OpenedInvite(Opened(asked.value), inviter, link)
+    if asked is Asked.LINKED:
+        # The invitee had asked first. The bot answers them; the inviter learns here.
+        _established(db, link, tell=inviter.id, about=invitee)
+    outcome = Opened.REQUESTED if asked is Asked.ALREADY_ASKED else Opened(asked.value)
+    return OpenedInvite(outcome, inviter, link)

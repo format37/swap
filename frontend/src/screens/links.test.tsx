@@ -161,6 +161,53 @@ describe('the «Связи» tab', () => {
   })
 })
 
+describe('a request by @username', () => {
+  it('asks and opens the request', async () => {
+    let body: unknown
+    fakeApi({
+      'GET /api/v1/links': () => json(200, NOBODY),
+      'POST /api/v1/links/requests': async (request) => {
+        body = await request.json()
+        return json(200, link({ status: 'pending', accepted_at: null }))
+      },
+    })
+    renderScreen(<Links />, { route: '/links' })
+    const field = await screen.findByRole('textbox', { name: 'Запрос по @username' })
+    const send = screen.getByRole('button', { name: 'Отправить запрос' })
+    expect(send).toBeDisabled()
+    fireEvent.change(field, { target: { value: '@nino' } })
+    fireEvent.click(send)
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent(`/links/${LINK_ID}`)
+    expect(body).toEqual({ username: '@nino' })
+  })
+
+  it('suggests an invitation for a name nobody in Swap has', async () => {
+    fakeApi({
+      'GET /api/v1/links': () => json(200, NOBODY),
+      'POST /api/v1/links/requests': () => problem(404, 'user.not_found'),
+    })
+    renderScreen(<Links />, { route: '/links' })
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Запрос по @username' }), {
+      target: { value: 'stranger' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить запрос' }))
+    expect(await screen.findByText(/Отправьте ссылку-приглашение/)).toBeInTheDocument()
+  })
+
+  it('says when to ask again after a decline', async () => {
+    fakeApi({
+      'GET /api/v1/links': () => json(200, NOBODY),
+      'POST /api/v1/links/requests': () => problem(429, 'link.cooldown'),
+    })
+    renderScreen(<Links />, { route: '/links' })
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Запрос по @username' }), {
+      target: { value: 'nino' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить запрос' }))
+    expect(await screen.findByText(/через неделю/)).toBeInTheDocument()
+  })
+})
+
 describe('the request screen', () => {
   const route = `/links/${LINK_ID}`
   const path = '/links/:id'

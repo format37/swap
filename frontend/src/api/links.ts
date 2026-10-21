@@ -56,6 +56,13 @@ export function useAnswerLink() {
   })
 }
 
+/** Asks someone to link by their @username; linked at once if they had asked first. */
+export function useRequestLink() {
+  return useLinksMutation((username: string) =>
+    unwrap(api.POST('/api/v1/links/requests', { body: { username } })),
+  )
+}
+
 /** Breaks an active link, or withdraws one's own request. */
 export function useRemoveLink() {
   return useLinksMutation((id: string) =>

@@ -1,10 +1,12 @@
-import { Link2, Trash2, UserPlus, Users } from 'lucide-react'
+import { AtSign, Link2, Send, Trash2, UserPlus, Users } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 
 import {
   fullName,
   useCreateInvite,
   useLinks,
+  useRequestLink,
   useRevokeInvite,
   type Invite,
   type Link,
@@ -74,6 +76,7 @@ export function Links() {
         {t('links.title')}
       </h1>
       {create.isError && <p className="px-6 text-destructive">{t(errorMessage(create.error))}</p>}
+      <UsernameRequest />
       {empty ? (
         <EmptyState
           icon={<UserPlus aria-hidden className="size-12" />}
@@ -142,5 +145,60 @@ function InviteRow({ invite }: { invite: Invite }) {
         <Trash2 aria-hidden className="size-5" />
       </button>
     </div>
+  )
+}
+
+/** A request to someone's @username (FR-1.1). An unknown name suggests an invitation. */
+function UsernameRequest() {
+  const { t } = useI18n()
+  const navigate = useNavigate()
+  const request = useRequestLink()
+  const [username, setUsername] = useState('')
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!username.trim()) return
+    request.mutate(username, {
+      onSuccess: (link) => void navigate(`/links/${link.id}`),
+      onError: () => {
+        hapticNotify('error')
+      },
+    })
+  }
+
+  return (
+    <>
+      <Section title={t('links.by_username')}>
+        <form onSubmit={submit} className="flex items-center gap-2 pr-2 pl-4">
+          <AtSign aria-hidden className="size-5 shrink-0 text-hint" />
+          <input
+            value={username}
+            onChange={(event) => {
+              setUsername(event.target.value)
+              request.reset()
+            }}
+            placeholder={t('links.username_placeholder')}
+            aria-label={t('links.by_username')}
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="send"
+            className="min-w-0 flex-1 bg-transparent py-3 outline-none placeholder:text-hint"
+          />
+          <button
+            type="submit"
+            aria-label={t('links.send_request')}
+            disabled={!username.trim() || request.isPending}
+            className="flex size-10 items-center justify-center rounded-full text-accent active:bg-secondary-bg disabled:text-hint"
+          >
+            <Send aria-hidden className="size-5" />
+          </button>
+        </form>
+      </Section>
+      {request.isError && (
+        <p className="px-6 text-sm text-destructive">{t(errorMessage(request.error))}</p>
+      )}
+    </>
   )
 }

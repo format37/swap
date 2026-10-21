@@ -10,7 +10,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swap.links import MAX_OUTSTANDING_INVITES, Opened, OpenedInvite, open_invite
-from swap.models import Invite, Link, LinkStatus, User
+from swap.models import Invite, Link, LinkStatus, Notification, User
 from swap.sessions import hash_token
 from tests.test_auth import bearer, sign_in
 
@@ -66,6 +66,21 @@ async def linked(
     return link_id
 
 
+async def ask_by_username(client: AsyncClient, headers: Headers, username: str) -> Any:
+    return await client.post("/api/v1/links/requests", json={"username": username}, headers=headers)
+
+
+async def told(sessions: Sessions) -> list[tuple[str, str, dict[str, str], str | None]]:
+    """Every queued message: to whom (first name), its type, its words' values, its card."""
+    async with sessions() as db:
+        rows = await db.execute(
+            select(User.first_name, Notification.type, Notification.params, Notification.target)
+            .join(User, User.id == Notification.recipient_id)
+            .order_by(Notification.created_at)
+        )
+        return [(name, type_, params, target) for name, type_, params, target in rows]
+
+
 async def lists(client: AsyncClient, headers: Headers) -> dict[str, list[str]]:
     """Who sits in each list of the «Связи» tab, by first name, and how many invites."""
     response = await client.get("/api/v1/links", headers=headers)
@@ -91,6 +106,7 @@ async def test_every_endpoint_needs_a_session(client: AsyncClient) -> None:
         ("POST", f"/api/v1/links/{some}/accept"),
         ("POST", f"/api/v1/links/{some}/decline"),
         ("DELETE", f"/api/v1/links/{some}"),
+        ("POST", "/api/v1/links/requests"),
     ]
     for method, path in calls:
         response = await client.request(method, path)
@@ -261,6 +277,57 @@ async def test_an_invite_between_linked_people_is_not_spent(
     opened = await press_start(sessionmaker, NINO, token)
     assert opened.outcome is Opened.ALREADY_LINKED
     assert len((await lists(client, alex))["invites"]) == 1
+
+
+@pytest.mark.parametrize("username", ["nobody_here", "@nobody_here", "a b", "@", "x" * 40, "ni"])
+async def test_a_username_nobody_has_is_not_found(client: AsyncClient, username: str) -> None:
+    alex = await person(client, ALEX)
+    await person(client, NINO)
+    response = await ask_by_username(client, alex, username)
+    assert response.status_code == 404
+    assert response.json()["code"] == "user.not_found"
+
+
+async def test_one_cannot_ask_oneself(client: AsyncClient) -> None:
+    alex = await person(client, ALEX)
+    response = await ask_by_username(client, alex, "@Format37")
+    assert response.status_code == 409
+    assert response.json()["code"] == "link.self"
+
+
+async def test_after_a_decline_the_requester_waits_a_week(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    link_id = (await ask_by_username(client, alex, "nino")).json()["id"]
+    await client.post(f"/api/v1/links/{link_id}/decline", headers=nino)
+
+    response = await ask_by_username(client, alex, "nino")
+    assert response.status_code == 429
+    assert response.json()["code"] == "link.cooldown"
+    assert [type_ for _, type_, _, _ in await told(sessionmaker)] == ["link.requested"]
+
+    async with sessionmaker() as db:
+        await db.execute(
+            update(Link).values(declined_at=datetime.now(UTC) - timedelta(days=7, seconds=1))
+        )
+        await db.commit()
+    again = await ask_by_username(client, alex, "nino")
+    assert again.status_code == 200
+    assert again.json()["status"] == "pending"
+
+
+async def test_the_decliner_may_ask_at_once(client: AsyncClient, sessionmaker: Sessions) -> None:
+    # The cooldown protects the one who declined, so it doesn't bind them.
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    link_id = (await ask_by_username(client, alex, "nino")).json()["id"]
+    await client.post(f"/api/v1/links/{link_id}/decline", headers=nino)
+    response = await ask_by_username(client, nino, "format37")
+    assert response.status_code == 200
+    assert response.json()["status"] == "pending"
+    assert response.json()["direction"] == "outgoing"
 
 
 # --- allowed ---------------------------------------------------------------------
@@ -439,3 +506,78 @@ async def test_the_list_shows_only_pending_and_active(
     shown = await lists(client, alex)
     expected = {"active": ["Nino"], "pending": ["Nino"]}.get(status, [])
     assert shown["active"] + shown["outgoing"] == expected
+
+
+async def test_a_request_by_username_tells_its_receiver(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    response = await ask_by_username(client, alex, " @NINO ")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "pending"
+    assert body["direction"] == "outgoing"
+    assert body["person"]["first_name"] == "Nino"
+    assert await told(sessionmaker) == [
+        ("Nino", "link.requested", {"name": "Alex (@format37)"}, f"link_{body['id']}")
+    ]
+    assert (await lists(client, nino))["incoming"] == ["Alex"]
+
+    # Asking again is not news.
+    await ask_by_username(client, alex, "nino")
+    assert len(await told(sessionmaker)) == 1
+
+
+async def test_when_both_ask_by_username_they_are_linked_and_the_first_is_told(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    await ask_by_username(client, nino, "format37")
+    response = await ask_by_username(client, alex, "nino")
+    assert response.json()["status"] == "active"
+    assert [(to, type_, params) for to, type_, params, _ in await told(sessionmaker)] == [
+        ("Alex", "link.requested", {"name": "Nino B (@nino)"}),
+        ("Nino", "link.established", {"name": "Alex (@format37)"}),
+    ]
+
+
+async def test_accepting_tells_the_requester(client: AsyncClient, sessionmaker: Sessions) -> None:
+    alex = await person(client, ALEX)
+    await person(client, NINO)
+    link_id = await linked(client, sessionmaker, alex, NINO)
+    # The invite itself told nobody: the bot answered the invitee there and then.
+    assert await told(sessionmaker) == [
+        ("Alex", "link.established", {"name": "Nino B (@nino)"}, f"link_{link_id}")
+    ]
+
+
+async def test_declining_withdrawing_and_breaking_tell_nobody(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    link_id = await requested(client, sessionmaker, alex, NINO)
+    await client.post(f"/api/v1/links/{link_id}/decline", headers=nino)
+    await requested(client, sessionmaker, alex, NINO)
+    await client.delete(f"/api/v1/links/{link_id}", headers=alex)
+    async with sessionmaker() as db:
+        await db.execute(update(Link).values(status=LinkStatus.ACTIVE))
+        await db.commit()
+    await client.delete(f"/api/v1/links/{link_id}", headers=nino)
+    assert await told(sessionmaker) == []
+
+
+async def test_an_invite_to_someone_who_had_asked_tells_the_inviter(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    await ask_by_username(client, nino, "format37")
+    opened = await press_start(sessionmaker, NINO, await invite(client, alex))
+    assert opened.outcome is Opened.LINKED
+    assert [(to, type_) for to, type_, _, _ in await told(sessionmaker)] == [
+        ("Alex", "link.requested"),
+        ("Alex", "link.established"),
+    ]

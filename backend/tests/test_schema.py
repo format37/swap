@@ -7,11 +7,12 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from swap.models import LinkStatus
+from swap.models import LinkStatus, NotificationStatus
 
 # Each status CHECK, and the enum the code uses for the same column.
 STATUS_CHECKS: list[tuple[str, type[StrEnum]]] = [
     ("ck_links_status", LinkStatus),
+    ("ck_notifications_tg_status", NotificationStatus),
 ]
 
 
