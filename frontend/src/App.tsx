@@ -18,6 +18,9 @@ import { LinkScreen } from './screens/LinkScreen'
 import { Links } from './screens/Links'
 import { NewOrder } from './screens/NewOrder'
 import { OrderCard } from './screens/OrderCard'
+import { PaymentMethodCard } from './screens/PaymentMethodCard'
+import { PaymentMethodForm } from './screens/PaymentMethodForm'
+import { Profile } from './screens/Profile'
 import { OutsideTelegram } from './screens/OutsideTelegram'
 import { Problem } from './screens/Problem'
 import type { Launch } from './telegram'
@@ -90,6 +93,9 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
         <Route path="/links/:id" element={<LinkScreen />} />
         <Route path="/orders/new" element={<NewOrder />} />
         <Route path="/orders/:id" element={<OrderCard />} />
+        <Route path="/profile" element={<Profile me={me} />} />
+        <Route path="/profile/details/new" element={<PaymentMethodForm />} />
+        <Route path="/profile/details/:id" element={<PaymentMethodCard />} />
         <Route path="/language" element={<Language />} />
       </Routes>
       <Tabs />

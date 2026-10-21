@@ -240,6 +240,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Payment Methods */
+        get: operations["list_payment_methods"];
+        put?: never;
+        /** Add Payment Method */
+        post: operations["add_payment_method"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-methods/{method_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Payment Method */
+        delete: operations["delete_payment_method"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quote": {
         parameters: {
             query?: never;
@@ -455,6 +490,23 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** NewPaymentMethod */
+        NewPaymentMethod: {
+            /**
+             * Asset
+             * @example GEL
+             */
+            asset: string;
+            kind: components["schemas"]["PaymentKind"];
+            /**
+             * Text
+             * Format: password
+             * @default
+             */
+            text: string;
+            /** Title */
+            title: string;
+        };
         /** Order */
         Order: {
             /** Amount Max */
@@ -557,6 +609,25 @@ export interface components {
          * @enum {string}
          */
         PaymentKind: "card" | "phone" | "bank" | "crypto" | "cash" | "other";
+        /** PaymentMethod */
+        PaymentMethod: {
+            /** Asset */
+            asset: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            details: components["schemas"]["SealedText"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["PaymentKind"];
+            /** Title */
+            title: string;
+        };
         /** Person */
         Person: {
             /** First Name */
@@ -636,6 +707,16 @@ export interface components {
         QuoteResult: {
             /** Amount */
             amount: string;
+        };
+        /**
+         * SealedText
+         * @description Payment details as the api shows them: the mask to all, the text to those Q-B8 allows.
+         */
+        SealedText: {
+            /** Full */
+            full: string | null;
+            /** Masked */
+            masked: string;
         };
         /** SignedIn */
         SignedIn: {
@@ -1424,6 +1505,142 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_payment_methods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentMethod"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    add_payment_method: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewPaymentMethod"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentMethod"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_payment_method: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                method_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

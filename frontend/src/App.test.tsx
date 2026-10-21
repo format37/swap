@@ -42,13 +42,13 @@ it('greets the user by name, in their language', () => {
   renderScreen(<Home me={me} />)
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Привет, Alex!')
   expect(screen.getByText('@format37')).toBeInTheDocument()
-  // The language row names the current language in its own script.
-  expect(screen.getByRole('button', { name: /Язык.*Русский/ })).toBeInTheDocument()
+  // The profile, with the language, opens from the avatar (Q-B14).
+  expect(screen.getByRole('button', { name: 'Профиль' })).toBeInTheDocument()
 })
 
 it('speaks Georgian when asked to', () => {
   quietApi()
   renderScreen(<Home me={me} />, { locale: 'ka' })
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('გამარჯობა, Alex!')
-  expect(screen.getByRole('button', { name: /ენა.*ქართული/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'პროფილი' })).toBeInTheDocument()
 })

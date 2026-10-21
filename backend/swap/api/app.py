@@ -16,6 +16,7 @@ from swap.api.errors import install_problem_handlers
 from swap.api.frontend import mount_frontend
 from swap.api.headers import SecurityHeadersMiddleware
 from swap.config import Settings, get_settings
+from swap.crypto import Keys
 from swap.db import Sessionmaker, create_engine, create_sessionmaker
 from swap.logs import configure_logging
 
@@ -56,6 +57,12 @@ def create_app(
     )
     app.state.settings = settings
     app.state.sessionmaker = sessionmaker
+    # Built once at start, so a malformed key fails the deploy, not a request (ADR-0004).
+    app.state.keys = (
+        Keys(settings.recipient_keys, settings.recipient_key_id)
+        if settings.recipient_keys
+        else None
+    )
     app.add_middleware(SecurityHeadersMiddleware)
     install_problem_handlers(app)
     app.include_router(health.router)

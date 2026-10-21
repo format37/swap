@@ -1,11 +1,10 @@
-import { Globe, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
 import { fullName, useLinks } from '../api/links'
 import { useOrders } from '../api/orders'
 import { useI18n } from '../i18n/useI18n'
-import { LANGUAGE_NAMES } from '../i18n/locale'
 import { OrderRow } from '../orders/OrderRow'
 import { useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
@@ -19,7 +18,7 @@ import { Section } from '../ui/Section'
  * nothing at all, the three steps that explain Swap.
  */
 export function Home({ me }: { me: Me }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const links = useLinks()
   const open = useOrders('visible')
@@ -38,7 +37,15 @@ export function Home({ me }: { me: Me }) {
   return (
     <Screen tabs>
       <header className="flex items-center gap-4 px-6 pt-4">
-        <Avatar name={me.first_name} />
+        {/* The profile opens from the avatar (Q-B14). */}
+        <button
+          type="button"
+          aria-label={t('profile.title')}
+          onClick={() => void navigate('/profile')}
+          className="rounded-full active:opacity-70"
+        >
+          <Avatar name={me.first_name} />
+        </button>
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold">
             {t('home.hello', { name: me.first_name })}
@@ -101,16 +108,6 @@ export function Home({ me }: { me: Me }) {
           )}
         </>
       )}
-
-      <Section title={t('home.settings')}>
-        <Cell
-          icon={<Globe aria-hidden className="size-6" />}
-          label={t('settings.language')}
-          detail={LANGUAGE_NAMES[locale]}
-          opens
-          onClick={() => void navigate('/language')}
-        />
-      </Section>
     </Screen>
   )
 }

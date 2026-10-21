@@ -13,6 +13,10 @@ const BY_CODE: Partial<Record<string, MessageKey>> = {
   'link.cooldown': 'error.link_cooldown',
   'order.not_found': 'error.order_not_found',
   'order.not_open': 'error.order_not_open',
+  'payment.unavailable': 'error.payment_unavailable',
+  'payment.text_required': 'error.payment_text_required',
+  'payment.limit': 'error.payment_limit',
+  'payment.not_found': 'error.payment_not_found',
 }
 
 /** Whatever else an order's refusal says, the wizard checked it before sending. */
