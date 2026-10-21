@@ -19,7 +19,7 @@ GEL_RUB = FixedRate.model_validate_json(
     [
         # Q-B4's example: 50 000 RUB at «1 GEL = 29,20 RUB».
         ("50000", "RUB", "GEL", False, "1712.33"),
-        ("50000", "RUB", "GEL", True, "1712"),
+        ("50000", "RUB", "GEL", True, "1712.00"),
         ("100000", "RUB", "USD", False, "1226.99"),
         # The quote's own direction multiplies.
         ("1100", "GEL", "RUB", False, "32120.00"),
@@ -32,7 +32,7 @@ def test_the_counter_amount(
 ) -> None:
     result = convert(Decimal(amount), GEL_RUB, give, want, whole=whole)
     assert result == Decimal(expected)
-    assert str(result) == expected  # exactly two decimals, or none when whole
+    assert str(result) == expected  # always two decimals, as numeric(18,2) stores them
 
 
 def test_halves_round_up_not_to_even() -> None:
@@ -42,7 +42,7 @@ def test_halves_round_up_not_to_even() -> None:
     two_and_a_half = FixedRate.model_validate(
         {"quotes": [{"base": "AAA", "quote": "BBB", "value": "2.5"}]}
     )
-    assert convert(Decimal("1"), two_and_a_half, "AAA", "BBB", whole=True) == Decimal("3")
+    assert str(convert(Decimal("1"), two_and_a_half, "AAA", "BBB", whole=True)) == "3.00"
 
 
 def test_a_rate_keeps_ten_decimals() -> None:

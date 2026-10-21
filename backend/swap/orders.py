@@ -22,6 +22,7 @@ from swap.links import linked_ids
 from swap.models import Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
 from swap.money import Asset, Country, Money
 from swap.notifications import notify
+from swap.proposals import cancel_on_order
 from swap.rates import FixedRate
 from swap.users import person_label
 
@@ -208,4 +209,6 @@ async def close(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> Ord
     if order.status != OrderStatus.OPEN:
         raise DomainError(409, "order.not_open")
     order.status = OrderStatus.CLOSED
+    # Its unanswered proposals have nothing left to take (Q-E2).
+    await cancel_on_order(db, order, author)
     return order

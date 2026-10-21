@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from swap.models import LinkStatus, NotificationStatus, OrderStatus, PaymentKind
+from swap.models import DealStatus, LinkStatus, NotificationStatus, OrderStatus, PaymentKind
 
 # Each status CHECK, and the enum the code uses for the same column.
 STATUS_CHECKS: list[tuple[str, type[StrEnum]]] = [
@@ -16,6 +16,8 @@ STATUS_CHECKS: list[tuple[str, type[StrEnum]]] = [
     ("ck_orders_status", OrderStatus),
     ("ck_orders_payout_methods", PaymentKind),
     ("ck_payment_methods_kind", PaymentKind),
+    ("ck_deals_status", DealStatus),
+    ("ck_deal_legs_method", PaymentKind),
 ]
 
 

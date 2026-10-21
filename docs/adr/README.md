@@ -10,7 +10,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | # | Decision | Status |
 |---|---|---|
 | [0001](0001-subdomain-and-routing.md) | `swap.latentstate.dev` at the root of its own origin; one upstream behind the shared Caddy | Accepted |
-| [0002](0002-database-schema-conventions.md) | Names, keys, statuses, money, indexes; the journal guarded in the database | Accepted |
+| [0002](0002-database-schema-conventions.md) | Names, keys, statuses, money, indexes; the journal guarded in the database | Accepted; journal guard amended by 0018 |
 | [0003](0003-ui-primitives.md) | Own primitives on Tailwind plus Telegram-native controls; readable without reading | Accepted |
 | [0004](0004-rate-spec-and-recipient-details.md) | `rate_spec` and encrypted `recipient_details` as versioned JSONB | Accepted |
 | [0005](0005-background-jobs.md) | APScheduler in one worker; every job is an idempotent sweep | Accepted |
@@ -26,6 +26,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0015](0015-georgian-without-intl-data.md) | Georgian numbers and dates borrow Russian's rules; Georgian dates stay numeric | Accepted |
 | [0016](0016-orders.md) | Orders: four statuses, one set of payment kinds, visibility as one predicate | Accepted |
 | [0017](0017-forms-without-a-form-library.md) | Forms keep state in React and rules in one pure module; no react-hook-form or zod | Accepted |
+| [0018](0018-deals.md) | Deals: one state machine, two legs, a journal guard that fires at once | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the

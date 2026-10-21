@@ -52,4 +52,5 @@ def convert(
     quote = spec.quote_for(give, want)
     with localcontext(Context(prec=28)):
         exact = amount * quote.value if quote.base == give else amount / quote.value
-        return exact.quantize(WHOLE if whole else CENT, rounding=ROUND_HALF_UP)
+        # Whole units still carry their cents, as numeric(18,2) stores them: 1712.00.
+        return exact.quantize(WHOLE if whole else CENT, rounding=ROUND_HALF_UP).quantize(CENT)

@@ -426,7 +426,7 @@ async def test_a_quote_previews_the_counter_amount(client: AsyncClient) -> None:
     response = await client.post("/api/v1/quote", json=body, headers=alex)
     assert response.json() == {"amount": "1712.33"}
     whole = await client.post("/api/v1/quote", json={**body, "whole": True}, headers=alex)
-    assert whole.json() == {"amount": "1712"}
+    assert whole.json() == {"amount": "1712.00"}
 
     missing = await client.post(
         "/api/v1/quote", json={**body, "want_currency": "EUR"}, headers=alex

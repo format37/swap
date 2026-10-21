@@ -79,7 +79,7 @@ async def _send(
     locale = resolve_locale(recipient.locale, recipient.language_code)
     try:
         values = {
-            key: format_amount(Decimal(value), locale) if key.startswith("amount") else value
+            key: format_amount(Decimal(value), locale) if "amount" in key else value
             for key, value in note.params.items()
         }
         text = t(locale, note.type, **values)

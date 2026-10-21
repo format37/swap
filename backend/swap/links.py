@@ -21,6 +21,7 @@ from swap.deeplinks import target
 from swap.errors import DomainError
 from swap.models import Invite, Link, LinkStatus, User
 from swap.notifications import notify
+from swap.proposals import cancel_between
 from swap.sessions import hash_token
 from swap.users import person_label
 
@@ -190,14 +191,16 @@ async def decline(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID) -> Link:
 async def remove(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID) -> Link:
     """Break an active link, or withdraw one's own pending request.
 
-    The pair's orders disappear for both at once, because visibility is a query
-    over active links.
+    The pair's orders disappear for both at once, because visibility is a query over
+    active links.
     """
     link = await _lock_own(db, me, link_id)
     withdrawing = link.status == LinkStatus.PENDING and link.requested_by == me
     if link.status != LinkStatus.ACTIVE and not withdrawing:
         raise DomainError(409, "link.invalid_state")
     link.status = LinkStatus.REMOVED
+    # The pair's unanswered proposals go with it; accepted deals run to the end (Q-B9).
+    await cancel_between(db, link.user_lo_id, link.user_hi_id, me)
     return link
 
 
