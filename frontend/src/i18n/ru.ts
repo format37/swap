@@ -47,6 +47,13 @@ export const ru = {
   'error.link_not_found': 'Связь не найдена.',
   'error.invite_limit': 'Слишком много неиспользованных приглашений. Сначала отзовите старые.',
   'error.link_changed': 'Запрос уже изменился. Обновите экран.',
+  'links.by_username': 'Запрос по @username',
+  'links.username_placeholder': 'имя пользователя',
+  'links.send_request': 'Отправить запрос',
+  'error.user_not_found': 'В Swap нет никого с таким @username. Отправьте ссылку-приглашение.',
+  'error.link_self': 'Это ваш собственный @username.',
+  'error.link_cooldown':
+    'Этот человек недавно отклонил ваш запрос. Попросить снова можно через неделю после отказа.',
   'settings.title': 'Настройки',
   'settings.language': 'Язык',
   'language.title': 'Язык',

@@ -48,6 +48,13 @@ export const en: Messages = {
   'error.link_not_found': 'Link not found.',
   'error.invite_limit': 'Too many unused invitations. Revoke some old ones first.',
   'error.link_changed': 'The request has changed meanwhile. Refresh the screen.',
+  'links.by_username': 'Ask by @username',
+  'links.username_placeholder': 'username',
+  'links.send_request': 'Send request',
+  'error.user_not_found': 'Nobody in Swap has this @username. Send an invitation link instead.',
+  'error.link_self': 'That’s your own @username.',
+  'error.link_cooldown':
+    'This person declined your request recently. You can ask again a week after that.',
   'settings.title': 'Settings',
   'settings.language': 'Language',
   'language.title': 'Language',

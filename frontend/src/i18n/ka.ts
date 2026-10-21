@@ -50,6 +50,13 @@ export const ka: Messages = {
   'error.link_not_found': 'კავშირი ვერ მოიძებნა.',
   'error.invite_limit': 'გამოუყენებელი მოწვევები ძალიან ბევრია. ჯერ ძველები გააუქმეთ.',
   'error.link_changed': 'მოთხოვნა უკვე შეიცვალა. განაახლეთ ეკრანი.',
+  'links.by_username': 'მოთხოვნა @username-ით',
+  'links.username_placeholder': 'მომხმარებლის სახელი',
+  'links.send_request': 'მოთხოვნის გაგზავნა',
+  'error.user_not_found': 'Swap-ში ამ @username-ით არავინაა. გაუგზავნეთ მოსაწვევი ბმული.',
+  'error.link_self': 'ეს თქვენი საკუთარი @username-ია.',
+  'error.link_cooldown':
+    'ამ ადამიანმა ახლახან უარყო თქვენი მოთხოვნა. ხელახლა თხოვნა უარიდან ერთი კვირის შემდეგ შეგიძლიათ.',
   'settings.title': 'პარამეტრები',
   'settings.language': 'ენა',
   'language.title': 'ენა',
