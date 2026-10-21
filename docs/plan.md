@@ -83,15 +83,15 @@ notifications.
       no log line holds them.
 - [x] App: a profile screen behind the avatar with name, language and «Реквизиты».
 
-**PR 1.6 — Deals: the state machine** (ADR-0018, written with it)
-- [ ] Migration: `deals`, `deal_legs`, `events` with its append-only trigger, and the
+**PR 1.6 — Deals: the state machine** (ADR-0018)
+- [x] Migration: `deals`, `deal_legs`, `events` with its append-only trigger, and the
       deferred trigger that refuses a status change without its event (ADR-0002).
-- [ ] The state-machine service. Every transition of Q-B1 is tested, and so is every
+- [x] The state-machine service. Every transition of Q-B1 is tested, and so is every
       illegal one, cancel requests and disputes included (their screens are slice 4).
-- [ ] api: propose, accept, decline, withdraw, sent, received, cancel. Remainders
+- [x] api: propose, accept, decline, withdraw, sent, received, cancel. Remainders
       follow FR-2.3 and Q-B5. Pending proposals that an order can no longer cover are
       cancelled (Q-E2).
-- [ ] Notifications for every deal event above.
+- [x] Notifications for every deal event above.
 
 **PR 1.7 — Deals: the proposal and the deal card**
 - [ ] The proposal: an amount slider within the remainder, the counter currency, who
