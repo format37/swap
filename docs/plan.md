@@ -7,106 +7,146 @@ phase's checklist and the estimates. Phase 1's order is ADR-0006.
 A **session** here is one sitting of mine that ends in reviewable PRs with green CI,
 roughly 2–4 hours of wall-clock work.
 
-## Phase 0 — skeleton (accepted 2026-10-22)
+## Phase 1 — MVP (started 2026-10-22)
 
-Phase 0 is done when (the kickoff's DoD and §12, with the owner's answers of
-2026-10-21):
-- `docker compose up` locally brings up Caddy, api, worker and postgres;
-- `/healthz` answers on api and worker;
-- the Mini App opens from `@peertopeerswapbot` on the owner's phone and greets the
-  owner by Telegram name, read from `/api/v1/me` after server-side `initData`
-  validation, in the language they pick: Russian, English or Georgian;
-- CI is green, `alembic upgrade head` runs on start, and ruff, mypy, eslint and
-  prettier are clean.
+Phase 1 is done when the owner and three acquaintances have run one real deal end to
+end, from the order to both «Получил», and §12's checklist holds:
+- three links made by invite links, and one by a request to an @username;
+- an order is visible to the author's links and to nobody else, and a test proves it;
+- a deal was proposed and accepted, both legs were marked, and a document was attached
+  through the bot;
+- the balance showed the open obligation and returned to zero after «Получил»;
+- every transition of the state machine is tested, and illegal ones are refused;
+- a backup was restored into a clean container.
+
+Each PR carries its API, UI and tests, with every string in ru, en and ka, and is
+usable on the bot once merged (ADR-0006). After a merge with green CI I redeploy
+Swap's stack on the VPS (the kickoff's standing permission).
 
 ### Owner
 
-- [x] Answer `docs/QUESTIONS.md` parts A and B (2026-10-21).
-- [x] Log the bot out of the cloud Bot API (2026-10-21).
-- [x] BotFather: groups off; Main Mini App on, fullscreen, at
-      `https://swap.latentstate.dev` (2026-10-21).
-- [x] DNS: an A record for `swap.latentstate.dev` → the VPS, DNS only (grey cloud). I
-      created it on 2026-10-21 with the owner's Edit-DNS token.
-- [x] Once it is deployed: open the app from the bot on your phone, and say whether
-      phase 0 is accepted. The owner signed in from his phone and accepted it on
-      2026-10-22.
+- [ ] Answer part E of `docs/QUESTIONS.md`: three items, each with a default I follow
+      until you answer.
+- [ ] Phone check of links once PR 1.1 is deployed: create an invite and share it.
+      Linking itself needs a second Telegram account.
+- [ ] Keep a copy of the payment-details key off the server. PR 1.5 generates it on
+      the VPS, and without it the saved details can't be read back (ADR-0004).
+- [ ] The demo, after slice 1: invite one or two people for a real link, order and
+      deal.
+- [ ] By slice 5: the backup bucket and the `age` public key (Q-A7).
+- [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
+      list (Q-A6), and the agreement text (Q-B15).
 
-### Me
+### Slice 1 — the demo: link + order + deal, without documents
 
-**PR 1 — docs.** QUESTIONS with the answers, ADRs 0001–0011, this plan, CLAUDE.md, the
-README and the licence.
+The outbox moves up from step 4 into links, because a request to an @username is
+invisible without a notification (ADR-0014). Each later PR sends its own
+notifications.
 
-**PR 2 — backend skeleton and CI**
-- [x] `backend/`: a uv project on Python 3.12; a FastAPI app factory; pydantic-settings;
-      structlog with redaction; RFC 9457 problems with machine codes; the security
-      headers (ADR-0001); `/healthz`.
-- [x] SQLAlchemy 2 async and Alembic with the naming convention. Migration 0001 creates
-      `users`, `sessions` and `service_heartbeats`.
-- [x] pytest on real Postgres with a transaction per test; mypy strict.
-- [x] CI: ruff, ruff format, mypy, pytest, `alembic upgrade → downgrade → upgrade`,
-      gitleaks.
+**PR 1.1 — Links by invitation** (ADR-0012, ADR-0013)
+- [ ] Migration: `links` and `invites`.
+- [ ] api: create and revoke an invite (at most 10 outstanding), list links, view one
+      with the mutual-links count, accept, decline, and break or withdraw.
+      Authorization tests come first: a stranger gets 404 on everything.
+- [ ] Bot: `/start inv_<token>` turns the invite into a request, then greets the
+      invitee with the inviter's name and «Открыть».
+- [ ] App: the tab bar; the «Связи» tab; the invite sheet with share and copy; the
+      request screen; deep links from `startapp`.
+- [ ] Dev: the Telegram mock draws MainButton, BackButton and popups, so they can be
+      clicked in Chrome.
 
-**PR 3 — auth, bot, worker**
-- [x] `initData` validation, tests first: a valid string, a tampered field, the wrong
-      token, a missing hash, duplicate keys, too old, from the future, URL-encoding
-      edge cases, and `signature` kept in the check string.
-- [x] `POST /api/v1/auth/telegram`, `GET /api/v1/me`, and `PATCH /api/v1/me` for the
-      language.
-- [x] The worker: Starlette with an APScheduler heartbeat, `/healthz`, and the relay
-      endpoint `/message`. `/start` answers with an «Открыть Swap» button in the
-      user's language. At start the worker sets the bot's profile texts and its menu
-      button (ADR-0008, ADR-0009).
+**PR 1.2 — The outbox, and requests by @username** (ADR-0014)
+- [ ] Migration: `notifications`.
+- [ ] Worker: the outbox sweep every 5 s. It claims rows with `SKIP LOCKED`; a 429
+      waits, a 403 turns `can_message` off, and other failures back off.
+- [ ] Notifications for a link request and an established link.
+- [ ] api and app: a request to an @username, with the 7-day cooldown (Q-E1).
 
-**PR 4 — frontend**
-- [x] Vite, React 18, strict TypeScript, Tailwind v4 on Telegram's theme variables,
-      TanStack Query, react-router 7 (memory router), and `@tma.js/sdk-react` 3.x for
-      theme, BackButton and fullscreen safe areas.
-- [x] ru/en/ka dictionaries and the language switch; the hello screen; «Откройте в
-      Telegram» everywhere else.
-- [x] The generated API client (ADR-0007). CI: eslint, prettier, tsc, vitest, build, the
-      300 KB budget and the OpenAPI drift check.
+**PR 1.3 — Orders: model, visibility, rates** (ADR-0015, written with it)
+- [ ] Migration: `orders`, `order_wants`, `order_visibility`, and `events` with its
+      append-only trigger; `users.tz`, taken from the device.
+- [ ] `rate_spec` v1 (fixed), and `swap/domain/rates.py` with its tests.
+- [ ] api: create, list («открытые мне» / «мои»), view, close, and a quote for live
+      previews. Visibility tests come first: not linked, link broken, not in the
+      order's list.
+- [ ] A notification: a new order is open to you.
 
-**PR 5 — Docker, compose, deploy**
-- [x] One image. `docker-compose.yml` runs caddy, api, worker and postgres on
-      10.89.91.0/24. Add `compose.sh`, `logs.sh`, `test.sh`, and
-      `swap.tools.dev_launch` for testing in Chrome.
-- [x] `deploy/docker-compose.vps.yml`: api on `mcp-shared`; the worker in the host's
-      network on `127.0.0.1:8707`; the db published on `127.0.0.1:5436` for it.
-      Add `deploy/Caddyfile-swap.caddy` and `deploy/vps.sh`.
-- [x] On the VPS: clone, write `.env`, deploy (2026-10-21).
-- [x] Register the bot in `bots.json` and restart the relay, then check every bot's
-      webhook. All five came back within 2 s, with nothing pending.
-- [x] Append the Caddy block, validate, reload, and probe every site before and after.
-      All 17 other sites answered exactly as before. Let's Encrypt issued Swap's
-      certificate within 4 s.
+**PR 1.4 — Orders: the wizard, the card, Home**
+- [ ] The three-step wizard with a fixed rate and a live preview, and the order card.
+- [ ] Home: «Открытые мне» and «Мои»; the three-step empty state.
+- [ ] Assets with their symbol, code and flag (ADR-0003).
 
-Expected later in phase 1, not now: a rate limit on auth, a session cleanup job,
-plurals, and backups (slice 7).
+**PR 1.5 — Payment details** (ADR-0010)
+- [ ] Migration: `payment_methods`. AES-GCM envelopes, with keys from the environment
+      and the mask written alongside (ADR-0004).
+- [ ] api: list, add and delete one's own; tests that no one else reads them and that
+      no log line holds them.
+- [ ] App: a profile screen behind the avatar with name, language and «Реквизиты».
+
+**PR 1.6 — Deals: the state machine** (ADR-0016, written with it)
+- [ ] Migration: `deals`, `deal_legs`, and the deferred trigger that refuses a status
+      change without its event (ADR-0002).
+- [ ] The state-machine service. Every transition of Q-B1 is tested, and so is every
+      illegal one, cancel requests and disputes included (their screens are slice 4).
+- [ ] api: propose, accept, decline, withdraw, sent, received, cancel. Remainders
+      follow FR-2.3 and Q-B5. Pending proposals that an order can no longer cover are
+      cancelled (Q-E2).
+- [ ] Notifications for every deal event above.
+
+**PR 1.7 — Deals: the proposal and the deal card**
+- [ ] The proposal: an amount slider within the remainder, the counter currency, who
+      goes first, due dates, payment details picked or added on the spot, and the
+      rounding tick (Q-B4).
+- [ ] The deal card: both legs, a status line that says what to do next, and actions
+      behind `showConfirm`. The payer sees the details in full once the deal is
+      accepted (Q-B8), with «Скопировать».
+- [ ] Home: my active deals, so the demo can find them without the bot.
+
+**Demo.** Deploy, then stop and ask the owner to invite one or two people.
+
+### Slices 2–7
+
+Each is broken into PRs when it starts.
+
+| Slice | Content |
+|---|---|
+| 2 | Balances (Q-B2); the deals list, active and history; «требует моего действия» on Home; order editing (FR-2.5) and the feed's filters (FR-2.4), which ADR-0006 left unplaced |
+| 3 | Documents through the bot (FR-5.1, 5.3–5.5, Q-B13) |
+| 4 | Cancel requests, disputes and their resolution, deal notes (FR-4.5–4.7) |
+| 5 | Reminders (Q-B7); order and proposal expiry; the in-app feed and its counter; muting a link's new orders; the retention and session sweeps; `requestWriteAccess` for those who skipped /start (Q-B12) |
+| 6 | The manual rate (Q-B3); the profile's display name, time zone and default currencies; blocks and the block list; account deletion (Q-B10) |
+| 7 | Encrypted off-box backups and a restore drill; hardening, including the rate limit on sign-in; the user agreement (Q-B15) |
 
 ## Estimates
 
 | Phase | Sessions | Calendar |
 |---|---|---|
-| 0 — skeleton | 4 | 1–2 days, plus the owner's DNS record and phone check |
-| 1 — MVP | ≈ 18 | ≈ 4 weeks; the last days wait on the group's real deal |
-
-On 2026-10-21 phase 1 grew by about two sessions: every string in three languages,
-and saved payment details.
+| 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
+| 1 — MVP | ≈ 18.5 | ≈ 4 weeks; the last days wait on the group's real deal |
 
 Phase 1 by slice (ADR-0006):
 
 | Slice | Sessions |
 |---|---|
-| Links | 1.5 |
-| Orders | 2 |
-| Deals, the state machine, payment details | 3 |
-| Notifications | 1 |
+| Links, the outbox (PRs 1.1–1.2) | 1.75 |
+| Orders (PRs 1.3–1.4) | 2 |
+| Payment details, deals, the state machine (PRs 1.5–1.7) | 3.75 |
 | **Demo** | **≈ 7.5** |
-| Balances and lists | 1 |
+| Balances, lists, order editing and filters | 1.5 |
 | Documents through the bot | 1.5 |
 | Cancel, dispute, notes | 1 |
 | Reminders, expiry, feed | 1.5 |
 | Manual rate, profile, blocks, deletion | 1.5 |
 | Backups, hardening, agreement | 1.5 |
 | Georgian review, acceptance fixes | 1.5 |
-| **Total** | **≈ 18** |
+| **Total** | **≈ 18.5** |
+
+Slice 2 grew by half a session on 2026-10-22: order editing and the filters had no
+slice.
+
+## Phase 0 — skeleton (accepted 2026-10-22)
+
+The owner signed in from his phone and accepted phase 0 on 2026-10-22. It shipped in
+PRs #1–#7: the docs, the backend skeleton and CI, sign-in with `initData` and the
+worker with the bot, the Mini App in three languages, the image, the local stack and
+the VPS deploy. Its checklist is in this file's history.

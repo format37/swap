@@ -14,7 +14,7 @@ exchange. There is no public order book, no search among strangers and no escrow
 see only the people you have linked with by personal invitation, and links are not
 transitive.
 
-Status: phase 0, the skeleton. The bot is
+Status: phase 1, the MVP, is being built. The bot is
 [@peertopeerswapbot](https://t.me/peertopeerswapbot).
 
 ## Stack

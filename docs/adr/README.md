@@ -20,11 +20,17 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0009](0009-languages.md) | Russian, English and Georgian from the start | Accepted |
 | [0010](0010-payment-details.md) | Payment details: saved free text per asset, copied into the deal | Accepted |
 | [0011](0011-phase-0-platform.md) | Phase-0 platform: sessions, router, tooling, logs, deploy | Accepted |
+| [0012](0012-links-and-invites.md) | Links: one pending request, whether it came by invite or by @username | Accepted |
+| [0013](0013-deep-links.md) | Deep links: the bot's buttons open `startapp=<kind>_<id>` | Accepted |
+| [0014](0014-notifications-outbox.md) | Notifications: an outbox row per recipient, worded and sent by the worker | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the
 records themselves, which had not been accepted before. 0008–0011 come from the
 owner's answers of the same day.
+
+0012 onwards are decisions made while building phase 1, under the owner's
+delegation ("feel free to decide"). The owner reviews them after the fact.
 
 ## Template
 

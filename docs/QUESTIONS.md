@@ -9,6 +9,8 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part A** blocks phase 0. If you only have a minute, answer A1–A6 and A8.
 - **Part B** blocks phase 1 (MVP).
 - **Part C** is for later phases and needs no answer now.
+- **Part D** records the owner's own decisions of 2026-10-21.
+- **Part E** was raised while planning phase 1. I follow its defaults until you answer.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -461,3 +463,41 @@ too.
 - **Simple, native, readable without reading:** icons, symbols and flags carry the
   meaning (ADR-0003).
 - **No overengineering.** The smallest thing that works, then iterate.
+
+## E. Phase 1 (asked 2026-10-22)
+
+Planning slice 1 raised these. I follow each default until you answer, and an answer
+that changes one comes with a fix.
+
+### Q-E1 · The 7-day cooldown and invite links
+
+Q-B16 applies the cooldown "to invite links and @username requests alike". But an
+invite can't be pushed at anyone: it becomes a request only when the invitee opens it
+themselves.
+
+**Proposed (ADR-0012):** after B declines A, A's requests to B's @username are refused
+for 7 days. If B opens an invite from A during that time, that is B's own doing, so it
+works and shows B the request again.
+
+### Q-E2 · Proposals that an order can no longer cover
+
+A remainder shrinks only when a deal is accepted (FR-2.3), so several proposals can
+wait on one order at once. After one is accepted, the others may no longer fit. And an
+order that closes leaves its proposals hanging until they expire after 48 h.
+
+**Proposed:** a pending proposal is cancelled in the same transaction when:
+- its order is closed by its author, used up, or expires;
+- or an accepted deal shrinks the remainder below the proposal's amount.
+
+It is journaled with the reason («заказ закрыт», «остатка не хватает»), and the
+proposer is notified. Like Q-B9, it follows from someone's action or from the order's
+own end date, so no new timer is involved.
+
+### Q-E3 · The demo comes before the user agreement
+
+The demo, after slice 1, is a real deal among your acquaintances. The agreement screen
+(Q-B15) comes in slice 7.
+
+**Proposed:** run the demo without it. The bot's greeting, which everyone sees at
+/start (Q-B12), already says that Swap never holds or moves money. The agreement is in
+place before acceptance, as planned.
