@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from swap.models import Notification
 
 # Each type is also the key of its words in swap/i18n.py.
-type NotificationType = Literal["link.requested", "link.established"]
+type NotificationType = Literal["link.requested", "link.established", "order.opened"]
 
 
 def notify(
@@ -19,7 +19,11 @@ def notify(
     target: str | None = None,
     **params: str,
 ) -> None:
-    """Queue a message in the caller's transaction, so it goes out only if the change commits."""
+    """Queue a message in the caller's transaction, so it goes out only if the change commits.
+
+    A value whose name starts with `amount` is a decimal string, which the worker formats
+    in the recipient's language.
+    """
     db.add(
         Notification(
             id=uuid.uuid4(), recipient_id=recipient, type=type_, params=params, target=target

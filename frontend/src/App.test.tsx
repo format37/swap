@@ -14,6 +14,7 @@ const me: Me = {
   username: 'format37',
   locale: 'ru',
   locale_chosen: false,
+  tz: 'Asia/Tbilisi',
 }
 
 function home(locale: Locale) {

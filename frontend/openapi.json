@@ -1,6 +1,38 @@
 {
   "components": {
     "schemas": {
+      "FixedRate": {
+        "additionalProperties": false,
+        "description": "`rate_spec` v1 of type fixed: one quote per wanted currency (ADR-0004).",
+        "properties": {
+          "quotes": {
+            "items": {
+              "$ref": "#/components/schemas/Quote"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Quotes",
+            "type": "array"
+          },
+          "type": {
+            "const": "fixed",
+            "default": "fixed",
+            "title": "Type",
+            "type": "string"
+          },
+          "v": {
+            "const": 1,
+            "default": 1,
+            "title": "V",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quotes"
+        ],
+        "title": "FixedRate",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -274,6 +306,17 @@
             "title": "Locale Chosen",
             "type": "boolean"
           },
+          "tz": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tz"
+          },
           "username": {
             "anyOf": [
               {
@@ -292,20 +335,37 @@
           "last_name",
           "username",
           "locale",
-          "locale_chosen"
+          "locale_chosen",
+          "tz"
         ],
         "title": "Me",
         "type": "object"
       },
       "MeUpdate": {
+        "description": "Only what is sent changes.",
         "properties": {
           "locale": {
-            "$ref": "#/components/schemas/Locale"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Locale"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tz": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tz"
           }
         },
-        "required": [
-          "locale"
-        ],
         "title": "MeUpdate",
         "type": "object"
       },
@@ -339,6 +399,254 @@
         ],
         "title": "NewInvite",
         "type": "object"
+      },
+      "Order": {
+        "properties": {
+          "amount_max": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount Max",
+            "type": "string"
+          },
+          "amount_min": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount Min",
+            "type": "string"
+          },
+          "amount_remaining": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount Remaining",
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "available_from": {
+            "format": "date",
+            "title": "Available From",
+            "type": "string"
+          },
+          "available_until": {
+            "format": "date",
+            "title": "Available Until",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "give_country": {
+            "title": "Give Country",
+            "type": "string"
+          },
+          "give_currency": {
+            "title": "Give Currency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mine": {
+            "title": "Mine",
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "payout_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentKind"
+            },
+            "title": "Payout Methods",
+            "type": "array"
+          },
+          "rate_spec": {
+            "$ref": "#/components/schemas/FixedRate"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Visibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wants": {
+            "items": {
+              "$ref": "#/components/schemas/Want"
+            },
+            "title": "Wants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "author",
+          "mine",
+          "give_currency",
+          "give_country",
+          "amount_min",
+          "amount_max",
+          "amount_remaining",
+          "available_from",
+          "available_until",
+          "payout_methods",
+          "wants",
+          "rate_spec",
+          "note",
+          "status",
+          "created_at"
+        ],
+        "title": "Order",
+        "type": "object"
+      },
+      "OrderDraft": {
+        "additionalProperties": false,
+        "description": "What the wizard publishes (FR-2.1). A value from a form, checked here for its rules.",
+        "properties": {
+          "amount_max": {
+            "examples": [
+              "1500.00"
+            ],
+            "pattern": "^\\d{1,16}(\\.\\d{1,2})?$",
+            "title": "Amount Max",
+            "type": "string"
+          },
+          "amount_min": {
+            "examples": [
+              "1500.00"
+            ],
+            "pattern": "^\\d{1,16}(\\.\\d{1,2})?$",
+            "title": "Amount Min",
+            "type": "string"
+          },
+          "available_from": {
+            "format": "date",
+            "title": "Available From",
+            "type": "string"
+          },
+          "available_until": {
+            "format": "date",
+            "title": "Available Until",
+            "type": "string"
+          },
+          "give_country": {
+            "examples": [
+              "GE"
+            ],
+            "pattern": "^[A-Z]{2}$",
+            "title": "Give Country",
+            "type": "string"
+          },
+          "give_currency": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Give Currency",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "payout_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentKind"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Payout Methods",
+            "type": "array"
+          },
+          "rate_spec": {
+            "$ref": "#/components/schemas/FixedRate"
+          },
+          "visible_to": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 200,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visible To"
+          },
+          "wants": {
+            "items": {
+              "$ref": "#/components/schemas/Want"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Wants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "give_currency",
+          "give_country",
+          "amount_min",
+          "amount_max",
+          "available_from",
+          "available_until",
+          "payout_methods",
+          "wants",
+          "rate_spec"
+        ],
+        "title": "OrderDraft",
+        "type": "object"
+      },
+      "OrderStatus": {
+        "enum": [
+          "open",
+          "fulfilled",
+          "closed",
+          "expired"
+        ],
+        "title": "OrderStatus",
+        "type": "string"
+      },
+      "PaymentKind": {
+        "description": "How money moves, one set for both sides (ADR-0016): an order's payout methods, and\nthe kinds of saved payment details (ADR-0010).",
+        "enum": [
+          "card",
+          "phone",
+          "bank",
+          "crypto",
+          "cash",
+          "other"
+        ],
+        "title": "PaymentKind",
+        "type": "string"
       },
       "Person": {
         "properties": {
@@ -422,6 +730,102 @@
         "title": "Problem",
         "type": "object"
       },
+      "Quote": {
+        "additionalProperties": false,
+        "description": "1 `base` = `value` `quote`, in the direction the author typed it: \u00ab1 GEL = 29,20 RUB\u00bb.",
+        "properties": {
+          "base": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Base",
+            "type": "string"
+          },
+          "quote": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Quote",
+            "type": "string"
+          },
+          "value": {
+            "examples": [
+              "29.20"
+            ],
+            "pattern": "^\\d{1,10}(\\.\\d{1,10})?$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "quote",
+          "value"
+        ],
+        "title": "Quote",
+        "type": "object"
+      },
+      "QuoteRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "examples": [
+              "1500.00"
+            ],
+            "pattern": "^\\d{1,16}(\\.\\d{1,2})?$",
+            "title": "Amount",
+            "type": "string"
+          },
+          "give_currency": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Give Currency",
+            "type": "string"
+          },
+          "rate_spec": {
+            "$ref": "#/components/schemas/FixedRate"
+          },
+          "want_currency": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Want Currency",
+            "type": "string"
+          },
+          "whole": {
+            "default": false,
+            "title": "Whole",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "amount",
+          "give_currency",
+          "want_currency",
+          "rate_spec"
+        ],
+        "title": "QuoteRequest",
+        "type": "object"
+      },
+      "QuoteResult": {
+        "properties": {
+          "amount": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "title": "QuoteResult",
+        "type": "object"
+      },
       "SignedIn": {
         "properties": {
           "expires_at": {
@@ -498,6 +902,55 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "Visibility": {
+        "description": "Who may see an order. Its author alone is told.",
+        "properties": {
+          "all_links": {
+            "title": "All Links",
+            "type": "boolean"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            },
+            "title": "People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "all_links",
+          "people"
+        ],
+        "title": "Visibility",
+        "type": "object"
+      },
+      "Want": {
+        "additionalProperties": false,
+        "properties": {
+          "country": {
+            "examples": [
+              "GE"
+            ],
+            "pattern": "^[A-Z]{2}$",
+            "title": "Country",
+            "type": "string"
+          },
+          "currency": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Currency",
+            "type": "string"
+          }
+        },
+        "required": [
+          "currency",
+          "country"
+        ],
+        "title": "Want",
         "type": "object"
       }
     },
@@ -1186,6 +1639,330 @@
         "summary": "Update Me",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`) or \u00ab\u041c\u043e\u0438\u00bb (`mine`).",
+        "operationId": "list_orders",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "visible",
+              "enum": [
+                "visible",
+                "mine"
+              ],
+              "title": "Scope",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  },
+                  "title": "Response List Orders",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Orders",
+        "tags": [
+          "orders"
+        ]
+      },
+      "post": {
+        "operationId": "create_order",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{order_id}": {
+      "get": {
+        "operationId": "get_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{order_id}/close": {
+      "post": {
+        "operationId": "close_order",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Close Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/quote": {
+      "post": {
+        "description": "What `amount` of the give currency comes to in the want currency.",
+        "operationId": "quote",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuoteResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Quote",
+        "tags": [
+          "rates"
         ]
       }
     },

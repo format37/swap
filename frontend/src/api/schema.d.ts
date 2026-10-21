@@ -165,6 +165,81 @@ export interface paths {
         patch: operations["update_me"];
         trace?: never;
     };
+    "/api/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Orders
+         * @description «Открытые мне» (`visible`) or «Мои» (`mine`).
+         */
+        get: operations["list_orders"];
+        put?: never;
+        /** Create Order */
+        post: operations["create_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Order */
+        get: operations["get_order"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close Order */
+        post: operations["close_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quote
+         * @description What `amount` of the give currency comes to in the want currency.
+         */
+        post: operations["quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -186,6 +261,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * FixedRate
+         * @description `rate_spec` v1 of type fixed: one quote per wanted currency (ADR-0004).
+         */
+        FixedRate: {
+            /** Quotes */
+            quotes: components["schemas"]["Quote"][];
+            /**
+             * Type
+             * @default fixed
+             * @constant
+             */
+            type: "fixed";
+            /**
+             * V
+             * @default 1
+             * @constant
+             */
+            v: 1;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -306,12 +401,19 @@ export interface components {
             locale: components["schemas"]["Locale"];
             /** Locale Chosen */
             locale_chosen: boolean;
+            /** Tz */
+            tz: string | null;
             /** Username */
             username: string | null;
         };
-        /** MeUpdate */
+        /**
+         * MeUpdate
+         * @description Only what is sent changes.
+         */
         MeUpdate: {
-            locale: components["schemas"]["Locale"];
+            locale?: components["schemas"]["Locale"] | null;
+            /** Tz */
+            tz?: string | null;
         };
         /** NewInvite */
         NewInvite: {
@@ -333,6 +435,108 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** Order */
+        Order: {
+            /** Amount Max */
+            amount_max: string;
+            /** Amount Min */
+            amount_min: string;
+            /** Amount Remaining */
+            amount_remaining: string;
+            author: components["schemas"]["Person"];
+            /**
+             * Available From
+             * Format: date
+             */
+            available_from: string;
+            /**
+             * Available Until
+             * Format: date
+             */
+            available_until: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Give Country */
+            give_country: string;
+            /** Give Currency */
+            give_currency: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mine */
+            mine: boolean;
+            /** Note */
+            note: string | null;
+            /** Payout Methods */
+            payout_methods: components["schemas"]["PaymentKind"][];
+            rate_spec: components["schemas"]["FixedRate"];
+            status: components["schemas"]["OrderStatus"];
+            visibility?: components["schemas"]["Visibility"] | null;
+            /** Wants */
+            wants: components["schemas"]["Want"][];
+        };
+        /**
+         * OrderDraft
+         * @description What the wizard publishes (FR-2.1). A value from a form, checked here for its rules.
+         */
+        OrderDraft: {
+            /**
+             * Amount Max
+             * @example 1500.00
+             */
+            amount_max: string;
+            /**
+             * Amount Min
+             * @example 1500.00
+             */
+            amount_min: string;
+            /**
+             * Available From
+             * Format: date
+             */
+            available_from: string;
+            /**
+             * Available Until
+             * Format: date
+             */
+            available_until: string;
+            /**
+             * Give Country
+             * @example GE
+             */
+            give_country: string;
+            /**
+             * Give Currency
+             * @example GEL
+             */
+            give_currency: string;
+            /** Note */
+            note?: string | null;
+            /** Payout Methods */
+            payout_methods: components["schemas"]["PaymentKind"][];
+            rate_spec: components["schemas"]["FixedRate"];
+            /** Visible To */
+            visible_to?: string[] | null;
+            /** Wants */
+            wants: components["schemas"]["Want"][];
+        };
+        /**
+         * OrderStatus
+         * @enum {string}
+         */
+        OrderStatus: "open" | "fulfilled" | "closed" | "expired";
+        /**
+         * PaymentKind
+         * @description How money moves, one set for both sides (ADR-0016): an order's payout methods, and
+         *     the kinds of saved payment details (ADR-0010).
+         * @enum {string}
+         */
+        PaymentKind: "card" | "phone" | "bank" | "crypto" | "cash" | "other";
         /** Person */
         Person: {
             /** First Name */
@@ -363,6 +567,56 @@ export interface components {
              */
             type: string;
         };
+        /**
+         * Quote
+         * @description 1 `base` = `value` `quote`, in the direction the author typed it: «1 GEL = 29,20 RUB».
+         */
+        Quote: {
+            /**
+             * Base
+             * @example GEL
+             */
+            base: string;
+            /**
+             * Quote
+             * @example GEL
+             */
+            quote: string;
+            /**
+             * Value
+             * @example 29.20
+             */
+            value: string;
+        };
+        /** QuoteRequest */
+        QuoteRequest: {
+            /**
+             * Amount
+             * @example 1500.00
+             */
+            amount: string;
+            /**
+             * Give Currency
+             * @example GEL
+             */
+            give_currency: string;
+            rate_spec: components["schemas"]["FixedRate"];
+            /**
+             * Want Currency
+             * @example GEL
+             */
+            want_currency: string;
+            /**
+             * Whole
+             * @default false
+             */
+            whole: boolean;
+        };
+        /** QuoteResult */
+        QuoteResult: {
+            /** Amount */
+            amount: string;
+        };
         /** SignedIn */
         SignedIn: {
             /**
@@ -391,6 +645,29 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * Visibility
+         * @description Who may see an order. Its author alone is told.
+         */
+        Visibility: {
+            /** All Links */
+            all_links: boolean;
+            /** People */
+            people: components["schemas"]["Person"][];
+        };
+        /** Want */
+        Want: {
+            /**
+             * Country
+             * @example GE
+             */
+            country: string;
+            /**
+             * Currency
+             * @example GEL
+             */
+            currency: string;
         };
     };
     responses: never;
@@ -905,6 +1182,237 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_orders: {
+        parameters: {
+            query?: {
+                scope?: "visible" | "mine";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderDraft"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    get_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    quote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteResult"];
                 };
             };
             /** @description Unauthorized */

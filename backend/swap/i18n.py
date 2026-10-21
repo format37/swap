@@ -4,6 +4,7 @@ The Mini App's strings live in `frontend/src/i18n/`. These are only the ones the
 writes itself. The Georgian still needs a native speaker's read before MVP acceptance.
 """
 
+from decimal import Decimal
 from typing import Literal, get_args
 
 type Locale = Literal["ru", "en", "ka"]
@@ -49,6 +50,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         "link.established": (
             "Связь установлена: {name}. Теперь вы видите заявки друг друга, открытые для связей."
         ),
+        "order.opened": (
+            "{name} — новая заявка. Отдаёт: до {amount} {currency}. Взамен хочет: {wants}."
+        ),
         "invite.already_linked": "Связь уже есть: {name}.",
         "invite.own": (
             "Это ваша собственная ссылка-приглашение. Отправьте её тому, кого хотите пригласить."
@@ -92,6 +96,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "link.established": (
             "Linked: {name}. You now see each other's offers that are open to links."
+        ),
+        "order.opened": (
+            "{name} — new offer. Gives: up to {amount} {currency}. Wants in return: {wants}."
         ),
         "invite.already_linked": "You are already linked: {name}.",
         "invite.own": (
@@ -139,6 +146,10 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "კავშირი დამყარდა: {name}. ახლა ერთმანეთის განცხადებებს ხედავთ, რომლებიც "
             "კავშირებისთვისაა გახსნილი."
         ),
+        "order.opened": (
+            "{name} — ახალი განცხადება. გასცემს: მაქსიმუმ {amount} {currency}. სანაცვლოდ "
+            "სურს: {wants}."
+        ),
         "invite.already_linked": "კავშირი უკვე არსებობს: {name}.",
         "invite.own": (
             "ეს თქვენი საკუთარი მოსაწვევი ბმულია. გაუგზავნეთ ის მას, ვისი მოწვევაც გსურთ."
@@ -165,3 +176,14 @@ MESSAGES: dict[Locale, dict[str, str]] = {
 def t(locale: Locale, key: str, **values: str) -> str:
     """The string for `key` in `locale`, with `{placeholders}` filled in."""
     return MESSAGES[locale][key].format(**values)
+
+
+def format_amount(amount: Decimal, locale: Locale) -> str:
+    """«150 000» and «1 712,33»; in English «150,000» and «1,712.33». Whole amounts drop
+    their cents. Georgian groups and marks decimals as Russian does (ADR-0015). The app's
+    Intl.NumberFormat writes the same."""
+    text = f"{amount:,.0f}" if amount == amount.to_integral_value() else f"{amount:,.2f}"
+    if locale == "en":
+        return text
+    # A no-break space, as Intl's ru-RU writes it, so an amount never splits a line.
+    return text.replace(",", "\u00a0").replace(".", ",")
