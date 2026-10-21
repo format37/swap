@@ -62,14 +62,14 @@ notifications.
 - [x] Notifications for a link request and an established link.
 - [x] api and app: a request to an @username, with the 7-day cooldown (Q-E1).
 
-**PR 1.3 — Orders: model, visibility, rates** (ADR-0016, written with it)
-- [ ] Migration: `orders`, `order_wants`, `order_visibility`, and `events` with its
-      append-only trigger; `users.tz`, taken from the device.
-- [ ] `rate_spec` v1 (fixed), and `swap/domain/rates.py` with its tests.
-- [ ] api: create, list («открытые мне» / «мои»), view, close, and a quote for live
+**PR 1.3 — Orders: model, visibility, rates** (ADR-0016)
+- [x] Migration: `orders`, `order_wants`, `order_visibility`; `users.tz`, taken from the
+      device. `events` and its trigger move to PR 1.6: only deals journal in slice 1.
+- [x] `rate_spec` v1 (fixed), and `swap/rates.py` with its tests.
+- [x] api: create, list («открытые мне» / «мои»), view, close, and a quote for live
       previews. Visibility tests come first: not linked, link broken, not in the
       order's list.
-- [ ] A notification: a new order is open to you.
+- [x] A notification: a new order is open to you.
 
 **PR 1.4 — Orders: the wizard, the card, Home**
 - [ ] The three-step wizard with a fixed rate and a live preview, and the order card.
@@ -84,8 +84,8 @@ notifications.
 - [ ] App: a profile screen behind the avatar with name, language and «Реквизиты».
 
 **PR 1.6 — Deals: the state machine** (ADR-0017, written with it)
-- [ ] Migration: `deals`, `deal_legs`, and the deferred trigger that refuses a status
-      change without its event (ADR-0002).
+- [ ] Migration: `deals`, `deal_legs`, `events` with its append-only trigger, and the
+      deferred trigger that refuses a status change without its event (ADR-0002).
 - [ ] The state-machine service. Every transition of Q-B1 is tested, and so is every
       illegal one, cancel requests and disputes included (their screens are slice 4).
 - [ ] api: propose, accept, decline, withdraw, sent, received, cancel. Remainders

@@ -6,6 +6,7 @@ between Telegram's answer and the commit, the message goes out twice (ADR-0005).
 """
 
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import structlog
 from aiogram import Bot
@@ -20,7 +21,7 @@ from sqlalchemy import func, select
 from swap.bot.handlers import open_card_keyboard
 from swap.config import Settings
 from swap.db import Sessionmaker
-from swap.i18n import resolve_locale, t
+from swap.i18n import format_amount, resolve_locale, t
 from swap.logs import Redactor
 from swap.models import Notification, NotificationStatus, User
 
@@ -77,7 +78,11 @@ async def _send(
         return True
     locale = resolve_locale(recipient.locale, recipient.language_code)
     try:
-        text = t(locale, note.type, **note.params)
+        values = {
+            key: format_amount(Decimal(value), locale) if key.startswith("amount") else value
+            for key, value in note.params.items()
+        }
+        text = t(locale, note.type, **values)
         keyboard = (
             open_card_keyboard(locale, settings.telegram_bot_username, note.target)
             if note.target
@@ -94,7 +99,7 @@ async def _send(
         recipient.can_message = False
         note.tg_status = NotificationStatus.SKIPPED
         log.info("recipient blocked the bot", type=note.type)
-    except (TelegramBadRequest, KeyError, ValueError) as exc:
+    except (TelegramBadRequest, KeyError, ValueError, ArithmeticError) as exc:
         # Retrying won't change a refusal, or a message we can't word.
         note.tg_status = NotificationStatus.FAILED
         note.last_error = _describe(exc, redactor)

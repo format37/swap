@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     init_data_max_age_s: int = 3600
     session_ttl_s: int = 24 * 3600
     invite_ttl_s: int = 72 * 3600
+    # What orders may give and want (FR-2.2): ISO 4217 codes and two stablecoins
+    # (ADR-0010). More are a config change, as JSON: ASSETS='["RUB","GEL",…]'.
+    assets: list[str] = ["RUB", "GEL", "USD", "EUR", "TRY", "KZT", "AMD", "USDT", "USDC"]
     # The built frontend; the api serves it when this is set (ADR-0001).
     static_dir: str | None = None
     log_format: Literal["json", "console"] = "json"

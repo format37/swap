@@ -240,3 +240,39 @@ async def test_one_sweep_sends_a_batch_and_leaves_the_rest(
             .where(Notification.tg_status == NotificationStatus.PENDING)
         )
     assert pending == 0
+
+
+@pytest.mark.parametrize(
+    ("locale", "words"),
+    [
+        ("ru", "до 150\u00a0000 RUB"),
+        ("en", "up to 150,000 RUB"),
+        ("ka", "მაქსიმუმ 150\u00a0000 RUB"),
+    ],
+)
+async def test_amounts_are_written_the_recipients_way(
+    sessionmaker: Sessions,
+    bot: Bot,
+    telegram: RecordingSession,
+    settings: Settings,
+    locale: str,
+    words: str,
+) -> None:
+    nino = await person(sessionmaker)
+    async with sessionmaker() as db:
+        await db.execute(update(User).values(locale=locale))
+        notify(
+            db,
+            nino.id,
+            "order.opened",
+            target=CARD,
+            name="Alex",
+            amount="150000.00",
+            currency="RUB",
+            wants="GEL, USD",
+        )
+        await db.commit()
+    await send_due(sessionmaker, bot, settings)
+    [sent] = telegram.calls
+    assert isinstance(sent, SendMessage)
+    assert words in sent.text

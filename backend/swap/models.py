@@ -1,11 +1,13 @@
 """Tables. The conventions are ADR-0002: plural snake_case, uuid keys, timestamptz."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import (
+    CHAR,
     BigInteger,
     CheckConstraint,
     DateTime,
@@ -13,14 +15,16 @@ from sqlalchemy import (
     Index,
     LargeBinary,
     MetaData,
+    Numeric,
+    String,
     Text,
     UniqueConstraint,
     false,
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 # One naming convention, so autogenerate and hand-written downgrades agree on the
 # name of every constraint.
@@ -45,6 +49,19 @@ def one_of(column: str, values: type[StrEnum]) -> str:
     return f"{column} IN ({listed})"
 
 
+def asset_check(column: str) -> str:
+    """ISO 4217 codes and the stablecoins (ADR-0002). Which ones are allowed is config."""
+    return f"{column} ~ '^[A-Z]{{3,5}}$'"
+
+
+def country_check(column: str) -> str:
+    return f"{column} ~ '^[A-Z]{{2}}$'"
+
+
+# Money is numeric(18,2), and Decimal in Python (ADR-0002).
+MONEY = Numeric(18, 2)
+
+
 class User(Base):
     """Someone who has opened the app or pressed /start (Q-B11)."""
 
@@ -61,6 +78,9 @@ class User(Base):
     locale: Mapped[str | None] = mapped_column(Text)
     # Whether the bot may write to them: they pressed /start, or initData said so.
     can_message: Mapped[bool] = mapped_column(default=False, server_default=false())
+    # An IANA zone from the device, such as Asia/Tbilisi. Dates in orders and deals are
+    # calendar dates in it (Q-B17).
+    tz: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
@@ -205,3 +225,108 @@ class Notification(Base):
     # Why the last attempt failed, for whoever reads the table.
     last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class PaymentKind(StrEnum):
+    """How money moves, one set for both sides (ADR-0016): an order's payout methods, and
+    the kinds of saved payment details (ADR-0010)."""
+
+    CARD = "card"
+    # A transfer to a phone number, such as Russia's SBP.
+    PHONE = "phone"
+    BANK = "bank"
+    CRYPTO = "crypto"
+    CASH = "cash"
+    OTHER = "other"
+
+
+class OrderStatus(StrEnum):
+    OPEN = "open"
+    # The remainder fell below the smallest deal (Q-B5).
+    FULFILLED = "fulfilled"
+    # The author closed the remainder (FR-2.5).
+    CLOSED = "closed"
+    EXPIRED = "expired"
+
+
+def _kinds_check(column: str) -> str:
+    listed = ", ".join(f"'{kind}'" for kind in PaymentKind)
+    return f"cardinality({column}) > 0 AND {column} <@ ARRAY[{listed}]::text[]"
+
+
+class Order(Base):
+    """An intent: «I give X here, between these dates, and want Y there» (§5, ADR-0016).
+
+    Who sees it is a query over active links (§3): the author always; anyone else only
+    while it is open, through an active link, and when they are on its list, if it has one.
+    """
+
+    __tablename__ = "orders"
+    __table_args__ = (
+        CheckConstraint(asset_check("give_currency"), name="give_currency"),
+        CheckConstraint(country_check("give_country"), name="give_country"),
+        CheckConstraint("amount_min > 0 AND amount_min <= amount_max", name="amounts"),
+        CheckConstraint(
+            "amount_remaining >= 0 AND amount_remaining <= amount_max", name="remaining"
+        ),
+        CheckConstraint("available_from <= available_until", name="window"),
+        CheckConstraint(_kinds_check("payout_methods"), name="payout_methods"),
+        CheckConstraint("rate_spec->>'type' IN ('fixed', 'reference')", name="rate_spec_type"),
+        CheckConstraint(one_of("status", OrderStatus), name="status"),
+        # What feeds and the expiry sweep look for (ADR-0002).
+        Index("ix_orders_open_until", "available_until", postgresql_where=text("status = 'open'")),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    give_currency: Mapped[str] = mapped_column(String(8))
+    give_country: Mapped[str] = mapped_column(CHAR(2))
+    # The smallest single deal, and all there is (Q-B5).
+    amount_min: Mapped[Decimal] = mapped_column(MONEY)
+    amount_max: Mapped[Decimal] = mapped_column(MONEY)
+    # Shrinks when a deal is accepted, and grows back when one is cancelled (FR-2.3).
+    amount_remaining: Mapped[Decimal] = mapped_column(MONEY)
+    available_from: Mapped[date]
+    available_until: Mapped[date]
+    payout_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    note: Mapped[str | None] = mapped_column(Text)
+    # A versioned union, validated by swap/rates.py (ADR-0004).
+    rate_spec: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(Text, server_default=OrderStatus.OPEN.value)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+    wants: Mapped[list["OrderWant"]] = relationship(
+        lazy="selectin", cascade="all, delete-orphan", order_by="OrderWant.position"
+    )
+
+
+class OrderWant(Base):
+    """One currency the author would take, and where (ADR-0002: rows, not JSON)."""
+
+    __tablename__ = "order_wants"
+    __table_args__ = (
+        CheckConstraint(asset_check("currency"), name="currency"),
+        CheckConstraint(country_check("country"), name="country"),
+    )
+
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), primary_key=True
+    )
+    currency: Mapped[str] = mapped_column(String(8), primary_key=True)
+    country: Mapped[str] = mapped_column(CHAR(2), primary_key=True)
+    # The author's order of preference: «GEL, or else USD».
+    position: Mapped[int] = mapped_column(server_default=text("0"))
+
+
+class OrderVisibility(Base):
+    """Who may see an order that is not for all links. No rows: all active links (§5)."""
+
+    __tablename__ = "order_visibility"
+
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
+    )

@@ -101,6 +101,15 @@ async def test_an_empty_body_is_a_validation_problem(client: AsyncClient) -> Non
     assert response.json()["code"] == "validation_error"
 
 
+async def test_an_unknown_time_zone_is_refused(client: AsyncClient) -> None:
+    signed_in = await sign_in(client)
+    response = await client.patch(
+        "/api/v1/me", json={"tz": "Mars/Olympus_Mons"}, headers=bearer(signed_in)
+    )
+    assert response.status_code == 422
+    assert response.json()["code"] == "validation_error"
+
+
 async def test_an_unknown_locale_is_refused(client: AsyncClient) -> None:
     signed_in = await sign_in(client)
     response = await client.patch("/api/v1/me", json={"locale": "de"}, headers=bearer(signed_in))
@@ -167,3 +176,16 @@ async def test_the_chosen_language_sticks(client: AsyncClient) -> None:
 async def test_other_languages_fall_back_to_english(client: AsyncClient) -> None:
     signed_in = await sign_in(client, user={"language_code": "pt-br"})
     assert signed_in["me"]["locale"] == "en"
+
+
+async def test_the_device_time_zone_is_kept_and_the_language_left_alone(
+    client: AsyncClient,
+) -> None:
+    signed_in = await sign_in(client)
+    assert signed_in["me"]["tz"] is None
+    response = await client.patch(
+        "/api/v1/me", json={"tz": "Asia/Tbilisi"}, headers=bearer(signed_in)
+    )
+    assert response.status_code == 200
+    assert response.json()["tz"] == "Asia/Tbilisi"
+    assert response.json()["locale_chosen"] is False
