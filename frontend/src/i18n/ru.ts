@@ -206,6 +206,7 @@ export const ru = {
   'deal.event.disputed': 'Спор',
   'deal.event.resolution_proposed': 'Предложен итог спора',
   'deal.event.resolved': 'Спор закрыт',
+  'home.deals': 'Мои сделки',
   'order.deals': 'Сделки по заявке',
   'order.propose': 'Предложить сделку',
   'propose.title': 'Предложение сделки',

@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
 import { fullName, useLinks } from '../api/links'
+import { useDeals } from '../api/deals'
 import { useOrders } from '../api/orders'
+import { DealRow } from '../deals/DealRow'
 import { useI18n } from '../i18n/useI18n'
 import { OrderRow } from '../orders/OrderRow'
 import { useMainButton } from '../telegram'
@@ -23,6 +25,7 @@ export function Home({ me }: { me: Me }) {
   const links = useLinks()
   const open = useOrders('visible')
   const mine = useOrders('mine')
+  const deals = useDeals('active')
 
   useMainButton({
     text: t('home.new_order'),
@@ -31,8 +34,14 @@ export function Home({ me }: { me: Me }) {
 
   const incoming = links.data?.incoming ?? []
   const linked = (links.data?.active.length ?? 0) > 0
-  const loaded = links.isSuccess && open.isSuccess && mine.isSuccess
-  const nothing = loaded && !linked && !incoming.length && !open.data.length && !mine.data.length
+  const loaded = links.isSuccess && open.isSuccess && mine.isSuccess && deals.isSuccess
+  const nothing =
+    loaded &&
+    !linked &&
+    !incoming.length &&
+    !open.data.length &&
+    !mine.data.length &&
+    !deals.data.length
 
   return (
     <Screen tabs>
@@ -64,6 +73,19 @@ export function Home({ me }: { me: Me }) {
               subtitle={t('link.incoming')}
               opens
               onClick={() => void navigate(`/links/${link.id}`)}
+            />
+          ))}
+        </Section>
+      )}
+
+      {deals.data && deals.data.length > 0 && (
+        <Section title={t('home.deals')}>
+          {deals.data.map((deal) => (
+            <DealRow
+              key={deal.id}
+              deal={deal}
+              me={me.id}
+              onOpen={() => void navigate(`/deals/${deal.id}`)}
             />
           ))}
         </Section>

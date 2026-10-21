@@ -210,6 +210,7 @@ export const ka: Messages = {
   'deal.event.disputed': 'დავა',
   'deal.event.resolution_proposed': 'შემოთავაზებულია დავის შედეგი',
   'deal.event.resolved': 'დავა დაიხურა',
+  'home.deals': 'ჩემი გარიგებები',
   'order.deals': 'გარიგებები ამ განცხადებაზე',
   'order.propose': 'გარიგების შეთავაზება',
   'propose.title': 'გარიგების შეთავაზება',

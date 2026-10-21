@@ -204,6 +204,7 @@ export const en: Messages = {
   'deal.event.disputed': 'Disputed',
   'deal.event.resolution_proposed': 'An outcome proposed',
   'deal.event.resolved': 'Dispute closed',
+  'home.deals': 'My deals',
   'order.deals': 'Deals on this offer',
   'order.propose': 'Propose a deal',
   'propose.title': 'Propose a deal',
