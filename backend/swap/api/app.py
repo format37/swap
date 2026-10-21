@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 from swap import __version__
-from swap.api import health
+from swap.api import health, v1
 from swap.api.errors import install_problem_handlers
 from swap.api.frontend import mount_frontend
 from swap.api.headers import SecurityHeadersMiddleware
@@ -59,6 +59,7 @@ def create_app(
     app.add_middleware(SecurityHeadersMiddleware)
     install_problem_handlers(app)
     app.include_router(health.router)
+    app.include_router(v1.router)
     if settings.static_dir:
         mount_frontend(app, Path(settings.static_dir))
     return app
