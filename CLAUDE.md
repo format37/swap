@@ -4,57 +4,76 @@ Swap is a Telegram Mini App for planning counter-transfers of currency between p
 linked by personal invitation. It plans and records; it never holds, moves or
 guarantees money.
 
+**This repository is public** (github.com/format37/swap, MIT). Everything committed is
+published.
+
 Read before changing anything:
 
-- `docs/kickoff.md` holds the owner's kickoff instructions, verbatim. The hard rules
-  below come from it.
-- `docs/tech-specs.md` is the spec, in Russian (UI strings are Russian too). FR-x.y
-  numbers are used in tasks and tests.
-- `docs/QUESTIONS.md` holds the open questions and the owner's answers. An answer
-  there overrides the spec.
+- `docs/kickoff.md` holds the owner's kickoff instructions, verbatim. Most of the hard
+  rules below come from it.
+- `docs/tech-specs.md` is the spec, in Russian. FR-x.y numbers are used in tasks and
+  tests.
+- `docs/QUESTIONS.md` holds the questions and the owner's answers. An answer there
+  overrides the spec and the kickoff. Part D lists the owner's own decisions of
+  2026-10-21.
 - `docs/adr/` has every decision another engineer would ask about, one page each.
   Never leave a decision only in chat.
-- `docs/plan.md` has the phases, the current phase's checklist and the estimates.
+- `docs/plan.md` has the current phase's checklist and the estimates.
 
-Precedence: the owner's answer in QUESTIONS, then the kickoff rules below, then the
-spec. When both look wrong, write a question before building around it.
+Precedence: the owner's answer in QUESTIONS, then the kickoff rules, then the spec.
+When both look wrong, write a question before building around it.
 
 ## Status
 
-Phase 0 has not started. PR 0 (QUESTIONS, ADRs 0001–0007, plan) is waiting for the
-owner's review.
+Phase 0 (skeleton) started on 2026-10-21; `docs/plan.md` has the checklist.
 
 ## Commands
 
-None yet. The phase-0 PRs add them here, following the owner's house scripts:
-`./compose.sh`, `./logs.sh <service>`, `./test.sh [backend|frontend] [pytest args]`,
-and Alembic through `docker compose exec api alembic …`.
+The phase-0 PRs add them here, following the owner's house scripts: `./compose.sh`,
+`./logs.sh <service>`, `./test.sh [backend|frontend] [pytest args]`, and Alembic
+through `docker compose exec api alembic …`.
+
+Python runs through uv 0.13 (pinned in CI and in the Dockerfile). This box has uv
+0.7.2, so run `uvx --from uv==0.13.4 uv …` here.
 
 ## Hard rules
 
 - **Secrets live only in `.env`.** Only `.env.example` is committed. Stage explicit
   paths (never `git add -A`) and read `git diff --cached` before every commit. If a
-  token is in a staged file, stop.
-- **The token in this machine's `.env` belongs to the PRODUCTION bot
-  `@peertopeerswapbot`** (checked with `getMe` on 2026-10-21). That holds until the
-  owner swaps in a test bot. Call no state-changing Bot API method with it: no
-  `setWebhook`, `deleteWebhook`, `setChatMenuButton`, `getUpdates` or `sendMessage`.
-  Code guards webhook registration from PR 2 on.
-- **No deploy to the VPS, no DNS change and no edit of `~/reverse-proxy/Caddyfile`**
-  unless the owner says so in the current session. Local `docker compose up` is
-  always fine.
+  token is in a staged file, stop. The repo is public, so a pushed secret is a leaked
+  secret: rotate it, don't just delete it.
+- **Nothing about the VPS beyond what the deploy files need.** No IP addresses,
+  passwords or host details in the repo. Firewall rules, free memory and the like
+  stay out too.
+- **There is one bot, `@peertopeerswapbot`, the production bot** (the owner,
+  2026-10-21). It is logged out of the cloud Bot API and served by the VPS's own Bot
+  API server through the owner's relay (ADR-0008).
+  - **Never call `api.telegram.org` with its token.** Once the 10-minute grace period
+    is over, a call logs the bot back in to the cloud, and its updates stop reaching
+    the relay without an error anywhere.
+  - Nothing outside the VPS talks to Telegram: `TELEGRAM_API_BASE` stays unset
+    locally and in CI.
+- **The shared VPS services belong to the owner.** `~/reverse-proxy/Caddyfile` serves
+  other sites, and `~/telegram_bot/bots.json` serves other bots. When changing either:
+  - only with the owner's go in the current session;
+  - back the file up first;
+  - edit it inode-preserving (`cat >>`, Python `r+`), never with `sed -i`;
+  - validate before the reload or restart;
+  - check the other sites and bots afterwards.
+- **No deploy to the VPS and no DNS change** unless the owner says so in the current
+  session. Local `docker compose up` is always fine.
 - **Money is `NUMERIC(18,2)` in the database, `Decimal` in Python and a string in
   JSON.** Never `float`, not in tests and not in the UI: format with
   `Intl.NumberFormat` from the string, and let the api do the arithmetic.
 - **Deal status changes only through the state-machine service**, with an `events`
   row in the same transaction. A database trigger enforces this (ADR-0002).
-- **Recipient details are encrypted in the app before they reach the database**
-  (ADR-0004). They are masked in every log line and every API response, except for
-  the people Q-B8 allows.
+- **Payment details are encrypted in the app before they reach the database**
+  (ADR-0004, ADR-0010). They are masked in every log line and API response, except
+  for the people Q-B8 allows.
 - **No analytics and no third-party scripts in the frontend.** Sentry comes in v1,
   with the owner's DSN.
-- **Every user-facing string lives in a dictionary**, UI and bot alike. Russian is
-  the only language in the MVP.
+- **Every user-facing string lives in a dictionary, in Russian, English and Georgian**
+  (ADR-0009), UI and bot alike. A PR that adds a string adds all three.
 - **§2 is product policy.** No public order board, no search among strangers, no
   reputation, no escrow, nothing that makes Swap an exchange. Visibility is active
   links only, and links are not transitive.
@@ -63,34 +82,32 @@ and Alembic through `docker compose exec api alembic …`.
   `rate_spec`, rate-source parsing and `initData` validation.
 - **Phases are gated.** A phase starts only after the previous one is accepted and
   the owner has confirmed. The first demo inside phase 1 is link + order + deal
-  without documents, on the test bot.
+  without documents.
 - **One PR per feature, with CI green.** Commits are small, and each message says
   why.
+- **No overengineering** (the owner): the smallest thing that works, then iterate.
 
 ## Layout (target)
 
 ```
-backend/    FastAPI app, aiogram bot, worker, alembic, tests
+backend/    FastAPI app (api), worker with the bot, alembic, tests
 frontend/   Vite app
-deploy/     VPS compose, Caddy site block, release.sh, backup/
-docs/       spec, QUESTIONS, adr/, plan
+deploy/     VPS compose, Caddy site block, vps.sh
+docs/       spec, kickoff, QUESTIONS, adr/, plan
 ```
 
 ## Environment facts
 
 - **This box.** Python 3.12 comes through `uv python`; the system `python3` is 3.11.
   Node is 26, Docker 29, Compose v5. Ports already taken here: 3000, 5173, 5433,
-  5434, 5439, 8000, 8010, 8018, 8020, 8080. Swap's local ports go elsewhere
-  (planned: Caddy 8030, db 5436). The local compose subnet is 10.89.91.0/24, free on
-  2026-10-21; other projects pin 10.89.x.0/24.
-- **VPS (OVH).**
-  - A shared Caddy 2.8, `reverse-proxy`, owns :80/:443 and reaches apps over the
-    external `mcp-shared` network. App containers publish no host ports.
+  5434, 5439, 8000, 8010, 8018, 8020, 8080. Swap's local ports: Caddy 8030, db 5436,
+  Vite 5180. The local compose subnet is 10.89.91.0/24; other projects pin
+  10.89.x.0/24.
+- **VPS (OVH).** Runbook: the `ovh` skill. Swap's own notes on it live in memory, not
+  here.
+  - The shared Caddy 2.8, `reverse-proxy`, owns :80/:443 and reaches apps over the
+    external `mcp-shared` network.
   - A new hostname gets its certificate automatically if its Cloudflare A record is
     grey-cloud.
-  - The Caddyfile is bind-mounted, so edit it in an inode-preserving way (vim,
-    `cat >>`), never with `sed -i`.
-  - Docker's default address pool on the box is nearly exhausted, so pin a subnet
-    and check it on the box first.
-  - Runbook: the `ovh` skill.
-- **GitHub.** Account `format37`; the repo is private.
+  - Anything in the host's network binds `127.0.0.1`, never `0.0.0.0`.
+- **GitHub.** Account `format37`; the repo is public.
