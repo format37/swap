@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { backButton } from '@tma.js/sdk-react'
+import { House, Users } from 'lucide-react'
 import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router'
 
@@ -7,11 +8,17 @@ import { ApiError, type Me } from './api/client'
 import { useMe } from './api/me'
 import { I18nProvider } from './i18n/I18n'
 import { resolveLocale } from './i18n/locale'
+import { useI18n } from './i18n/useI18n'
+import { startRoute } from './routes'
 import { Home } from './screens/Home'
+import { Invite } from './screens/Invite'
 import { Language } from './screens/Language'
+import { LinkScreen } from './screens/LinkScreen'
+import { Links } from './screens/Links'
 import { OutsideTelegram } from './screens/OutsideTelegram'
 import { Problem } from './screens/Problem'
 import type { Launch } from './telegram'
+import { TabBar } from './ui/TabBar'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,13 +33,16 @@ const queryClient = new QueryClient({
   },
 })
 
-/** Telegram's BackButton follows the router: shown off Home, and it goes back. */
+// The tabs' own screens (Q-B14). Everything else sits above one of them.
+const TAB_ROOTS = ['/', '/links']
+
+/** Telegram's BackButton follows the router: hidden on a tab, and it goes back. */
 function BackButtonSync() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   useEffect(() => {
     if (!backButton.isMounted()) return
-    if (pathname === '/') {
+    if (TAB_ROOTS.includes(pathname)) {
       backButton.hide()
       return
     }
@@ -42,14 +52,38 @@ function BackButtonSync() {
   return null
 }
 
-function Screens({ me }: { me: Me }) {
+function Tabs() {
+  const { t } = useI18n()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  if (!TAB_ROOTS.includes(pathname)) return null
   return (
-    <MemoryRouter>
+    <TabBar
+      current={pathname}
+      // Switching tabs replaces the entry, so history only holds what BackButton undoes.
+      onSelect={(path) => void navigate(path, { replace: true })}
+      tabs={[
+        { path: '/', label: t('tab.home'), icon: <House aria-hidden className="size-6" /> },
+        { path: '/links', label: t('tab.links'), icon: <Users aria-hidden className="size-6" /> },
+      ]}
+    />
+  )
+}
+
+function Screens({ me, startParam }: { me: Me; startParam: string | undefined }) {
+  // A deep link opens its card above Home, so BackButton leads Home (ADR-0013).
+  const start = startRoute(startParam)
+  return (
+    <MemoryRouter initialEntries={start ? ['/', start] : ['/']} initialIndex={start ? 1 : 0}>
       <BackButtonSync />
       <Routes>
         <Route path="/" element={<Home me={me} />} />
+        <Route path="/links" element={<Links />} />
+        <Route path="/links/invite" element={<Invite />} />
+        <Route path="/links/:id" element={<LinkScreen />} />
         <Route path="/language" element={<Language />} />
       </Routes>
+      <Tabs />
     </MemoryRouter>
   )
 }
@@ -67,7 +101,7 @@ function SignedIn({ launch }: { launch: Launch }) {
       ) : me.isError ? (
         <Problem error={me.error} retry={() => void me.refetch()} />
       ) : (
-        <Screens me={me.data} />
+        <Screens me={me.data} startParam={launch.startParam} />
       )}
     </I18nProvider>
   )
