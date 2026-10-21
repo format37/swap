@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router'
 
 import { ApiError, type Me } from './api/client'
-import { useMe } from './api/me'
+import { useDeviceTimeZone, useMe } from './api/me'
 import { I18nProvider } from './i18n/I18n'
 import { resolveLocale } from './i18n/locale'
 import { useI18n } from './i18n/useI18n'
@@ -90,6 +90,7 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
 
 function SignedIn({ launch }: { launch: Launch }) {
   const me = useMe()
+  useDeviceTimeZone(me.data)
   // Until /me answers, Telegram's language; afterwards the api's resolved one.
   const locale = resolveLocale(me.data?.locale, launch.languageCode)
   return (
