@@ -1,0 +1,29 @@
+# Swap (github.com/format37/swap): the site block appended once to the VPS's shared
+# ~/reverse-proxy/Caddyfile (ADR-0001). That file is bind-mounted, so append with
+# `cat >>`, which keeps its inode, never `sed -i`. Back it up first, then validate
+# and reload:
+#   sudo docker exec reverse-proxy caddy validate --config /etc/caddy/Caddyfile
+#   sudo docker exec reverse-proxy caddy reload --config /etc/caddy/Caddyfile
+#
+# No `tls` line: Caddy issues the certificate itself, which needs the A record to be
+# DNS-only (grey cloud). The security headers come from the app (swap/api/headers.py),
+# so this block never has to change for them. deploy/Caddyfile.local is its twin.
+swap.latentstate.dev {
+	encode zstd gzip
+	# The api takes JSON only; documents arrive through the bot.
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy swap-api:8000 {
+		# Hold a request across an api restart instead of answering 502. A body that
+		# fits in request_buffers survives the retry too (measured for phonyx on 2.8.4).
+		lb_try_duration 30s
+		lb_try_interval 500ms
+		request_buffers 1MB
+	}
+	# The api has been down longer than lb_try_duration. The one user-facing text
+	# outside the dictionaries, because Caddy can't read them (ADR-0001).
+	handle_errors {
+		respond "Swap is restarting, try again in a minute · Swap обновляется, попробуйте через минуту · Swap ახლდება, სცადეთ ერთ წუთში" 503
+	}
+}
