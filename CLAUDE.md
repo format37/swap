@@ -36,6 +36,17 @@ Phase 0 (skeleton) started on 2026-10-21; `docs/plan.md` has the checklist.
   and `uv run python -m swap.tools.openapi` (prints the schema).
 - Migrations: `DATABASE_URL=postgresql+asyncpg://swap:swap@127.0.0.1:5436/swap uv run
   alembic upgrade head`, and `uv run alembic check` to compare models with the schema.
+- In `frontend/` (Node 24 in CI): `npm ci`; `npm run lint && npm run format:check`;
+  `npx vitest run`; `npm run build && npm run budget` (300 KB gzip, ADR-0003).
+- The API contract (ADR-0007): `uv run python -m swap.tools.openapi >
+  ../frontend/openapi.json` in `backend/`, then `npm run gen:api` in `frontend/`.
+  Commit both files; CI fails when they drift from the api.
+- Trying the app in a desktop browser: run the api (compose, or uvicorn on the host),
+  then `SWAP_API=http://127.0.0.1:<api port> npm run dev` (Vite on 5180). Print a
+  signed launch URL with `TELEGRAM_BOT_TOKEN=… uv run python -m swap.tools.dev_launch
+  --base http://127.0.0.1:5180` and open it with mobile emulation. The api validates
+  it like a real launch, and it expires in an hour. A URL that differs only in its hash
+  doesn't reload the page, so reload by hand.
 - Run `git config core.hooksPath .githooks` once per clone. The pre-commit hook then
   refuses staged bot tokens and `.env` values.
 
