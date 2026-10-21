@@ -25,8 +25,9 @@ When both look wrong, write a question before building around it.
 
 ## Status
 
-Phase 0 (skeleton) since 2026-10-21. It is live at https://swap.latentstate.dev and
-waits for the owner's phone check. `docs/plan.md` has the checklist.
+The owner accepted phase 0 (skeleton) on 2026-10-22; it is live at
+https://swap.latentstate.dev. Phase 1 (MVP) is next, slice 1 first (ADR-0006).
+Its checklist goes into `docs/plan.md`.
 
 ## Commands
 
