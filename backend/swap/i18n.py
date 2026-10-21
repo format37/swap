@@ -34,6 +34,25 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "start.hint": "Всё происходит в приложении. Откройте его кнопкой ниже.",
         "button.open": "Открыть Swap",
+        "button.open_card": "Открыть",
+        "invite.requested": (
+            "{name} приглашает вас в Swap.\n\n"
+            "Swap помогает знакомым договариваться об обмене денег между странами: каждый "
+            "платит получателю другого у себя. Сам Swap деньги не хранит и не переводит, "
+            "он только планирует и записывает.\n\n"
+            "Откройте приглашение, чтобы установить связь или отклонить его."
+        ),
+        "invite.linked": (
+            "Связь установлена: {name}. Теперь вы видите заявки друг друга, открытые для связей."
+        ),
+        "invite.already_linked": "Связь уже есть: {name}.",
+        "invite.own": (
+            "Это ваша собственная ссылка-приглашение. Отправьте её тому, кого хотите пригласить."
+        ),
+        "invite.invalid": (
+            "Это приглашение больше не действует: оно истекло, отозвано или уже "
+            "использовано. Попросите прислать новое."
+        ),
         "bot.command.start": "Открыть Swap",
         "bot.short_description": (
             "Обмен деньгами между странами с людьми, которых вы знаете. Swap планирует "
@@ -55,6 +74,25 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "start.hint": "Everything happens in the app. Open it with the button below.",
         "button.open": "Open Swap",
+        "button.open_card": "Open",
+        "invite.requested": (
+            "{name} invites you to Swap.\n\n"
+            "Swap helps people who know each other arrange money swaps across countries: "
+            "each pays the other's recipient at home. Swap itself never holds or moves "
+            "money; it only plans and records.\n\n"
+            "Open the invitation to link up or to decline it."
+        ),
+        "invite.linked": (
+            "Linked: {name}. You now see each other's offers that are open to links."
+        ),
+        "invite.already_linked": "You are already linked: {name}.",
+        "invite.own": (
+            "This is your own invitation link. Send it to the person you want to invite."
+        ),
+        "invite.invalid": (
+            "This invitation no longer works: it expired, was revoked or has already been "
+            "used. Ask for a new one."
+        ),
         "bot.command.start": "Open Swap",
         "bot.short_description": (
             "Swap money across countries with people you know. Swap plans and records; "
@@ -77,6 +115,25 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "start.hint": "ყველაფერი აპლიკაციაში ხდება. გახსენით ის ქვემოთ მოცემული ღილაკით.",
         "button.open": "Swap-ის გახსნა",
+        "button.open_card": "გახსნა",
+        "invite.requested": (
+            "{name} გიწვევთ Swap-ში.\n\n"
+            "Swap ეხმარება ნაცნობებს, შეთანხმდნენ ფულის გაცვლაზე ქვეყნებს შორის: "
+            "თითოეული უხდის მეორის მიმღებს საკუთარ ქვეყანაში. თავად Swap ფულს არ ინახავს "
+            "და არ გადარიცხავს, ის მხოლოდ გეგმავს და აღრიცხავს.\n\n"
+            "გახსენით მოწვევა, რომ დაუკავშირდეთ ან უარი თქვათ."
+        ),
+        "invite.linked": (
+            "კავშირი დამყარდა: {name}. ახლა ერთმანეთის განცხადებებს ხედავთ, რომლებიც "
+            "კავშირებისთვისაა გახსნილი."
+        ),
+        "invite.already_linked": "კავშირი უკვე არსებობს: {name}.",
+        "invite.own": (
+            "ეს თქვენი საკუთარი მოსაწვევი ბმულია. გაუგზავნეთ ის მას, ვისი მოწვევაც გსურთ."
+        ),
+        "invite.invalid": (
+            "ეს მოწვევა აღარ მოქმედებს: ვადა გაუვიდა, გაუქმდა ან უკვე გამოყენებულია. სთხოვეთ ახალი."
+        ),
         "bot.command.start": "Swap-ის გახსნა",
         "bot.short_description": (
             "ფულის გაცვლა ქვეყნებს შორის ნაცნობებთან. Swap გეგმავს და აღრიცხავს, ფულს არ ინახავს."
