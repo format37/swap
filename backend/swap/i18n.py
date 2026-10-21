@@ -42,7 +42,11 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "он только планирует и записывает.\n\n"
             "Откройте приглашение, чтобы установить связь или отклонить его."
         ),
-        "invite.linked": (
+        "link.requested": (
+            "{name} хочет установить с вами связь в Swap. Связанные видят заявки друг "
+            "друга, открытые для связей."
+        ),
+        "link.established": (
             "Связь установлена: {name}. Теперь вы видите заявки друг друга, открытые для связей."
         ),
         "invite.already_linked": "Связь уже есть: {name}.",
@@ -82,7 +86,11 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "money; it only plans and records.\n\n"
             "Open the invitation to link up or to decline it."
         ),
-        "invite.linked": (
+        "link.requested": (
+            "{name} wants to link with you in Swap. Linked people see each other's offers "
+            "that are open to links."
+        ),
+        "link.established": (
             "Linked: {name}. You now see each other's offers that are open to links."
         ),
         "invite.already_linked": "You are already linked: {name}.",
@@ -123,7 +131,11 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "და არ გადარიცხავს, ის მხოლოდ გეგმავს და აღრიცხავს.\n\n"
             "გახსენით მოწვევა, რომ დაუკავშირდეთ ან უარი თქვათ."
         ),
-        "invite.linked": (
+        "link.requested": (
+            "{name} გთხოვთ, დაუკავშირდეთ Swap-ში. დაკავშირებულები ხედავენ ერთმანეთის "
+            "განცხადებებს, რომლებიც კავშირებისთვისაა გახსნილი."
+        ),
+        "link.established": (
             "კავშირი დამყარდა: {name}. ახლა ერთმანეთის განცხადებებს ხედავთ, რომლებიც "
             "კავშირებისთვისაა გახსნილი."
         ),

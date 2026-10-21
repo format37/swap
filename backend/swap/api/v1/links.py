@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Literal, Self
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from swap import links
 from swap.api.deps import AppSettings, CurrentUser, Db
@@ -94,6 +94,21 @@ async def create_invite(user: CurrentUser, db: Db, settings: AppSettings) -> New
     )
 
 
+class LinkRequest(BaseModel):
+    # With or without the @; Telegram's own limit is 32 characters.
+    username: str = Field(min_length=1, max_length=64)
+
+
+@router.post(
+    "/requests",
+    responses={404: {"model": Problem}, 409: {"model": Problem}, 429: {"model": Problem}},
+)
+async def request_link(body: LinkRequest, user: CurrentUser, db: Db) -> Link:
+    """Ask someone to link by their @username. When they had already asked, it links."""
+    link = await links.request_by_username(db, user, body.username)
+    return await _answered(db, link, user.id)
+
+
 @router.delete(
     "/invites/{invite_id}",
     status_code=204,
@@ -120,7 +135,7 @@ async def _answered(db: Db, link: LinkRow, me: uuid.UUID) -> Link:
 
 @router.post("/{link_id}/accept", responses={404: {"model": Problem}, 409: {"model": Problem}})
 async def accept_link(link_id: uuid.UUID, user: CurrentUser, db: Db) -> Link:
-    return await _answered(db, await links.accept(db, user.id, link_id), user.id)
+    return await _answered(db, await links.accept(db, user, link_id), user.id)
 
 
 @router.post("/{link_id}/decline", responses={404: {"model": Problem}, 409: {"model": Problem}})
