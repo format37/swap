@@ -330,3 +330,29 @@ class OrderVisibility(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
     )
+
+
+class PaymentMethod(Base):
+    """Someone's saved payment details for one asset (ADR-0010).
+
+    The kind and title stay in the clear, for lists and bot messages. The text is a sealed
+    envelope with its mask (ADR-0004). Deleting one is a real delete: a deal keeps its own
+    copy of what it used.
+    """
+
+    __tablename__ = "payment_methods"
+    __table_args__ = (
+        CheckConstraint(asset_check("asset"), name="asset"),
+        CheckConstraint(one_of("kind", PaymentKind), name="kind"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    asset: Mapped[str] = mapped_column(String(8))
+    kind: Mapped[str] = mapped_column(Text)
+    title: Mapped[str] = mapped_column(Text)
+    # The sealed text; null when there is none, as for cash.
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

@@ -400,6 +400,42 @@
         "title": "NewInvite",
         "type": "object"
       },
+      "NewPaymentMethod": {
+        "additionalProperties": false,
+        "properties": {
+          "asset": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Asset",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PaymentKind"
+          },
+          "text": {
+            "default": "",
+            "format": "password",
+            "title": "Text",
+            "type": "string",
+            "writeOnly": true
+          },
+          "title": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset",
+          "kind",
+          "title"
+        ],
+        "title": "NewPaymentMethod",
+        "type": "object"
+      },
       "Order": {
         "properties": {
           "amount_max": {
@@ -648,6 +684,51 @@
         "title": "PaymentKind",
         "type": "string"
       },
+      "PaymentMethod": {
+        "properties": {
+          "asset": {
+            "title": "Asset",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SealedText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PaymentKind"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "asset",
+          "kind",
+          "title",
+          "details",
+          "created_at"
+        ],
+        "title": "PaymentMethod",
+        "type": "object"
+      },
       "Person": {
         "properties": {
           "first_name": {
@@ -824,6 +905,32 @@
           "amount"
         ],
         "title": "QuoteResult",
+        "type": "object"
+      },
+      "SealedText": {
+        "description": "Payment details as the api shows them: the mask to all, the text to those Q-B8 allows.",
+        "properties": {
+          "full": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full"
+          },
+          "masked": {
+            "title": "Masked",
+            "type": "string"
+          }
+        },
+        "required": [
+          "masked",
+          "full"
+        ],
+        "title": "SealedText",
         "type": "object"
       },
       "SignedIn": {
@@ -1947,6 +2054,181 @@
         "summary": "Close Order",
         "tags": [
           "orders"
+        ]
+      }
+    },
+    "/api/v1/payment-methods": {
+      "get": {
+        "operationId": "list_payment_methods",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentMethod"
+                  },
+                  "title": "Response List Payment Methods",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Payment Methods",
+        "tags": [
+          "payment details"
+        ]
+      },
+      "post": {
+        "operationId": "add_payment_method",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPaymentMethod"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethod"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Payment Method",
+        "tags": [
+          "payment details"
+        ]
+      }
+    },
+    "/api/v1/payment-methods/{method_id}": {
+      "delete": {
+        "operationId": "delete_payment_method",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "method_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Method Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Payment Method",
+        "tags": [
+          "payment details"
         ]
       }
     },
