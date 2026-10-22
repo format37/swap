@@ -916,7 +916,22 @@
             "type": "array"
           },
           "rate_spec": {
-            "$ref": "#/components/schemas/FixedRate"
+            "discriminator": {
+              "mapping": {
+                "fixed": "#/components/schemas/FixedRate",
+                "reference": "#/components/schemas/ReferenceRate"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FixedRate"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenceRate"
+              }
+            ],
+            "title": "Rate Spec"
           },
           "receive_methods": {
             "items": {
@@ -1043,7 +1058,22 @@
             "type": "array"
           },
           "rate_spec": {
-            "$ref": "#/components/schemas/FixedRate"
+            "discriminator": {
+              "mapping": {
+                "fixed": "#/components/schemas/FixedRate",
+                "reference": "#/components/schemas/ReferenceRate"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FixedRate"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenceRate"
+              }
+            ],
+            "title": "Rate Spec"
           },
           "receive_methods": {
             "items": {
@@ -1352,6 +1382,55 @@
         "title": "Quote",
         "type": "object"
       },
+      "QuoteRate": {
+        "description": "\u00ab1 base = value quote\u00bb: the rate the amount came from, to show beside it.",
+        "properties": {
+          "base": {
+            "title": "Base",
+            "type": "string"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "const": "coinbase",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "quote",
+          "value"
+        ],
+        "title": "QuoteRate",
+        "type": "object"
+      },
       "QuoteRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1372,7 +1451,22 @@
             "type": "string"
           },
           "rate_spec": {
-            "$ref": "#/components/schemas/FixedRate"
+            "discriminator": {
+              "mapping": {
+                "fixed": "#/components/schemas/FixedRate",
+                "reference": "#/components/schemas/ReferenceRate"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FixedRate"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenceRate"
+              }
+            ],
+            "title": "Rate Spec"
           },
           "want_currency": {
             "examples": [
@@ -1403,24 +1497,52 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "type": "string"
+          },
+          "rate": {
+            "$ref": "#/components/schemas/QuoteRate"
           }
         },
         "required": [
-          "amount"
+          "amount",
+          "rate"
         ],
         "title": "QuoteResult",
         "type": "object"
       },
       "Rate": {
-        "description": "\u00ab1 base = value quote\u00bb, as the order's author typed it, locked at the proposal.",
+        "description": "\u00ab1 base = value quote\u00bb, as the order's author typed it or the market had it, locked\nat the proposal.",
         "properties": {
           "base": {
             "title": "Base",
             "type": "string"
           },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
           "quote": {
             "title": "Quote",
             "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "const": "coinbase",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "value": {
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -1434,6 +1556,32 @@
           "value"
         ],
         "title": "Rate",
+        "type": "object"
+      },
+      "ReferenceRate": {
+        "additionalProperties": false,
+        "description": "`rate_spec` v1 of type reference: the market's rate whenever someone looks, and the\nrate of the moment once a proposal locks it (QUESTIONS G2, ADR-0022). Coinbase is the\none source so far (ADR-0020). A markup can join it later with a default.",
+        "properties": {
+          "source": {
+            "const": "coinbase",
+            "default": "coinbase",
+            "title": "Source",
+            "type": "string"
+          },
+          "type": {
+            "const": "reference",
+            "default": "reference",
+            "title": "Type",
+            "type": "string"
+          },
+          "v": {
+            "const": 1,
+            "default": 1,
+            "title": "V",
+            "type": "integer"
+          }
+        },
+        "title": "ReferenceRate",
         "type": "object"
       },
       "Resolution": {
@@ -3843,7 +3991,7 @@
     },
     "/api/v1/orders/{order_id}/deals": {
       "post": {
-        "description": "Propose a deal on an order open to you (FR-4.1).",
+        "description": "Propose a deal on an order open to you (FR-4.1), at its rate of this moment.",
         "operationId": "propose_deal",
         "parameters": [
           {
@@ -4196,7 +4344,7 @@
     },
     "/api/v1/quote": {
       "post": {
-        "description": "What `amount` of the give currency comes to in the want currency.",
+        "description": "What `amount` of the give currency comes to in the want currency, at the order's\nrate: the author's, or the market's of the moment (QUESTIONS G2).",
         "operationId": "quote",
         "requestBody": {
           "content": {
@@ -4238,6 +4386,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "security": [

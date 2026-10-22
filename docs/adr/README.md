@@ -30,6 +30,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0019](0019-orders-after-the-first-test.md) | Orders after the first test: no minimum or last day needed, ways to be paid, reopen and delete | Accepted |
 | [0020](0020-market-rate-from-coinbase.md) | The wizard's rate starts at the market's: Coinbase's public rates | Accepted |
 | [0021](0021-deals-plan-the-exchange-only.md) | Deals plan the exchange only: no payment details, three ways to pay | Accepted |
+| [0022](0022-market-rate-by-default.md) | An order follows the market unless its author fixes the rate | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the

@@ -422,6 +422,10 @@ class Deal(Base):
     rate_locked_at: Mapped[datetime]
     # The counter-amount was rounded to whole units (Q-B4).
     whole: Mapped[bool] = mapped_column(server_default=false())
+    # Where a market rate came from, and when it said so; None for the author's own
+    # (FR-3.5, QUESTIONS G2).
+    rate_source: Mapped[str | None] = mapped_column(Text)
+    rate_fetched_at: Mapped[datetime | None]
     # A proposal lapses at this moment (FR-4.4).
     expires_at: Mapped[datetime]
     accepted_at: Mapped[datetime | None]

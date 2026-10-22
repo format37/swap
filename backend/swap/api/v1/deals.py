@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from swap import deals
-from swap.api.deps import CurrentUser, Db
+from swap.api.deps import CurrentUser, Db, MarketRates
 from swap.api.errors import Problem
 from swap.api.v1.people import Person
 from swap.deals import Dispute, Proposal
@@ -42,11 +42,15 @@ class Leg(BaseModel):
 
 
 class Rate(BaseModel):
-    """«1 base = value quote», as the order's author typed it, locked at the proposal."""
+    """«1 base = value quote», as the order's author typed it or the market had it, locked
+    at the proposal."""
 
     base: str
     quote: str
     value: Decimal
+    # The market's: its source, and when it said so (FR-3.5). None for the author's own.
+    source: Literal["coinbase"] | None = None
+    fetched_at: datetime | None = None
 
 
 class DealEvent(BaseModel):
@@ -137,9 +141,15 @@ class Deal(BaseModel):
 
 
 def _rate(deal: DealRow) -> Rate:
-    """The quote as its author typed it («29,20»), from the deal's own copy of the spec."""
+    """The quote as it was locked («29,20»), from the deal's own copy of the spec."""
     quote = FixedRate.model_validate(deal.rate_spec).quote_for(deal.rate_base, deal.rate_quote)
-    return Rate(base=quote.base, quote=quote.quote, value=quote.value)
+    return Rate(
+        base=quote.base,
+        quote=quote.quote,
+        value=quote.value,
+        source="coinbase" if deal.rate_source == "coinbase" else None,
+        fetched_at=deal.rate_fetched_at,
+    )
 
 
 def _event(event: Event) -> DealEvent:
@@ -177,9 +187,11 @@ async def _done(db: Db, row: DealRow, viewer: uuid.UUID) -> Deal:
     status_code=201,
     responses={**REFUSALS, 422: {"model": Problem}},
 )
-async def propose_deal(order_id: uuid.UUID, body: Proposal, user: CurrentUser, db: Db) -> Deal:
-    """Propose a deal on an order open to you (FR-4.1)."""
-    row = await deals.propose(db, user, order_id, body)
+async def propose_deal(
+    order_id: uuid.UUID, body: Proposal, user: CurrentUser, db: Db, market: MarketRates
+) -> Deal:
+    """Propose a deal on an order open to you (FR-4.1), at its rate of this moment."""
+    row = await deals.propose(db, user, order_id, body, market)
     return await _done(db, row, user.id)
 
 

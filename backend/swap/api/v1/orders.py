@@ -15,7 +15,7 @@ from swap.api.v1.people import Person
 from swap.models import Order as OrderRow
 from swap.models import OrderStatus, PaymentKind, User
 from swap.orders import OrderDraft, Want
-from swap.rates import FixedRate
+from swap.rates import RateSpec, parse_spec
 
 router = APIRouter(prefix="/orders", tags=["orders"], responses={401: {"model": Problem}})
 
@@ -43,7 +43,7 @@ class Order(BaseModel):
     payout_methods: list[PaymentKind]
     receive_methods: list[PaymentKind]
     wants: list[Want]
-    rate_spec: FixedRate
+    rate_spec: RateSpec
     note: str | None
     status: OrderStatus
     created_at: datetime
@@ -66,7 +66,7 @@ class Order(BaseModel):
             payout_methods=[PaymentKind(kind) for kind in order.payout_methods],
             receive_methods=[PaymentKind(kind) for kind in order.receive_methods],
             wants=[Want(currency=want.currency, country=want.country) for want in order.wants],
-            rate_spec=FixedRate.model_validate(order.rate_spec),
+            rate_spec=parse_spec(order.rate_spec),
             note=order.note,
             status=OrderStatus(order.status),
             created_at=order.created_at,

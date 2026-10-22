@@ -60,6 +60,23 @@ describe('the deal card', () => {
     expect(screen.getByRole('button', { name: 'Отменить сделку' })).toBeInTheDocument()
   })
 
+  it('says where a market rate came from, and when', async () => {
+    const at = new Date()
+    at.setHours(12, 0, 0, 0)
+    const rate = {
+      base: 'GEL',
+      quote: 'RUB',
+      value: '31.39',
+      source: 'coinbase' as const,
+      fetched_at: at.toISOString(),
+    }
+    fakeApi({ [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal({ rate })) })
+    renderScreen(<DealCard me={meOf(NINO)} />, { route, path })
+    expect(await screen.findByText(/Курс зафиксирован при предложении/)).toHaveTextContent(
+      '1 ₾GEL = 31,39 ₽RUB· по рынку Coinbase, 12:00',
+    )
+  })
+
   it('marks a transfer sent only once that is confirmed', async () => {
     const { served } = fakeApi({
       [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal({ status: 'accepted' })),
@@ -151,7 +168,11 @@ describe('the proposal', () => {
     let sent: unknown
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER.id}`]: () => json(200, ORDER),
-      'POST /api/v1/quote': () => json(200, { amount: '1712.33' }),
+      'POST /api/v1/quote': () =>
+        json(200, {
+          amount: '1712.33',
+          rate: { base: 'GEL', quote: 'RUB', value: '29.20', source: null, fetched_at: null },
+        }),
       [`POST /api/v1/orders/${ORDER.id}/deals`]: async (request) => {
         sent = await request.json()
         return json(201, deal())
