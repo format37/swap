@@ -6,6 +6,7 @@ import os
 from collections.abc import AsyncIterator
 
 import asyncpg
+import httpx
 import pytest
 from alembic import command
 from alembic.config import Config
@@ -23,6 +24,7 @@ from sqlalchemy.ext.asyncio import (
 from swap.api.app import create_app
 from swap.config import Settings
 from swap.crypto import new_key
+from swap.market import Market
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+asyncpg://swap:swap@127.0.0.1:5436/swap_test"
@@ -31,6 +33,19 @@ TEST_DATABASE_URL = os.environ.get(
 TEST_BOT_TOKEN = "123456789:" + "T" * 35
 # A fresh key per run seals payment details in tests (ADR-0004).
 TEST_RECIPIENT_KEYS = f"k1:{new_key()}"
+# Coinbase's table as it was on 2026-10-22, cut short: tests never call out (ADR-0020).
+COINBASE = {
+    "data": {
+        "currency": "USD",
+        "rates": {
+            "RUB": "81.386641",
+            "GEL": "2.5924766666666667",
+            "EUR": "0.889521046386925",
+            "USDT": "1.001081167661074",
+            "USD": "1.0",
+        },
+    }
+}
 
 
 async def _ensure_database(url: str) -> None:
@@ -103,6 +118,8 @@ def settings() -> Settings:
 async def client(
     settings: Settings, sessionmaker: async_sessionmaker[AsyncSession]
 ) -> AsyncIterator[AsyncClient]:
-    app = create_app(settings, sessionmaker=sessionmaker)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield client
+    coinbase = httpx.MockTransport(lambda request: httpx.Response(200, json=COINBASE))
+    async with httpx.AsyncClient(transport=coinbase) as outside:
+        app = create_app(settings, sessionmaker=sessionmaker, market=Market(outside))
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            yield client

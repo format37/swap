@@ -11,6 +11,7 @@ dependencies = [
     "asyncpg>=0.30",
     "cryptography>=46",
     "fastapi>=0.118",
+    "httpx>=0.28",
     "pydantic-settings>=2.10",
     "sqlalchemy[asyncio]>=2.0.43",
     "structlog>=25.4",
@@ -19,7 +20,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28",
     "mypy>=1.18",
     "pytest>=8.4",
     "pytest-asyncio>=1.2",

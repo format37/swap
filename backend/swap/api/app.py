@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
@@ -19,6 +20,7 @@ from swap.config import Settings, get_settings
 from swap.crypto import Keys
 from swap.db import Sessionmaker, create_engine, create_sessionmaker
 from swap.logs import configure_logging
+from swap.market import TIMEOUT_S, Market
 
 
 def _operation_id(route: APIRoute) -> str:
@@ -27,9 +29,13 @@ def _operation_id(route: APIRoute) -> str:
 
 
 def create_app(
-    settings: Settings | None = None, *, sessionmaker: Sessionmaker | None = None
+    settings: Settings | None = None,
+    *,
+    sessionmaker: Sessionmaker | None = None,
+    market: Market | None = None,
 ) -> FastAPI:
-    """Build the app. Tests pass a `sessionmaker` bound to their own transaction."""
+    """Build the app. Tests pass a `sessionmaker` bound to their own transaction, and a
+    `market` that answers without the network."""
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.log_format, settings.secrets())
 
@@ -38,9 +44,17 @@ def create_app(
         engine = create_engine(settings.database_url)
         sessionmaker = create_sessionmaker(engine)
 
+    # Coinbase, for the wizard's rate (ADR-0020); the only call the api makes outside.
+    outside = None
+    if market is None:
+        outside = httpx.AsyncClient(timeout=TIMEOUT_S)
+        market = Market(outside)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
+        if outside is not None:
+            await outside.aclose()
         if engine is not None:
             await engine.dispose()
 
@@ -57,6 +71,7 @@ def create_app(
     )
     app.state.settings = settings
     app.state.sessionmaker = sessionmaker
+    app.state.market = market
     # Built once at start, so a malformed key fails the deploy, not a request (ADR-0004).
     app.state.keys = (
         Keys(settings.recipient_keys, settings.recipient_key_id)
