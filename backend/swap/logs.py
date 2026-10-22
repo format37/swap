@@ -11,7 +11,8 @@ import logging
 import re
 import sys
 from collections.abc import Iterable, Mapping
-from typing import Any
+from types import TracebackType
+from typing import Any, cast
 
 import structlog
 from structlog.typing import EventDict, Processor, WrappedLogger
@@ -65,6 +66,29 @@ class Redactor:
         return {k: REDACTED if _sensitive(k) else self.clean(v) for k, v in event_dict.items()}
 
 
+ExcInfo = tuple[type[BaseException], BaseException, TracebackType | None]
+
+
+def _exc_info(value: object) -> ExcInfo | None:
+    """structlog's `exc_info` as the stdlib takes it: an exception, a tuple or True."""
+    if isinstance(value, tuple):
+        return cast(ExcInfo, value)
+    error = value if isinstance(value, BaseException) else sys.exception() if value else None
+    return None if error is None else (type(error), error, error.__traceback__)
+
+
+def _wrap_for_formatter(
+    logger: WrappedLogger, name: str, event_dict: EventDict
+) -> tuple[tuple[EventDict], dict[str, Any]]:
+    """structlog's own wrapper, plus the exception on the stdlib record, where Sentry
+    looks for it (ADR-0025). Our formatter still renders it from the event dict."""
+    args, wrapped = structlog.stdlib.ProcessorFormatter.wrap_for_formatter(logger, name, event_dict)
+    kwargs: dict[str, Any] = dict(wrapped)
+    if (info := _exc_info(event_dict.get("exc_info"))) is not None:
+        kwargs["exc_info"] = info
+    return args, kwargs
+
+
 def configure_logging(level: str = "INFO", fmt: str = "json", secrets: Iterable[str] = ()) -> None:
     """Send structlog and the standard library through one redacting handler on stderr.
 
@@ -82,7 +106,7 @@ def configure_logging(level: str = "INFO", fmt: str = "json", secrets: Iterable[
         else structlog.dev.ConsoleRenderer(colors=False)
     )
     structlog.configure(
-        processors=[*shared, structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
+        processors=[*shared, _wrap_for_formatter],
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=False,

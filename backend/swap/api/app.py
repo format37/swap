@@ -20,6 +20,7 @@ from swap.config import Settings, get_settings
 from swap.db import Sessionmaker, create_engine, create_sessionmaker
 from swap.logs import configure_logging
 from swap.market import TIMEOUT_S, Market
+from swap.sentry import init_sentry
 
 
 def _operation_id(route: APIRoute) -> str:
@@ -37,6 +38,7 @@ def create_app(
     `market` that answers without the network."""
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.log_format, settings.secrets())
+    init_sentry(settings, "api")
 
     engine = None
     if sessionmaker is None:
@@ -71,7 +73,7 @@ def create_app(
     app.state.settings = settings
     app.state.sessionmaker = sessionmaker
     app.state.market = market
-    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware, sentry_dsn=settings.sentry_dsn)
     install_problem_handlers(app)
     app.include_router(health.router)
     app.include_router(v1.router)
