@@ -65,6 +65,17 @@ it('offers the ways of the currency picked, keeping one that it takes too (L1)',
   expect(withWant(filled({ counterMethod: 'cash' }), two, 'USD').counterMethod).toBe('')
 })
 
+it('reads back the amount it fills in, in English too (M2)', () => {
+  const english: ProposalForm = {
+    ...emptyProposal(ORDER, 'en'),
+    giveMethod: 'bank',
+    counterMethod: 'cash',
+  }
+  expect(english.amount).toBe('150,000')
+  expect(proposalProblem(english, ORDER)).toBeNull()
+  expect(toProposal(english).amount).toBe('150000')
+})
+
 it('turns a filled form into exactly what the api takes', () => {
   expect(toProposal(filled())).toEqual({
     amount: '50000',

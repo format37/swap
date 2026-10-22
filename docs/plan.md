@@ -306,8 +306,8 @@ card and the tab bar.
 **The owner's notes after testing part L (2026-10-22).** QUESTIONS part M.
 
 **PR 1.36 — Amounts typed in any language's way** (M2; ADR-0040)
-- [ ] `parseAmount` reads «150,000» and «1,712.33» as well as «150 000» and «1 712,33».
-- [ ] The wizard's «You get» and the proposal's amount work in English.
+- [x] `parseAmount` reads «150,000» and «1,712.33» as well as «150 000» and «1 712,33».
+- [x] The wizard's «You get» and the proposal's amount work in English.
 
 **PR 1.37 — After deleting, Home** (M1)
 - [ ] Deleting an order or a deal leaves for Home, without refreshing the card it leaves.

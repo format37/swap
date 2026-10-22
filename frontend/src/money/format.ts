@@ -26,22 +26,43 @@ export function formatRate(locale: Locale, value: string): string {
   }).format(value as Intl.StringNumericLiteral)
 }
 
+const SPACES = /[\s\u00a0\u202f]/g
+
 function plain(text: string): string {
   return text
-    .replace(/[\s\u00a0\u202f]/g, '')
+    .replace(SPACES, '')
     .replace(',', '.')
     .replace(/^0+(?=\d)/, '')
 }
 
-/** What someone typed into an amount field, «150 000» or «1712,5», as the api wants it. */
+/**
+ * An amount's digits, with a point for the decimals, however its language writes it
+ * (ADR-0040): «150 000», «150,000», «1 712,33», «1,712.33». Money has at most two decimals,
+ * so the last comma or point before one or two digits is the decimal point; any other
+ * comma groups thousands, three digits each. A point never groups.
+ */
+function amountDigits(text: string): string | null {
+  const squeezed = text.replace(SPACES, '')
+  const split = /^(.*)[.,](\d{1,2})$/.exec(squeezed)
+  const [whole, cents] = split ? [split[1] ?? '', split[2] ?? ''] : [squeezed, '']
+  if (!/^\d+$|^\d{1,3}(,\d{3})+$/.test(whole)) return null
+  const digits = whole.replaceAll(',', '').replace(/^0+(?=\d)/, '')
+  return cents ? `${digits}.${cents}` : digits
+}
+
+/**
+ * What someone typed into an amount field, or what the app wrote there, as the api wants
+ * it: «1 712,33» and «1,712.33» are both «1712.33» (QUESTIONS M2).
+ */
 export function parseAmount(text: string): string | null {
-  const value = plain(text)
-  return AMOUNT.test(value) && !ZERO.test(value) ? value : null
+  const value = amountDigits(text)
+  return value !== null && AMOUNT.test(value) && !ZERO.test(value) ? value : null
 }
 
 /** An amount that may be left empty: blank or zero is '0', as an order's minimum (F4). */
 export function parseAmountOrZero(text: string): string | null {
-  return ZERO.test(plain(text)) ? '0' : parseAmount(text)
+  const value = text.replace(SPACES, '') === '' ? '0' : amountDigits(text)
+  return value !== null && ZERO.test(value) ? '0' : parseAmount(text)
 }
 
 /** Whether a decimal string from the api is zero: «0.00». */
