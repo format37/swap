@@ -724,6 +724,10 @@
             ],
             "title": "Photo Url"
           },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
           "tz": {
             "anyOf": [
               {
@@ -753,6 +757,7 @@
           "last_name",
           "username",
           "photo_url",
+          "score",
           "locale",
           "locale_chosen",
           "tz"
@@ -1169,6 +1174,10 @@
             ],
             "title": "Photo Url"
           },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
           "username": {
             "anyOf": [
               {
@@ -1186,7 +1195,8 @@
           "first_name",
           "last_name",
           "username",
-          "photo_url"
+          "photo_url",
+          "score"
         ],
         "title": "Person",
         "type": "object"

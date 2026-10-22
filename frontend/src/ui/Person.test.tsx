@@ -1,7 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { vi } from 'vitest'
 
+import { I18nProvider } from '../i18n/I18n'
+import { explain } from '../telegram'
 import { Avatar } from './Avatar'
 import { Person } from './Person'
+
+vi.mock('../telegram', () => ({ explain: vi.fn(() => Promise.resolve()) }))
+
+function inRussian(ui: ReactElement) {
+  return render(<I18nProvider locale="ru">{ui}</I18nProvider>)
+}
 
 const PHOTO = 'https://t.me/i/userpic/320/nino.jpg'
 const NINO = {
@@ -10,6 +20,7 @@ const NINO = {
   last_name: 'B',
   username: 'nino',
   photo_url: PHOTO,
+  score: 0,
 }
 
 it('shows the Telegram photo, straight from Telegram (J4)', () => {
@@ -39,13 +50,30 @@ it('takes Telegram’s 1×1 stand-in for a hidden photo as no photo', () => {
 })
 
 it('puts the name and, under it, the @username to the right of the photo', () => {
-  render(<Person person={NINO} detail="с 21 окт." />)
+  inRussian(<Person person={NINO} detail="с 21 окт." />)
   expect(screen.getByText('Nino B')).toBeInTheDocument()
   expect(screen.getByText('@nino · с 21 окт.')).toBeInTheDocument()
 })
 
 it('makes the name a heading on a screen about the person', () => {
-  render(<Person person={{ ...NINO, username: null, photo_url: null }} heading detail="Сделка" />)
+  inRussian(
+    <Person person={{ ...NINO, username: null, photo_url: null }} heading detail="Сделка" />,
+  )
   expect(screen.getByRole('heading', { name: 'Nino B' })).toBeInTheDocument()
   expect(screen.getByText('Сделка')).toBeInTheDocument()
+})
+
+it('shows the score beside the name, and explains it on a tap in a heading (J5)', () => {
+  const { rerender } = inRussian(<Person person={{ ...NINO, score: 7 }} />)
+  // In a row that is itself a button, the score only shows.
+  expect(screen.getByRole('img', { name: 'Скор: 7' })).toHaveTextContent('7')
+  rerender(
+    <I18nProvider locale="ru">
+      <Person person={{ ...NINO, score: 7 }} heading />
+    </I18nProvider>,
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Скор: 7' }))
+  expect(explain).toHaveBeenCalledWith(
+    'Успешные сделки с разными людьми: 7. Повторные сделки с тем же человеком не прибавляют.',
+  )
 })

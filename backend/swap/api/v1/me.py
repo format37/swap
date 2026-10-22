@@ -21,6 +21,8 @@ class Me(BaseModel):
     last_name: str | None
     username: str | None
     photo_url: str | None
+    # How many different people they settled a deal with (ADR-0029).
+    score: int
     # The language to show, already resolved; `locale_chosen` says whether the user
     # picked it or it came from Telegram.
     locale: Locale
@@ -36,6 +38,7 @@ class Me(BaseModel):
             last_name=user.last_name,
             username=user.username,
             photo_url=user.photo_url,
+            score=user.score,
             locale=resolve_locale(user.locale, user.language_code),
             locale_chosen=user.locale is not None,
             tz=user.tz,

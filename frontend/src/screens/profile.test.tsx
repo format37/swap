@@ -12,6 +12,7 @@ const me: Me = {
   last_name: 'B',
   username: 'nino',
   photo_url: null,
+  score: 0,
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',

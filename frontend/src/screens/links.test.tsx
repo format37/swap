@@ -34,6 +34,7 @@ const ALEX = {
   last_name: null,
   username: 'format37',
   photo_url: null,
+  score: 0,
 }
 const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
@@ -41,6 +42,7 @@ const NINO = {
   last_name: 'B',
   username: 'nino',
   photo_url: null,
+  score: 0,
 }
 const GIO = {
   id: 'a0000000-0000-4000-8000-000000000003',
@@ -48,6 +50,7 @@ const GIO = {
   last_name: null,
   username: null,
   photo_url: null,
+  score: 0,
 }
 const LINK_ID = 'b0000000-0000-4000-8000-000000000001'
 
@@ -95,12 +98,12 @@ describe('the «Связи» tab', () => {
     })
     renderScreen(<Links />, { route: '/links' })
     const requests = (await screen.findByRole('heading', { name: 'Запросы' })).parentElement
-    expect(requests).toHaveTextContent('Alex@format37')
+    expect(requests).toHaveTextContent('Alex0@format37')
     expect(screen.getByRole('heading', { name: 'Мои связи' }).parentElement).toHaveTextContent(
-      'Nino B@nino · с 21 окт.',
+      'Nino B0@nino · с 21 окт.',
     )
     expect(screen.getByRole('heading', { name: 'Отправленные' }).parentElement).toHaveTextContent(
-      'Gioждёт ответа',
+      'Gio0ждёт ответа',
     )
     expect(screen.getByText('Ссылка действует до 25 окт.')).toBeInTheDocument()
   })

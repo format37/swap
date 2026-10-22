@@ -67,6 +67,8 @@ async def upsert_user(db: AsyncSession, profile: TelegramProfile, *, can_message
     )
     if user is None:  # pragma: no cover - RETURNING always yields the row
         raise RuntimeError("upsert returned no row")
+    # RETURNING brings the row's columns, not what is counted from deals (ADR-0029).
+    await db.refresh(user, ["score"])
     return user
 
 

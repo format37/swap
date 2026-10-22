@@ -6,6 +6,7 @@ import { useI18n } from '../i18n/useI18n'
 import { LANGUAGE_NAMES } from '../i18n/locale'
 import { Avatar } from '../ui/Avatar'
 import { Cell } from '../ui/Cell'
+import { Score } from '../ui/Person'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 
@@ -22,7 +23,10 @@ export function Profile({ me }: { me: Me }) {
     <Screen>
       <header className="flex flex-col items-center gap-2 px-6 pt-8 text-center">
         <Avatar name={name} photo={me.photo_url} size="xl" />
-        <h1 className="text-2xl font-semibold">{name}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">{name}</h1>
+          <Score count={me.score} explained />
+        </div>
         {me.username && <p className="text-hint">@{me.username}</p>}
       </header>
 

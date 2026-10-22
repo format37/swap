@@ -216,8 +216,8 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] The bot tells direct links only, and the words about links follow the new rule.
 
 **PR 1.23 — The score** (J5; ADR-0029)
-- [ ] api: each person's score, counted from settled deals.
-- [ ] In `Person`, beside the name, with a tap that explains it.
+- [x] api: each person's score, counted from settled deals.
+- [x] In `Person`, beside the name, with a tap that explains it.
 
 **PR 1.24 — Deleting for oneself** (J3; ADR-0030)
 - [ ] Migration: `deals.proposer_deleted_at`. The journal lets a deal's lines go with the

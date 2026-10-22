@@ -11,6 +11,7 @@ import { confirmAction, hapticNotify, useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Loading } from '../ui/Loading'
+import { Score } from '../ui/Person'
 import { Screen } from '../ui/Screen'
 import { Problem } from './Problem'
 
@@ -135,7 +136,10 @@ function Shown({ link, answer }: { link: LinkDetail; answer: ReturnType<typeof u
     <Screen>
       <div className="flex flex-col items-center gap-2 px-6 pt-8 text-center">
         <Avatar name={name} photo={link.person.photo_url} size="xl" />
-        <h1 className="text-2xl font-semibold break-words">{name}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold break-words">{name}</h1>
+          <Score count={link.person.score} explained />
+        </div>
         {link.person.username && <p className="text-hint">@{link.person.username}</p>}
         <p className="flex items-center gap-1.5 text-sm text-hint">
           <Users aria-hidden className="size-4" />
