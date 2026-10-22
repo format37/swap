@@ -303,6 +303,18 @@ card and the tab bar.
 - [x] The sign-in keeps the stored link when a launch has none, and still takes a new
       one, Telegram's letter picture included.
 
+**The owner's notes after testing part L (2026-10-22).** QUESTIONS part M.
+
+**PR 1.36 — Amounts typed in any language's way** (M2; ADR-0040)
+- [ ] `parseAmount` reads «150,000» and «1,712.33» as well as «150 000» and «1 712,33».
+- [ ] The wizard's «You get» and the proposal's amount work in English.
+
+**PR 1.37 — After deleting, Home** (M1)
+- [ ] Deleting an order or a deal leaves for Home, without refreshing the card it leaves.
+
+**PR 1.38 — What the other side gives, on the order's card** (M3)
+- [ ] Someone else's open order shows, per wanted currency, «Вы отдадите от … до …».
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -344,7 +356,7 @@ lost server.
 | Phase | Sessions | Calendar |
 |---|---|---|
 | 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
-| 1 — MVP | ≈ 25 | ≈ 2 more weeks, then the owner's confirmation |
+| 1 — MVP | ≈ 26 | ≈ 2 more weeks, then the owner's confirmation |
 
 Phase 1, PR by PR:
 
@@ -368,13 +380,16 @@ Phase 1, PR by PR:
 | 1.33 | L1 · how to be paid, per currency | 1 |
 | 1.34 | L2 · the amount one gets, typed | 1 |
 | 1.35 | L3 · keeping a photo's link | 0.25 |
+| 1.36 | M2 · amounts in any language's way | 0.25 |
+| 1.37 | M1 · after deleting, Home | 0.25 |
+| 1.38 | M3 · what the other side gives, on the card | 0.5 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 25** |
+| | **Total** | **≈ 26** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
 K9 into the privacy page's, because each touches the same screens. The owner's notes
-after testing them (part L) add about 3.25.
+after testing them (part L) add about 3.25, and those after part L (part M) 1 more.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
