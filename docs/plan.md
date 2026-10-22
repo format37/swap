@@ -27,14 +27,16 @@ Swap's stack on the VPS (the kickoff's standing permission).
 
 - [ ] Answer part E of `docs/QUESTIONS.md`: three items, each with a default I follow
       until you answer.
-- [ ] Phone check of links once PR 1.1 is deployed: create an invite and share it.
-      Linking itself needs a second Telegram account.
+- [x] Phone check of links once PR 1.1 is deployed: create an invite and share it.
+      Linking itself needs a second Telegram account. (Done in the demo, 2026-10-22.)
 - [ ] Keep a copy of the payment-details key off the server. PR 1.5 generates it on
       the VPS, and without it the saved details can't be read back (ADR-0004).
-- [ ] Phone check of PRs 1.8–1.11 once deployed: a new order without a minimum or a
+- [x] Phone check of PRs 1.8–1.11 once deployed: a new order without a minimum or a
       last day, with its rate filled in; then close, reopen and delete one.
 - [ ] The demo, after slice 1: invite one or two people for a real link, order and
-      deal.
+      deal. Links and an order worked on 2026-10-22; the deal waits for PRs 1.12–1.15.
+- [ ] Answer G7 in `docs/QUESTIONS.md`: may the four saved payment details, their table
+      and the key be deleted?
 - [ ] By slice 5: the backup bucket and the `age` public key (Q-A7).
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
       list (Q-A6), and the agreement text (Q-B15).
@@ -131,6 +133,27 @@ with others.
 
 **Demo.** Deploy, then stop and ask the owner to invite one or two people.
 
+**The demo with others (2026-10-22).** Links and an order worked, but no proposal went
+through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
+
+**PR 1.12 — Deals ask only what the exchange needs** (G1, G3, G4, G5; ADR-0021)
+- [ ] Migration: `deals.note`; the legs' payment details go.
+- [ ] The proposal starts at all that remains, asks for no payment details, and takes an
+      optional comment. Accepting is one confirmation.
+- [ ] The profile without «Реквизиты»; what stops a form shows above the main button.
+
+**PR 1.13 — Three ways: cash, bank, crypto** (G3; ADR-0021)
+- [ ] Migration: card, SBP and «other» become bank; the CHECKs allow three.
+
+**PR 1.14 — A way on from a link's screen** (G6)
+- [ ] A made link's screen leads Home with the main button.
+
+**PR 1.15 — The market rate by default** (G2; ADR-0022)
+- [ ] An order follows the market unless its author fixes the rate; whoever opens it
+      sees the rate of the moment, and a proposal locks it.
+
+**Demo, again.** Deploy, then ask the owner to run the deal.
+
 ### Slices 2–7
 
 Each is broken into PRs when it starts.
@@ -149,7 +172,7 @@ Each is broken into PRs when it starts.
 | Phase | Sessions | Calendar |
 |---|---|---|
 | 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
-| 1 — MVP | ≈ 20 | ≈ 4 weeks; the last days wait on the group's real deal |
+| 1 — MVP | ≈ 21.5 | ≈ 4 weeks; the last days wait on the group's real deal |
 
 Phase 1 by slice (ADR-0006):
 
@@ -159,7 +182,8 @@ Phase 1 by slice (ADR-0006):
 | Orders (PRs 1.3–1.4) | 2 |
 | Payment details, deals, the state machine (PRs 1.5–1.7) | 3.75 |
 | The owner's notes (PRs 1.8–1.11) | 1.5 |
-| **Demo** | **≈ 9** |
+| The demo's notes (PRs 1.12–1.15) | 1.5 |
+| **Demo** | **≈ 10.5** |
 | Balances, lists, order editing and filters | 1.5 |
 | Documents through the bot | 1.5 |
 | Cancel, dispute, notes | 1 |
@@ -167,11 +191,11 @@ Phase 1 by slice (ADR-0006):
 | Manual rate, profile, blocks, deletion | 1.5 |
 | Backups, hardening, agreement | 1.5 |
 | Georgian review, acceptance fixes | 1.5 |
-| **Total** | **≈ 20** |
+| **Total** | **≈ 21.5** |
 
 Slice 2 grew by half a session on 2026-10-22: order editing and the filters had no
 slice. Slice 1 grew by one and a half the same day, for the owner's notes after his
-first test.
+first test, and by one and a half again for his notes after the demo.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
