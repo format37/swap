@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     static_dir: str | None = None
     log_format: Literal["json", "console"] = "json"
     log_level: str = "INFO"
+    # Error reports (ADR-0025); unset means none are sent. The frontend's build gets the
+    # same DSN, and the api lets the browser reach its host.
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.1
 
     def secrets(self) -> tuple[str, ...]:
         """What the log redactor must never print: the token and its secret half."""

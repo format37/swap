@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 
 import { App } from './App'
 import { setLaunchInitData } from './api/client'
+import { startSentry } from './sentry'
 import { startTelegram } from './telegram'
 import './styles.css'
 
@@ -12,6 +13,7 @@ if (import.meta.env.DEV) {
   mockTelegramForDev()
 }
 
+startSentry()
 const launch = startTelegram()
 setLaunchInitData(launch?.initDataRaw)
 

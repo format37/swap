@@ -25,6 +25,7 @@ from swap.bot.setup import configure_bot, make_bot
 from swap.config import Settings, get_settings
 from swap.db import Sessionmaker, create_engine, create_sessionmaker
 from swap.logs import configure_logging
+from swap.sentry import init_sentry
 from swap.worker.jobs import beat
 from swap.worker.outbox import send_due
 
@@ -63,6 +64,7 @@ def create_app(
     """Build the worker. Tests pass their own `sessionmaker` and a recording `bot`."""
     settings = settings or get_settings()
     configure_logging(settings.log_level, settings.log_format, settings.secrets())
+    init_sentry(settings, "worker")
 
     engine = None
     if sessionmaker is None:

@@ -5,6 +5,9 @@ name: swap
 x-app: &app
   build:
     context: ..
+    # The frontend's bundle gets the DSN at build time; vps.sh passes the release.
+    args:
+      SENTRY_DSN: ${SENTRY_DSN:-}
   image: swap-app:prod
   env_file: ../.env
   restart: unless-stopped
