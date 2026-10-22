@@ -228,10 +228,10 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] The deal card and the order card offer it.
 
 **PR 1.25 — The settings: notifications and the language** (K1, K6)
-- [ ] Migration: what each person switched off, and whose new orders they muted.
-- [ ] The settings on the profile screen: «Все уведомления» and a switch per kind;
+- [x] Migration: what each person switched off, and whose new orders they muted.
+- [x] The settings on the profile screen: «Все уведомления» and a switch per kind;
       «Язык». Muting a link's new orders on its screen.
-- [ ] The outbox skips what the recipient switched off.
+- [x] The outbox skips what the recipient switched off.
 
 **PR 1.26 — Deleting all history, and the account** (K2; Q-B10)
 - [ ] «Удалить всю историю»: J3 for everything finished, and a word on what still runs.

@@ -39,6 +39,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0028](0028-reach-by-handshakes.md) | An order reaches as far along chains of links as its author says | Accepted |
 | [0029](0029-the-score.md) | A person's score: how many different people they settled a deal with | Accepted |
 | [0030](0030-deleting-for-oneself.md) | Each side deletes for themselves, and the server erases what all have deleted | Accepted |
+| [0031](0031-notification-settings.md) | Notification settings: switches on the person, mutes per pair, the outbox obeys | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the
