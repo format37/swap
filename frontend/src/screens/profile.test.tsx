@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Me } from '../api/client'
@@ -7,6 +7,7 @@ import { renderScreen } from '../test/render'
 import { fullName } from '../api/links'
 import { copyText, openPage } from '../telegram'
 import { Person } from '../ui/Person'
+import { Language } from './Language'
 import { Notifications } from './Notifications'
 import { Profile } from './Profile'
 
@@ -28,6 +29,7 @@ const me: Me = {
   score: 0,
   locale: 'ru',
   locale_chosen: false,
+  telegram_locale: 'ru',
   tz: 'Asia/Tbilisi',
   notifications_off: false,
   muted_kinds: [],
@@ -44,10 +46,34 @@ describe('the profile', () => {
     const { served } = fakeApi({})
     renderScreen(<Profile me={me} />, { route: '/profile' })
     expect(screen.getByRole('heading', { name: 'Nino B' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Язык.*Русский/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Язык.*Как в Telegram/ })).toBeInTheDocument()
     // The parties settle where to pay among themselves (QUESTIONS G3).
     expect(screen.queryByText(/Реквизиты/)).toBeNull()
     expect(served).toEqual([])
+  })
+})
+
+describe('the language (L6)', () => {
+  it('names a chosen language, and lets it go to follow Telegram again', async () => {
+    const sent: unknown[] = []
+    fakeApi({
+      'PATCH /api/v1/me': async (request) => {
+        sent.push(await request.json())
+        return json(200, { ...me, locale: 'en', locale_chosen: false, telegram_locale: 'en' })
+      },
+    })
+    const chosen = { ...me, locale_chosen: true, telegram_locale: 'en' as const }
+    renderScreen(<Profile me={chosen} />, { route: '/profile' })
+    expect(screen.getByRole('button', { name: /Язык.*Русский/ })).toBeInTheDocument()
+    cleanup()
+    renderScreen(<Language me={chosen} />, { route: '/language' })
+    const telegram = screen.getByRole('radio', { name: /Как в Telegram.*English/ })
+    expect(telegram).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('radio', { name: 'Русский' })).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(telegram)
+    await waitFor(() => {
+      expect(sent).toEqual([{ locale: null }])
+    })
   })
 })
 

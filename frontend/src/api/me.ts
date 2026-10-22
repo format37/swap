@@ -63,11 +63,14 @@ export function useDeleteAccount() {
   })
 }
 
-/** Saves the language on the server, so the bot speaks it too (ADR-0009). */
+/**
+ * Saves the language on the server, so the bot speaks it too (ADR-0009); null lets the
+ * choice go, and Telegram's language counts again (ADR-0039).
+ */
 export function useSetLocale() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (locale: Locale) => unwrap(api.PATCH('/api/v1/me', { body: { locale } })),
+    mutationFn: (locale: Locale | null) => unwrap(api.PATCH('/api/v1/me', { body: { locale } })),
     onSuccess: (me: Me) => {
       queryClient.setQueryData(ME, me)
     },

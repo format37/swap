@@ -276,8 +276,8 @@ shows once.
 veto on parts J and K.
 
 **PR 1.31 — A settings tab, and the language Telegram has** (L5, L6; ADR-0039)
-- [ ] «Настройки» becomes a tab beside «Главная» and «Связи».
-- [ ] The language screen offers «Как в Telegram», and the api lets a chosen language go.
+- [x] «Настройки» becomes a tab beside «Главная» and «Связи».
+- [x] The language screen offers «Как в Telegram», and the api lets a chosen language go.
 
 **PR 1.32 — Deleting a finished order one only dealt on** (L4; ADR-0030)
 - [ ] `DELETE /orders/{id}` deletes, for someone who dealt on it, all their finished deals
