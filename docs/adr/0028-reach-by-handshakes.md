@@ -43,11 +43,15 @@ author always sees their order. Anyone else sees it when all of these hold:
 answers 404, as one that doesn't exist.
 
 **How distance is computed.** A recursive CTE walks active links out from the viewer and
-caps the depth at 4, meaning "four or more". Reach and the filter tell only 1, 2, 3 and ∞
-apart, so 4 is enough. Postgres's `UNION` drops rows it has already produced, and with
-the cap there are at most four rows per person. The walk ends however the links loop,
-and it touches each link a few times at most. At Swap's scale that is microseconds, and
-it needs no table to keep in step with the links.
+caps the depth at 4, meaning "four or more" (`swap/network.py`). Reach and the filter
+tell only 1, 2, 3 and ∞ apart, so 4 is enough. Postgres's `UNION` drops rows it has
+already produced, and with the cap there are at most four rows per person. The walk ends
+however the links loop, and it touches each link a few times at most. At Swap's scale
+that is microseconds, and it needs no table to keep in step with the links.
+
+What is only shown, the chain on a card and the rings, comes from a breadth-first walk in
+Python over the same active links (`Graph`). A test builds a random network of forty
+people and holds the two walks to the same distances.
 
 **The viewer's filter.** «Открытые мне» takes `within` = 1, 2 or 3, or nothing for ∞,
 the default. On Home it is folded under one line that says «Вся сеть» until someone
@@ -56,8 +60,9 @@ opens it. Its 0, favourites, waits in «Потенциальные планы».
 **Proposals across handshakes.**
 - Anyone who sees an order may propose on it, without a direct link first: the author
   chose the reach.
-- The card shows how the viewer reaches the author, through one shortest chain of names
-  («через Нино → Гиорги»). It also shows the author's score (ADR-0029).
+- The card shows how the viewer reaches the author, through one shortest chain of names,
+  the viewer's own link first («через Нино → Гиорги»). It also shows the author's score
+  (ADR-0029). Lists show no chains.
 - A deal outlives a broken chain. Once proposed, it stays visible to both sides.
 - A broken direct link between the two still cancels their unanswered proposals (Q-B9).
   A break farther along the chain cancels nothing.
@@ -74,7 +79,9 @@ at 0. Farther rings find it in the feed.
   author decide, and the count is all the line under the slider needs.
 
 At 0 the picture gives way to the author's links to choose from. «Только выбранным»
-needs at least one person, so the slider has no broken state.
+needs at least one person, so the slider has no broken state: the api refuses an empty
+list (`order.visible_to_nobody`), and a list at any other reach
+(`order.visible_to_needs_reach_0`).
 
 **`GET /api/v1/network`** returns the signed-in user's rings: who is 1, 2 and 3
 handshakes away, and how many are farther. It names people beyond one's own links,
