@@ -174,6 +174,31 @@ describe('the deal card', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/истекло/)
   })
 
+  it.each<[string, Partial<Parameters<typeof deal>[0]>, boolean]>([
+    ['its proposer, once it is over', { status: 'settled', role: 'proposer' }, true],
+    ['nobody while it runs', { status: 'accepted', role: 'proposer' }, false],
+    ['not its author, who deletes the order', { status: 'settled', role: 'acceptor' }, false],
+  ])('offers deleting it for oneself to %s (J3)', async (_, changes, offered) => {
+    const me = meOf(changes?.role === 'acceptor' ? ALEX : NINO)
+    const { served } = fakeApi({
+      [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal(changes)),
+      [`DELETE /api/v1/deals/${DEAL_ID}`]: () => new Response(null, { status: 204 }),
+    })
+    renderScreen(<DealCard me={me} />, { route, path })
+    await screen.findByText(/История/)
+    const button = screen.queryByRole('button', { name: 'Удалить у себя' })
+    expect(Boolean(button)).toBe(offered)
+    if (!button) return
+    fireEvent.click(button)
+    await waitFor(() => {
+      expect(served).toContain(`DELETE /api/v1/deals/${DEAL_ID}`)
+    })
+    expect(confirmAction).toHaveBeenCalledWith(
+      'Удалить сделку у себя? У второй стороны она останется. Вернуть её нельзя.',
+      'Удалить у себя',
+    )
+  })
+
   it('tells a stranger only that there is no such deal', async () => {
     fakeApi({ [`GET /api/v1/deals/${DEAL_ID}`]: () => problem(404, 'deal.not_found') })
     renderScreen(<DealCard me={meOf(NINO)} />, { route, path })

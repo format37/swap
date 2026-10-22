@@ -97,7 +97,8 @@ export const en: Messages = {
   'order.close_confirm': 'Close the offer? Nobody will see it anymore. Accepted deals carry on.',
   'order.reopen': 'Reopen offer',
   'order.delete': 'Delete offer',
-  'order.delete_confirm': 'Delete the offer? It will be gone for you too. Its deals carry on.',
+  'order.delete_confirm':
+    'Delete the offer and all its deals, for you alone? The others keep theirs. This can’t be undone.',
   'order.status.open': 'Open',
   'order.status.fulfilled': 'Done',
   'order.status.closed': 'Closed',
@@ -204,6 +205,11 @@ export const en: Messages = {
   'deal.withdraw': 'Withdraw proposal',
   'deal.withdraw_confirm': 'Withdraw the proposal?',
   'deal.cancel': 'Cancel deal',
+  'deal.delete': 'Delete for me',
+  'deal.delete_confirm':
+    'Delete the deal for you alone? The other side keeps it. This can’t be undone.',
+  'error.deal_running': 'The deal is still running: only a finished one can be deleted.',
+  'error.order_deals_running': 'Deals on this offer are still running: finish them first.',
   'deal.cancel_confirm': 'Cancel the deal? Until anything is sent, either of you can.',
   'deal.journal': 'History',
   'deal.event.proposed': 'Proposed',

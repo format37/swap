@@ -22,6 +22,9 @@ const BY_CODE: Partial<Record<string, MessageKey>> = {
   'deal.invalid_transition': 'error.deal_changed',
   'deal.not_your_move': 'error.deal_not_yours',
   'deal.expired': 'error.deal_expired',
+  'deal.running': 'error.deal_running',
+  'deal.delete_with_order': 'error.deal_changed',
+  'order.deals_running': 'error.order_deals_running',
 }
 
 // Whatever else an order's or a deal's refusal says, its form checked before sending.

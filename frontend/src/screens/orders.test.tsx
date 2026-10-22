@@ -611,6 +611,7 @@ describe('the order card', () => {
   it('lets its author reopen a closed order, or delete it once that is confirmed', async () => {
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, status: 'closed' })),
+      'GET /api/v1/deals': () => json(200, [deal({ status: 'settled', role: 'acceptor' })]),
       [`POST /api/v1/orders/${ORDER_ID}/reopen`]: () => json(200, order({ mine: true })),
       [`DELETE /api/v1/orders/${ORDER_ID}`]: () => new Response(null, { status: 204 }),
     })
@@ -623,7 +624,7 @@ describe('the order card', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Удалить заявку' }))
     await waitFor(() => {
       expect(confirmAction).toHaveBeenCalledWith(
-        'Удалить заявку? Она пропадёт и у вас. Сделки по ней продолжатся.',
+        'Удалить заявку и все сделки по ней у себя? У других участников они останутся. Вернуть их нельзя.',
         'Удалить заявку',
         { destructive: true },
       )
@@ -640,13 +641,28 @@ describe('the order card', () => {
     ['fulfilled', ['Удалить заявку']],
     ['expired', ['Удалить заявку']],
   ])('offers its author of a %s order only %j', async (status, actions) => {
-    fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, status })) })
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, status })),
+      'GET /api/v1/deals': () => json(200, []),
+    })
     renderScreen(<OrderCard me={me} />, { route, path })
     await screen.findByText(/Осталось/)
+    await screen.findAllByRole('button')
     const offered = ['Закрыть заявку', 'Открыть снова', 'Удалить заявку'].filter((name) =>
       screen.queryByRole('button', { name }),
     )
     expect(offered).toEqual(actions)
+  })
+
+  it('offers its author no deletion while a deal on it runs (J3)', async () => {
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+        json(200, order({ mine: true, status: 'fulfilled' })),
+      'GET /api/v1/deals': () => json(200, [deal({ status: 'accepted', role: 'acceptor' })]),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    await screen.findByText(/Сделки по заявке/i)
+    expect(screen.queryByRole('button', { name: 'Удалить заявку' })).toBeNull()
   })
 
   it('says why a closed order past its last day can’t reopen', async () => {
