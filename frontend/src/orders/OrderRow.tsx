@@ -2,14 +2,15 @@ import { ArrowRight, ChevronRight } from 'lucide-react'
 
 import { fullName } from '../api/links'
 import type { Order } from '../api/orders'
-import { formatDates } from '../i18n/format'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { Avatar } from '../ui/Avatar'
+import { orderDates } from './words'
 
 /** One order in a feed: what remains → what is wanted, and who and when. */
 export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }) {
-  const { t, locale } = useI18n()
+  const i18n = useI18n()
+  const { t, locale } = i18n
   const name = fullName(order.author)
   const wanted = [...new Set(order.wants.map((want) => want.currency))]
   const second = order.mine ? t(`order.status.${order.status}`) : name
@@ -29,7 +30,7 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
           ))}
         </span>
         <span className="block truncate text-sm text-hint">
-          {second} · {formatDates(locale, order.available_from, order.available_until)}
+          {second} · {orderDates(i18n, order)}
         </span>
       </span>
       <ChevronRight aria-hidden className="size-5 shrink-0 text-hint" />

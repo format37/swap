@@ -826,9 +826,16 @@
             "type": "string"
           },
           "available_until": {
-            "format": "date",
-            "title": "Available Until",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Until"
           },
           "created_at": {
             "format": "date-time",
@@ -929,7 +936,7 @@
           },
           "amount_min": {
             "examples": [
-              "1500.00"
+              "0"
             ],
             "pattern": "^\\d{1,16}(\\.\\d{1,2})?$",
             "title": "Amount Min",
@@ -941,9 +948,16 @@
             "type": "string"
           },
           "available_until": {
-            "format": "date",
-            "title": "Available Until",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Until"
           },
           "give_country": {
             "examples": [
@@ -1017,7 +1031,6 @@
           "amount_min",
           "amount_max",
           "available_from",
-          "available_until",
           "payout_methods",
           "wants",
           "rate_spec"

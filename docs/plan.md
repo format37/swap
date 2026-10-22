@@ -31,6 +31,8 @@ Swap's stack on the VPS (the kickoff's standing permission).
       Linking itself needs a second Telegram account.
 - [ ] Keep a copy of the payment-details key off the server. PR 1.5 generates it on
       the VPS, and without it the saved details can't be read back (ADR-0004).
+- [ ] Phone check of PRs 1.8–1.11 once deployed: a new order without a minimum or a
+      last day, with its rate filled in; then close, reopen and delete one.
 - [ ] The demo, after slice 1: invite one or two people for a real link, order and
       deal.
 - [ ] By slice 5: the backup bucket and the `age` public key (Q-A7).
@@ -104,6 +106,29 @@ notifications.
       deal is over, so the other side's step shows without reopening the app.
 - [x] Home: my active deals, so the demo can find them without the bot.
 
+**The owner's first test (2026-10-22).** He ran slice 1 on his own and sent seven
+notes (QUESTIONS part F, ADR-0019). They change orders, so they come before the demo
+with others.
+
+**PR 1.8 — Orders: less to fill in** (F1, F3, F4)
+- [x] Migration: `amount_min` may be 0, and `available_until` may be empty.
+- [x] The currency lists open with «Отдаёте» and «Получаете».
+- [x] An empty minimum is any amount; the last day sits behind «Ограничить срок», off
+      by default.
+
+**PR 1.9 — Orders: how the author is paid** (F2)
+- [ ] Migration: `orders.receive_methods`; orders published earlier get all six.
+- [ ] Step 2 asks for them, the card shows them, and a proposal pays in one of them.
+
+**PR 1.10 — Orders: the market rate** (F5, ADR-0020)
+- [ ] api: Coinbase's public rates, cached, as one endpoint.
+- [ ] The wizard fills each rate in from it, with the source and time; the author can
+      change it.
+
+**PR 1.11 — Orders: reopen and delete** (F6, F7)
+- [ ] api: reopen a closed order; delete one that isn't open.
+- [ ] The order card offers both to its author.
+
 **Demo.** Deploy, then stop and ask the owner to invite one or two people.
 
 ### Slices 2–7
@@ -124,7 +149,7 @@ Each is broken into PRs when it starts.
 | Phase | Sessions | Calendar |
 |---|---|---|
 | 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
-| 1 — MVP | ≈ 18.5 | ≈ 4 weeks; the last days wait on the group's real deal |
+| 1 — MVP | ≈ 20 | ≈ 4 weeks; the last days wait on the group's real deal |
 
 Phase 1 by slice (ADR-0006):
 
@@ -133,7 +158,8 @@ Phase 1 by slice (ADR-0006):
 | Links, the outbox (PRs 1.1–1.2) | 1.75 |
 | Orders (PRs 1.3–1.4) | 2 |
 | Payment details, deals, the state machine (PRs 1.5–1.7) | 3.75 |
-| **Demo** | **≈ 7.5** |
+| The owner's notes (PRs 1.8–1.11) | 1.5 |
+| **Demo** | **≈ 9** |
 | Balances, lists, order editing and filters | 1.5 |
 | Documents through the bot | 1.5 |
 | Cancel, dispute, notes | 1 |
@@ -141,10 +167,11 @@ Phase 1 by slice (ADR-0006):
 | Manual rate, profile, blocks, deletion | 1.5 |
 | Backups, hardening, agreement | 1.5 |
 | Georgian review, acceptance fixes | 1.5 |
-| **Total** | **≈ 18.5** |
+| **Total** | **≈ 20** |
 
 Slice 2 grew by half a session on 2026-10-22: order editing and the filters had no
-slice.
+slice. Slice 1 grew by one and a half the same day, for the owner's notes after his
+first test.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 

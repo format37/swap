@@ -125,16 +125,21 @@ interface StepProps {
   change: (changes: Changes) => void
 }
 
+/**
+ * `prompt` heads the list, «Отдаёте» or «Получаете»: the list covers the screen while it
+ * is open, and someone distracted should still know which side they are choosing (F1).
+ */
 function CurrencySelect({
   value,
   onChange,
   label,
+  prompt,
 }: {
   value: string
   onChange: (code: string) => void
   label: string
+  prompt: string
 }) {
-  const { t } = useI18n()
   const assets = useAssets()
   return (
     <Field label={label}>
@@ -147,7 +152,7 @@ function CurrencySelect({
         }}
       >
         <option value="" disabled>
-          {t('wizard.choose')}
+          {prompt}
         </option>
         {(assets.data ?? []).map((code) => (
           <option key={code} value={code}>
@@ -227,6 +232,7 @@ function GiveStep({ form, today, change }: StepProps & { today: string }) {
       <Section title={t('wizard.give.title')}>
         <CurrencySelect
           label={t('wizard.currency')}
+          prompt={t('wizard.give.prompt')}
           value={form.giveCurrency}
           onChange={(code) => {
             change({
@@ -308,17 +314,27 @@ function GiveStep({ form, today, change }: StepProps & { today: string }) {
             }}
           />
         </Field>
-        <Field label={t('wizard.last_day')}>
-          <input
-            type="date"
-            className={CONTROL}
-            min={form.from || today}
-            value={form.until}
-            onChange={(event) => {
-              change({ until: event.target.value })
-            }}
-          />
-        </Field>
+        {/* Off by default: open until its author closes it (F3). */}
+        <Switch
+          label={t('wizard.limited')}
+          checked={form.limited}
+          onChange={(limited) => {
+            change({ limited })
+          }}
+        />
+        {form.limited && (
+          <Field label={t('wizard.last_day')}>
+            <input
+              type="date"
+              className={CONTROL}
+              min={form.from || today}
+              value={form.until}
+              onChange={(event) => {
+                change({ until: event.target.value })
+              }}
+            />
+          </Field>
+        )}
       </Section>
     </>
   )
@@ -338,6 +354,7 @@ function WantStep({ form, change }: StepProps) {
         <Section key={index} title={index === 0 ? t('wizard.want.title') : undefined}>
           <CurrencySelect
             label={t('wizard.currency')}
+            prompt={t('wizard.want.prompt')}
             value={want.currency}
             onChange={(code) => {
               const fresh = newWant(form.giveCurrency, code, look(code).home ?? want.country)

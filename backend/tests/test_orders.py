@@ -262,8 +262,9 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
         ),
         ({"amount_max": 150000}, "validation_error"),
         ({"amount_max": "150000.001"}, "validation_error"),
-        ({"amount_min": "0"}, "validation_error"),
+        ({"amount_max": "0"}, "validation_error"),
         ({"amount_min": "-5"}, "validation_error"),
+        ({"amount_min": 0}, "validation_error"),
         ({"amount_min": "1e3"}, "validation_error"),
         ({"payout_methods": []}, "validation_error"),
         ({"payout_methods": ["pigeon"]}, "validation_error"),
@@ -404,6 +405,29 @@ async def test_closing_an_order_twice_is_refused(client: AsyncClient) -> None:
     again = await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
     assert again.status_code == 409
     assert again.json()["code"] == "order.not_open"
+
+
+async def test_an_order_needs_no_minimum_and_no_last_day(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    await linked(client, sessionmaker, alex, NINO)
+    # What the wizard sends when both are left empty (QUESTIONS F3, F4).
+    order = await publish(client, alex, amount_min="0", available_until=None)
+    assert order["amount_min"] == "0.00"
+    assert order["available_until"] is None
+    assert await sees(client, nino, order["id"])
+    # An order without a last day never passes its dates, however long ago it began.
+    async with sessionmaker() as db:
+        await db.execute(update(Order).values(available_from=TODAY - timedelta(days=400)))
+        await db.commit()
+    assert await sees(client, nino, order["id"])
+    # Leaving the last day out is the same as sending none.
+    default = draft()
+    del default["available_until"]
+    response = await client.post("/api/v1/orders", json=default, headers=alex)
+    assert response.json()["available_until"] is None
 
 
 async def test_exactly_one_amount_is_an_order_too(client: AsyncClient) -> None:

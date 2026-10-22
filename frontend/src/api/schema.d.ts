@@ -891,11 +891,8 @@ export interface components {
              * Format: date
              */
             available_from: string;
-            /**
-             * Available Until
-             * Format: date
-             */
-            available_until: string;
+            /** Available Until */
+            available_until: string | null;
             /**
              * Created At
              * Format: date-time
@@ -934,7 +931,7 @@ export interface components {
             amount_max: string;
             /**
              * Amount Min
-             * @example 1500.00
+             * @example 0
              */
             amount_min: string;
             /**
@@ -942,11 +939,8 @@ export interface components {
              * Format: date
              */
             available_from: string;
-            /**
-             * Available Until
-             * Format: date
-             */
-            available_until: string;
+            /** Available Until */
+            available_until?: string | null;
             /**
              * Give Country
              * @example GE

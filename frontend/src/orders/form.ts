@@ -1,6 +1,6 @@
 import type { OrderDraft, PaymentKind } from '../api/orders'
 import type { MessageKey } from '../i18n/ru'
-import { parseAmount, parseRate } from '../money/format'
+import { parseAmount, parseAmountOrZero, parseRate } from '../money/format'
 
 /** One wanted currency, and its rate as the author types it. */
 export interface WantForm {
@@ -18,9 +18,12 @@ export interface OrderForm {
   total: string
   /** «Только целиком»: one deal takes it all (Q-B5). */
   exact: boolean
+  /** Empty or 0: any amount (QUESTIONS F4). */
   least: string
   methods: PaymentKind[]
   from: string
+  /** «Ограничить срок»: off, the order is open until its author closes it (F3). */
+  limited: boolean
   until: string
   wants: WantForm[]
   everyone: boolean
@@ -57,7 +60,7 @@ export function addDays(iso: string, days: number): string {
   return isoDate(new Date(year, month - 1, day + days))
 }
 
-/** A fresh wizard: from today, for two weeks (Q-B17). */
+/** A fresh wizard: from today, with no last day; two weeks if one is asked for (F3). */
 export function emptyForm(today: string): OrderForm {
   return {
     giveCurrency: '',
@@ -67,6 +70,7 @@ export function emptyForm(today: string): OrderForm {
     least: '',
     methods: [],
     from: today,
+    limited: false,
     until: addDays(today, 14),
     wants: [newWant('')],
     everyone: true,
@@ -87,12 +91,13 @@ export function giveProblem(form: OrderForm, today: string): MessageKey | null {
   const total = parseAmount(form.total)
   if (!total) return 'wizard.error.amount'
   if (!form.exact) {
-    const least = parseAmount(form.least)
+    const least = parseAmountOrZero(form.least)
     if (!least) return 'wizard.error.amount'
     if (cents(least) > cents(total)) return 'wizard.error.range'
   }
   if (form.methods.length === 0) return 'wizard.error.methods'
-  if (!form.from || !form.until || form.until < form.from || form.until < today)
+  if (!form.from) return 'wizard.error.dates'
+  if (form.limited && (!form.until || form.until < form.from || form.until < today))
     return 'wizard.error.dates'
   return null
 }
@@ -131,9 +136,9 @@ export function toDraft(form: OrderForm): OrderDraft {
     give_currency: form.giveCurrency,
     give_country: form.giveCountry,
     amount_max: total,
-    amount_min: form.exact ? total : (parseAmount(form.least) ?? ''),
+    amount_min: form.exact ? total : (parseAmountOrZero(form.least) ?? ''),
     available_from: form.from,
-    available_until: form.until,
+    available_until: form.limited ? form.until : null,
     payout_methods: form.methods,
     wants: form.wants.map(({ currency, country }) => ({ currency, country })),
     rate_spec: {

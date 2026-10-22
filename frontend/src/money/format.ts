@@ -39,6 +39,16 @@ export function parseAmount(text: string): string | null {
   return AMOUNT.test(value) && !ZERO.test(value) ? value : null
 }
 
+/** An amount that may be left empty: blank or zero is '0', as an order's minimum (F4). */
+export function parseAmountOrZero(text: string): string | null {
+  return ZERO.test(plain(text)) ? '0' : parseAmount(text)
+}
+
+/** Whether a decimal string from the api is zero: «0.00». */
+export function isZero(value: string): boolean {
+  return ZERO.test(value)
+}
+
 /** What someone typed into a rate field, «29,20», as the api wants it. */
 export function parseRate(text: string): string | null {
   const value = plain(text)

@@ -375,6 +375,21 @@ async def test_cancelling_an_accepted_deal_gives_its_amount_back(world: World) -
     assert [name for name, _, _ in await world.told("deal.cancelled")] == ["Alex"]
 
 
+async def test_an_order_without_a_minimum_is_used_up_only_when_nothing_is_left(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    world = await World(client, sessionmaker).build(amount_min="0")
+    # Any amount is a deal, a single rouble included (QUESTIONS F4).
+    small = await world.propose(amount="1.00")
+    await world.ok(world.alex, small, "accept")
+    assert await world.remaining() == "149999.00:open"
+    rest = await world.propose(amount="149999.00")
+    await world.ok(world.alex, rest, "accept")
+    assert await world.remaining() == "0.00:fulfilled"
+    await world.ok(world.nino, rest, "cancel")
+    assert await world.remaining() == "149999.00:open"
+
+
 async def test_closing_an_order_cancels_its_proposals_but_not_its_deals(world: World) -> None:
     proposed = await world.propose()
     accepted = await world.propose(amount="20000.00")

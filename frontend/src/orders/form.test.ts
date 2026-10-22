@@ -27,9 +27,10 @@ function filled(changes: Partial<OrderForm> = {}): OrderForm {
   }
 }
 
-it('starts today, for two weeks', () => {
+it('starts today, with no last day, and offers two weeks if asked for one', () => {
   const form = emptyForm(TODAY)
   expect(form.from).toBe(TODAY)
+  expect(form.limited).toBe(false)
   expect(form.until).toBe('2026-11-05')
   expect(addDays('2026-12-25', 10)).toBe('2027-01-04')
 })
@@ -47,7 +48,7 @@ it('turns a filled wizard into exactly what the api takes', () => {
     amount_max: '150000',
     amount_min: '10000',
     available_from: TODAY,
-    available_until: '2026-11-05',
+    available_until: null,
     payout_methods: ['card', 'phone'],
     wants: [
       { currency: 'GEL', country: 'GE' },
@@ -66,6 +67,19 @@ it('turns a filled wizard into exactly what the api takes', () => {
   })
 })
 
+it('sends the last day only once it is asked for (F3)', () => {
+  expect(toDraft(filled({ limited: true })).available_until).toBe('2026-11-05')
+  // A date left behind by switching it off is not sent, and can't stop the wizard.
+  const off = filled({ limited: false, until: '2026-10-01' })
+  expect(toDraft(off).available_until).toBeNull()
+  expect(giveProblem(off, TODAY)).toBeNull()
+})
+
+it.each(['', '  ', '0', '0,00'])('reads a minimum of %j as any amount (F4)', (least) => {
+  expect(giveProblem(filled({ least }), TODAY)).toBeNull()
+  expect(toDraft(filled({ least })).amount_min).toBe('0')
+})
+
 it('takes the whole amount as the least one when it goes at once', () => {
   const draft = toDraft(filled({ exact: true, least: '' }))
   expect(draft.amount_min).toBe('150000')
@@ -80,11 +94,14 @@ it.each<[Partial<OrderForm>, string]>([
   [{ giveCountry: '' }, 'wizard.error.choose'],
   [{ total: 'много' }, 'wizard.error.amount'],
   [{ total: '0' }, 'wizard.error.amount'],
-  [{ least: '' }, 'wizard.error.amount'],
+  [{ least: 'немного' }, 'wizard.error.amount'],
+  [{ least: '-5' }, 'wizard.error.amount'],
   [{ least: '150000.01' }, 'wizard.error.range'],
   [{ methods: [] }, 'wizard.error.methods'],
-  [{ until: '2026-10-21', from: '2026-10-20' }, 'wizard.error.dates'],
-  [{ from: '2026-10-30', until: '2026-10-29' }, 'wizard.error.dates'],
+  [{ from: '' }, 'wizard.error.dates'],
+  [{ limited: true, until: '' }, 'wizard.error.dates'],
+  [{ limited: true, until: '2026-10-21', from: '2026-10-20' }, 'wizard.error.dates'],
+  [{ limited: true, from: '2026-10-30', until: '2026-10-29' }, 'wizard.error.dates'],
 ])('refuses step 1 with %j', (changes, problem) => {
   expect(giveProblem(filled(changes), TODAY)).toBe(problem)
 })

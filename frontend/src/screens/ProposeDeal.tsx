@@ -17,7 +17,7 @@ import { errorMessage } from '../i18n/errors'
 import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
-import { parseAmount } from '../money/format'
+import { isZero, parseAmount } from '../money/format'
 import { KINDS } from '../money/kinds'
 import { isoDate } from '../orders/form'
 import { hapticNotify, hapticSelect, useMainButton } from '../telegram'
@@ -165,10 +165,14 @@ function Form({ order }: { order: Order }) {
               }}
             />
             <p className="flex flex-wrap items-center gap-1 text-sm text-hint">
-              {tn('order.range', {
-                min: <Money locale={locale} amount={order.amount_min} code={give} />,
-                max: <Money locale={locale} amount={order.amount_remaining} code={give} />,
-              })}
+              {isZero(order.amount_min)
+                ? tn('order.up_to', {
+                    max: <Money locale={locale} amount={order.amount_remaining} code={give} />,
+                  })
+                : tn('order.range', {
+                    min: <Money locale={locale} amount={order.amount_min} code={give} />,
+                    max: <Money locale={locale} amount={order.amount_remaining} code={give} />,
+                  })}
             </p>
           </div>
         )}
