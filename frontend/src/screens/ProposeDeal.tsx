@@ -48,7 +48,7 @@ function Form({ order }: { order: Order }) {
   const { t, tn, locale } = useI18n()
   const navigate = useNavigate()
   const today = useMemo(() => isoDate(new Date()), [])
-  const [form, setForm] = useState<ProposalForm>(() => emptyProposal(order, today))
+  const [form, setForm] = useState<ProposalForm>(() => emptyProposal(order, today, locale))
   const [shown, setShown] = useState<MessageKey | null>(null)
   const propose = usePropose(order.id)
   const give = order.give_currency

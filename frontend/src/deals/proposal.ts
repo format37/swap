@@ -1,7 +1,8 @@
 import type { Proposal } from '../api/deals'
 import type { Order, PaymentKind } from '../api/orders'
+import type { Locale } from '../i18n/locale'
 import type { MessageKey } from '../i18n/ru'
-import { parseAmount } from '../money/format'
+import { formatAmount, parseAmount } from '../money/format'
 import { addDays } from '../orders/form'
 
 /** The proposal form's state, strings as typed (ADR-0017). */
@@ -20,13 +21,16 @@ export interface ProposalForm {
   note: string
 }
 
-/** A fresh proposal: the proposer first (Q-B16), a day apart from when the order starts. */
-export function emptyProposal(order: Order, today: string): ProposalForm {
+/**
+ * A fresh proposal for all that remains (QUESTIONS G4), the proposer first (Q-B16), a day
+ * apart from when the order starts.
+ */
+export function emptyProposal(order: Order, today: string, locale: Locale): ProposalForm {
   const start = order.available_from > today ? order.available_from : today
   // One way is no choice at all.
   const only = (kinds: PaymentKind[]) => (kinds.length === 1 && kinds[0] ? kinds[0] : '')
   return {
-    amount: '',
+    amount: formatAmount(locale, order.amount_remaining),
     want: order.wants[0]?.currency ?? '',
     whole: false,
     first: 'proposer',

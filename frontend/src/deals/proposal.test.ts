@@ -24,7 +24,7 @@ const ORDER = {
 
 function filled(changes: Partial<ProposalForm> = {}): ProposalForm {
   return {
-    ...emptyProposal(ORDER, TODAY),
+    ...emptyProposal(ORDER, TODAY, 'ru'),
     amount: '50 000',
     giveMethod: 'card',
     counterMethod: 'cash',
@@ -32,15 +32,20 @@ function filled(changes: Partial<ProposalForm> = {}): ProposalForm {
   }
 }
 
-it('starts with the first wanted currency, the proposer first, from when the order starts', () => {
-  const form = emptyProposal(ORDER, TODAY)
+it('starts with all that remains, the first wanted currency, the proposer first', () => {
+  const form = emptyProposal(ORDER, TODAY, 'ru')
+  // The whole remainder, as the proposer would type it (QUESTIONS G4).
+  expect(form.amount).toBe('150\u00a0000')
+  expect(emptyProposal(ORDER, TODAY, 'en').amount).toBe('150,000')
   expect(form.want).toBe('GEL')
   expect(form.first).toBe('proposer')
   expect([form.myDue, form.theirDue]).toEqual(['2026-10-26', '2026-10-28'])
   expect([form.giveMethod, form.counterMethod]).toEqual(['', ''])
   // One way is no choice at all.
-  expect(emptyProposal({ ...ORDER, payout_methods: ['cash'] }, TODAY).giveMethod).toBe('cash')
-  expect(emptyProposal({ ...ORDER, receive_methods: ['bank'] }, TODAY).counterMethod).toBe('bank')
+  expect(emptyProposal({ ...ORDER, payout_methods: ['cash'] }, TODAY, 'ru').giveMethod).toBe('cash')
+  expect(emptyProposal({ ...ORDER, receive_methods: ['bank'] }, TODAY, 'ru').counterMethod).toBe(
+    'bank',
+  )
 })
 
 it('turns a filled form into exactly what the api takes', () => {

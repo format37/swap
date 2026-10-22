@@ -147,7 +147,7 @@ describe('the proposal', () => {
     visibility: null,
   }
 
-  it('sends exactly what was chosen, and no payment details', async () => {
+  it('starts at all that remains, and sends exactly what was chosen', async () => {
     let sent: unknown
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER.id}`]: () => json(200, ORDER),
@@ -162,6 +162,8 @@ describe('the proposal', () => {
       path: '/orders/:id/propose',
     })
     const amount = await screen.findByRole('textbox', { name: 'Сколько вы хотите получить' })
+    // All that remains, unless the proposer wants less (QUESTIONS G4).
+    expect(amount).toHaveValue('150\u00a0000')
     fireEvent.change(amount, { target: { value: '50 000' } })
     await waitFor(() => {
       expect(document.body).toHaveTextContent('Взамен вы отдаёте 1 712,33₾GEL')
