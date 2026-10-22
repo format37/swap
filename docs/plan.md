@@ -49,6 +49,8 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
 - [ ] A phone check of PRs 1.31–1.35: the «Настройки» tab and «Как в Telegram»,
       «Удалить у себя» on an order you only dealt on, «Как получать» on each currency,
       typing «Получите», and whether Ira's photo now shows in the rings (L3).
+- [ ] A phone check of PRs 1.36–1.38, in English: «You get» with two currencies, going
+      Home after «Удалить у себя», and «You'd give» on someone else's order.
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -303,7 +305,10 @@ card and the tab bar.
 - [x] The sign-in keeps the stored link when a launch has none, and still takes a new
       one, Telegram's letter picture included.
 
-**The owner's notes after testing part L (2026-10-22).** QUESTIONS part M.
+**The owner's notes after testing part L (2026-10-22).** QUESTIONS part M. All three PRs
+went live the same evening (#51–#53). The owner's English steps were replayed in headless
+Chrome against a local api: the sum reads «15,795» for 500 GEL, USD added afterwards fills
+in, and typing USD moves GEL.
 
 **PR 1.36 — Amounts typed in any language's way** (M2; ADR-0040)
 - [x] `parseAmount` reads «150,000» and «1,712.33» as well as «150 000» and «1 712,33».

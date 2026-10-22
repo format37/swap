@@ -38,8 +38,8 @@ https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
   too: PRs 1.20–1.30, GitHub #29–#41, deployed on 2026-10-22.
 - So is QUESTIONS part L (the owner's notes after testing J and K): PRs 1.31–1.35,
   GitHub #43–#48, deployed on 2026-10-22. Production runs migration 0024.
-- QUESTIONS part M (the owner's notes after testing part L) is in progress: PRs
-  1.36–1.38 in plan.md.
+- So is QUESTIONS part M (the owner's notes after testing part L): PRs 1.36–1.38,
+  GitHub #50–#53, deployed on 2026-10-22.
 - Phase 1 is accepted when the owner confirms (K10). The owner's open items are in
   plan.md: phone checks and the Georgian read.
 - Everything else waits in plan.md's «Потенциальные планы».
