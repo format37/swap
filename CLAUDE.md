@@ -17,7 +17,9 @@ Read before changing anything:
   overrides the spec and the kickoff. Part D lists the owner's own decisions of
   2026-10-21, part F his notes after his first test on 2026-10-22, part G his notes
   after the demo with others, part H his notes after the first real deal, and part I
-  his Sentry setup, all the same day.
+  his Sentry setup, all the same day. Part J holds the owner's notes of that evening
+  (the wizard, reach by handshakes, deleting, photos, the score), and part K the
+  owner's priority list for the rest of phase 1.
 - `docs/adr/` has every decision another engineer would ask about, one page each.
   Never leave a decision only in chat.
 - `docs/plan.md` has the current phase's checklist and the estimates.
@@ -28,8 +30,13 @@ When both look wrong, write a question before building around it.
 ## Status
 
 The owner accepted phase 0 (skeleton) on 2026-10-22; it is live at
-https://swap.latentstate.dev. Phase 1 (MVP) started on 2026-10-22, slice 1 first
-(ADR-0006). Its checklist, PR by PR, is in `docs/plan.md`.
+https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
+- Slice 1 and three rounds of the owner's notes on it are live (PRs 1.1–1.18), and so
+  are error reports (PR 1.19).
+- What remains is QUESTIONS part J (the owner's notes) and part K (the owner's priority
+  list): PRs 1.20–1.30 in `docs/plan.md`.
+- Everything else waits in plan.md's «Потенциальные планы».
+- Phase 1 is accepted when parts J and K are live and the owner confirms (K10).
 
 ## Commands
 
@@ -64,7 +71,7 @@ directly.
   `./logs.sh [service]` follows its logs. Outside Telegram the app shows its stub;
   open it with a signed launch URL (above) to see more.
 - Deploying: `deploy/README.md`. The routine is `./deploy/vps.sh --pull` on the VPS,
-  with the owner's go.
+  under the owner's standing go (Hard rules).
 
 ## Hard rules
 
@@ -90,8 +97,13 @@ directly.
   - edit it inode-preserving (`cat >>`, Python `r+`), never with `sed -i`;
   - validate before the reload or restart;
   - check the other sites and bots afterwards.
-- **No deploy to the VPS and no DNS change** unless the owner says so in the current
-  session. Local `docker compose up` is always fine.
+- **Deploys follow the owner's standing go** (2026-10-22). After a merge with CI green,
+  redeploy Swap's own stack (`cd ~/swap && ./deploy/vps.sh --pull`), check `/healthz`,
+  and go on. The migrations run with it, after a dump.
+  - Still ask first, in the session, before touching a shared VPS service, DNS, a
+    reboot, or production data by hand outside what a merged PR does. With no answer,
+    leave that step out and go on.
+  - Local `docker compose up` is always fine.
 - **Money is `NUMERIC(18,2)` in the database, `Decimal` in Python and a string in
   JSON.** Never `float`, not in tests and not in the UI: format with
   `Intl.NumberFormat` from the string, and let the api do the arithmetic.
@@ -105,12 +117,16 @@ directly.
   build has `SENTRY_DSN` (ADR-0025). Nothing personal goes into a report.
 - **Every user-facing string lives in a dictionary, in Russian, English and Georgian**
   (ADR-0009), UI and bot alike. A PR that adds a string adds all three.
-- **§2 is product policy.** No public order board, no search among strangers, no
-  reputation, no escrow, nothing that makes Swap an exchange. Visibility is active
-  links only, and links are not transitive.
+- **§2 is product policy, as the owner amended it** (QUESTIONS J2, J5). No public order
+  board, no search among strangers, no escrow, no money moved, nothing that makes Swap
+  an exchange.
+  - An order is visible along chains of active links, up to the reach its author sets
+    (ADR-0028). Nothing is visible to anyone with no chain of links to its author.
+  - A person's only standing is their score: how many different people they settled a
+    deal with (ADR-0029). There are no ratings and no reviews.
 - **Tests are not optional for** the deal state machine (every transition and every
-  illegal one), object-level authorization (negative tests first), amounts from
-  `rate_spec`, rate-source parsing and `initData` validation.
+  illegal one), object-level authorization and reach (negative tests first), amounts
+  from `rate_spec`, rate-source parsing and `initData` validation.
 - **Phases are gated.** A phase starts only after the previous one is accepted and
   the owner has confirmed. The first demo inside phase 1 is link + order + deal
   without documents.

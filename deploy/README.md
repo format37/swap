@@ -2,7 +2,9 @@
 
 Production runs on the owner's VPS. The shared Caddy sits in front (ADR-0001), and
 the bot goes through the VPS's own Bot API server and the owner's relay (ADR-0008).
-A deploy needs the owner's go in the current session (CLAUDE.md).
+Since 2026-10-22 the owner's standing go covers a redeploy after each merge with CI
+green; anything touching the shared services, DNS or a reboot still needs the owner's
+go in the session (CLAUDE.md).
 
 ## Routine redeploy
 
