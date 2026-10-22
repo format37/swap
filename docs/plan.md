@@ -46,6 +46,9 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
 - [ ] A phone check of PRs 1.20–1.30: the two-step wizard and its reach slider, photos
       and scores, «Удалить у себя», the settings (notifications, deleting, CSV,
       «О Swap»), the agreement at launch, order numbers, a recurring order.
+- [ ] A phone check of PRs 1.31–1.35: the «Настройки» tab and «Как в Telegram»,
+      «Удалить у себя» on an order you only dealt on, «Как получать» on each currency,
+      typing «Получите», and whether Ira's photo now shows in the rings (L3).
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -273,7 +276,9 @@ signing in again: how many users get a `photo_url` (ADR-0027), and that the agre
 shows once.
 
 **The owner's notes after testing parts J and K (2026-10-22).** QUESTIONS part L. No
-veto on parts J and K.
+veto on parts J and K. All five PRs went live the same evening (#44–#48), with migration
+0024; a pass at 390 px in headless Chrome checked the wizard's currency cards, the order's
+card and the tab bar.
 
 **PR 1.31 — A settings tab, and the language Telegram has** (L5, L6; ADR-0039)
 - [x] «Настройки» becomes a tab beside «Главная» and «Связи».
