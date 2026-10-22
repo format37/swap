@@ -11,6 +11,7 @@ const me: Me = {
   first_name: 'Alex',
   last_name: null,
   username: 'format37',
+  photo_url: null,
   locale: 'ru',
   locale_chosen: false,
   tz: null,

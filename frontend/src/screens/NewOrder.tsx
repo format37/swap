@@ -2,7 +2,7 @@ import { ArrowLeftRight, Plus, X } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
-import { fullName, useLinks } from '../api/links'
+import { useLinks } from '../api/links'
 import {
   useAssets,
   useMarketRate,
@@ -35,12 +35,12 @@ import {
   type WantForm,
 } from '../orders/form'
 import { hapticNotify, hapticSelect, useMainButton } from '../telegram'
-import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { Choice } from '../ui/Choice'
 import { CONTROL, Field } from '../ui/Field'
 import { FormError } from '../ui/FormError'
+import { Person } from '../ui/Person'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 import { Switch } from '../ui/Switch'
@@ -672,8 +672,7 @@ function WhoStep({ form, change }: StepProps) {
               <Choice
                 key={link.id}
                 kind="checkbox"
-                leading={<Avatar name={fullName(link.person)} size="sm" />}
-                label={fullName(link.person)}
+                label={<Person person={link.person} />}
                 checked={checked}
                 onChange={() => {
                   change(({ chosen }) => ({

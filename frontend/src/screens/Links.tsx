@@ -3,7 +3,6 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 
 import {
-  fullName,
   useCreateInvite,
   useLinks,
   useRequestLink,
@@ -15,10 +14,9 @@ import { errorMessage } from '../i18n/errors'
 import { formatDate } from '../i18n/format'
 import { useI18n } from '../i18n/useI18n'
 import { confirmAction, hapticNotify, useMainButton } from '../telegram'
-import { Avatar } from '../ui/Avatar'
-import { Cell } from '../ui/Cell'
 import { EmptyState } from '../ui/EmptyState'
 import { Loading } from '../ui/Loading'
+import { PersonRow } from '../ui/Person'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 import { Problem } from './Problem'
@@ -54,20 +52,14 @@ export function Links() {
   const { active, incoming, outgoing, invites } = links.data
   const empty = !active.length && !incoming.length && !outgoing.length && !invites.length
 
-  const row = (link: Link, ...details: string[]) => {
-    const name = fullName(link.person)
-    const handle = link.person.username ? `@${link.person.username}` : ''
-    return (
-      <Cell
-        key={link.id}
-        icon={<Avatar name={name} size="sm" />}
-        label={name}
-        subtitle={[handle, ...details].filter(Boolean).join(' · ')}
-        opens
-        onClick={() => void navigate(`/links/${link.id}`)}
-      />
-    )
-  }
+  const row = (link: Link, detail?: string) => (
+    <PersonRow
+      key={link.id}
+      person={link.person}
+      detail={detail}
+      onClick={() => void navigate(`/links/${link.id}`)}
+    />
+  )
 
   return (
     <Screen tabs>
@@ -95,7 +87,7 @@ export function Links() {
                   link,
                   link.accepted_at
                     ? t('links.since', { date: formatDate(locale, link.accepted_at) })
-                    : '',
+                    : undefined,
                 ),
               )}
             </Section>

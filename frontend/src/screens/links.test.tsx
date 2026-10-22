@@ -33,18 +33,21 @@ const ALEX = {
   first_name: 'Alex',
   last_name: null,
   username: 'format37',
+  photo_url: null,
 }
 const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
   first_name: 'Nino',
   last_name: 'B',
   username: 'nino',
+  photo_url: null,
 }
 const GIO = {
   id: 'a0000000-0000-4000-8000-000000000003',
   first_name: 'Gio',
   last_name: null,
   username: null,
+  photo_url: null,
 }
 const LINK_ID = 'b0000000-0000-4000-8000-000000000001'
 

@@ -21,7 +21,7 @@ export function Profile({ me }: { me: Me }) {
   return (
     <Screen>
       <header className="flex flex-col items-center gap-2 px-6 pt-8 text-center">
-        <Avatar name={name} size="xl" />
+        <Avatar name={name} photo={me.photo_url} size="xl" />
         <h1 className="text-2xl font-semibold">{name}</h1>
         {me.username && <p className="text-hint">@{me.username}</p>}
       </header>

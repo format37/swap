@@ -18,7 +18,7 @@ export function DealRow({ deal, me, onOpen }: { deal: Deal; me: string; onOpen: 
       onClick={onOpen}
       className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-secondary-bg"
     >
-      <Avatar name={fullName(other)} size="sm" />
+      <Avatar name={fullName(other)} photo={other.photo_url} size="sm" />
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
           {first && <Money locale={i18n.locale} amount={first.amount} code={first.currency} />}

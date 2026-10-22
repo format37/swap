@@ -11,6 +11,7 @@ const me: Me = {
   first_name: 'Nino',
   last_name: 'B',
   username: 'nino',
+  photo_url: null,
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',

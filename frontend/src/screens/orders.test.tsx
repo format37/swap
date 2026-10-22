@@ -40,12 +40,14 @@ const ALEX = {
   first_name: 'Alex',
   last_name: null,
   username: 'format37',
+  photo_url: null,
 }
 const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
   first_name: 'Nino',
   last_name: 'B',
   username: 'nino',
+  photo_url: null,
 }
 
 function order(changes: Partial<Order> = {}): Order {
@@ -79,6 +81,7 @@ const me: Me = {
   first_name: 'Alex',
   last_name: null,
   username: 'format37',
+  photo_url: null,
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',

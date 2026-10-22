@@ -22,7 +22,7 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
       onClick={onOpen}
       className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-secondary-bg"
     >
-      {!order.mine && <Avatar name={name} size="sm" />}
+      {!order.mine && <Avatar name={name} photo={order.author.photo_url} size="sm" />}
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
           {/* What remains while it is open; once over, what it was for: «0 RUB» says nothing. */}
