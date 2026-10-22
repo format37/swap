@@ -55,8 +55,8 @@ function order(changes: Partial<Order> = {}): Order {
     amount_remaining: '150000.00',
     available_from: '2026-10-25',
     available_until: '2026-11-08',
-    payout_methods: ['card', 'phone'],
-    receive_methods: ['cash', 'bank'],
+    payout_methods: ['bank'],
+    receive_methods: ['cash', 'crypto'],
     wants: [
       { currency: 'GEL', country: 'GE' },
       { currency: 'USD', country: 'GE' },
@@ -218,7 +218,7 @@ describe('the wizard', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /^Минимум за сделку/ }), {
       target: { value: '10000' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Карта' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Банк' }))
     press()
     expect(await screen.findByText('Шаг 2 из 3')).toBeInTheDocument()
 
@@ -261,7 +261,7 @@ describe('the wizard', () => {
       amount_max: '150000',
       amount_min: '10000',
       available_until: null,
-      payout_methods: ['card'],
+      payout_methods: ['bank'],
       receive_methods: ['cash'],
       wants: [{ currency: 'GEL', country: 'GE' }],
       rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
@@ -298,7 +298,7 @@ describe('the wizard’s rate', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /^Всего/ }), {
       target: { value: '150000' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Карта' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Банк' }))
     press()
     await screen.findByText('Шаг 2 из 3')
     fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
@@ -343,11 +343,10 @@ describe('the order card', () => {
     expect(within(wants as HTMLElement).getAllByText(/Курс: 1/)[0]).toHaveTextContent(
       'Курс: 1 ₾GEL = 29,20 ₽RUB',
     )
-    expect(screen.getByText('Карта')).toBeInTheDocument()
-    expect(screen.getByText('Телефон (СБП)')).toBeInTheDocument()
+    expect(screen.getByText('Банк')).toBeInTheDocument()
     // How the author is paid sits with what they want (F2).
     expect(within(wants as HTMLElement).getByText('Наличные')).toBeInTheDocument()
-    expect(within(wants as HTMLElement).getByText('Банк')).toBeInTheDocument()
+    expect(within(wants as HTMLElement).getByText('Крипто')).toBeInTheDocument()
     expect(screen.getByText('наличные у метро')).toBeInTheDocument()
     // Someone else's order: no list of who sees it, and nothing to close.
     expect(screen.queryByText(/Видно/)).toBeNull()

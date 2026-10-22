@@ -32,7 +32,7 @@ class World:
         self.gio = await person(self.client, GIO)
         self.link = await linked(self.client, self.sessions, self.alex, NINO)
         self.order = await publish(
-            self.client, self.alex, payout_methods=["card", "phone", "cash"], **order
+            self.client, self.alex, payout_methods=["bank", "cash"], **order
         )
         return self
 
@@ -40,7 +40,7 @@ class World:
         return {
             "amount": "50000.00",
             "want_currency": "GEL",
-            "give_method": "card",
+            "give_method": "bank",
             "counter_method": "cash",
             "my_due": str(TODAY + timedelta(days=3)),
             "their_due": str(TODAY + timedelta(days=2)),
@@ -188,8 +188,10 @@ async def test_a_closed_order_takes_no_proposals(world: World) -> None:
         ({"amount": "150000.01"}, "deal.amount_range"),
         ({"want_currency": "EUR"}, "deal.unknown_want"),
         ({"give_method": "crypto"}, "deal.method_not_offered"),
-        # Alex is paid in cash or by bank, not by card (QUESTIONS F2).
-        ({"counter_method": "card"}, "deal.method_not_accepted"),
+        # Alex is paid in cash or by bank, not in crypto (QUESTIONS F2).
+        ({"counter_method": "crypto"}, "deal.method_not_accepted"),
+        # A card is a bank account now (QUESTIONS G3).
+        ({"counter_method": "card"}, "validation_error"),
         ({"my_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),
         ({"their_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),
         ({"amount": 50000}, "validation_error"),
@@ -434,7 +436,7 @@ async def test_legs_are_stored_as_the_proposal_said(world: World) -> None:
         )
     assert [(leg.seq, leg.currency, str(leg.amount), leg.method) for leg in legs] == [
         (1, "GEL", "1712.33", "cash"),
-        (2, "RUB", "50000.00", "card"),
+        (2, "RUB", "50000.00", "bank"),
     ]
     assert [str(leg.due_date) for leg in legs] == [
         str(TODAY + timedelta(days=3)),

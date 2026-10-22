@@ -53,12 +53,9 @@ export const ru = {
   'error.link_self': 'Это ваш собственный @username.',
   'error.link_cooldown':
     'Этот человек недавно отклонил ваш запрос. Попросить снова можно через неделю после отказа.',
-  'kind.card': 'Карта',
-  'kind.phone': 'Телефон (СБП)',
   'kind.bank': 'Банк',
   'kind.crypto': 'Крипто',
   'kind.cash': 'Наличные',
-  'kind.other': 'Другое',
   'home.link_requests': 'Запросы связи',
   'home.open_to_me': 'Открытые мне',
   'home.mine': 'Мои заявки',
