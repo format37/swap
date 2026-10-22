@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swap.deals import expire_due
 from swap.models import Deal, DealLeg, Notification, Order, User
-from tests.test_links import ALEX, GIO, NINO, Headers, linked, person
+from tests.test_links import ALEX, GIO, NINO, WRITTEN, Headers, linked, person
 from tests.test_orders import publish
 
 Sessions = async_sessionmaker[AsyncSession]
@@ -96,7 +96,7 @@ class World:
                 select(User.first_name, Notification.params, Notification.target)
                 .join(User, User.id == Notification.recipient_id)
                 .where(Notification.type == kind)
-                .order_by(Notification.created_at)
+                .order_by(Notification.created_at, WRITTEN)
             )
             return [(name, params, card) for name, params, card in rows]
 
