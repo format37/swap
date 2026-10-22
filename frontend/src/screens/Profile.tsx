@@ -1,9 +1,9 @@
-import { Bell, Eraser, Globe, Mail, ShieldCheck, UserX } from 'lucide-react'
+import { Bell, Eraser, FileSpreadsheet, Globe, Mail, ShieldCheck, UserX } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
-import { useDeleteAccount, useDeleteHistory } from '../api/me'
+import { useDeleteAccount, useDeleteHistory, useExportDeals } from '../api/me'
 import { errorMessage } from '../i18n/errors'
 import { useI18n } from '../i18n/useI18n'
 import { DEVELOPER_EMAIL, privacyUrl } from '../settings/about'
@@ -27,8 +27,9 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
   const navigate = useNavigate()
   const history = useDeleteHistory()
   const account = useDeleteAccount()
+  const exported = useExportDeals()
   const name = [me.first_name, me.last_name].filter(Boolean).join(' ')
-  const failure = history.error ?? account.error
+  const failure = history.error ?? account.error ?? exported.error
   const [copied, setCopied] = useState(false)
 
   return (
@@ -87,6 +88,23 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
 
       {/* Everything finished, for oneself; what runs stays (QUESTIONS K2, J3). */}
       <Section title={t('settings.data')}>
+        {/* The bot sends the file: a download inside Telegram's WebView is unreliable (K4). */}
+        <Cell
+          icon={<FileSpreadsheet aria-hidden className="size-6" />}
+          label={t('settings.export')}
+          subtitle={exported.isSuccess ? t('settings.export_sent') : t('settings.export_hint')}
+          disabled={exported.isPending}
+          onClick={() => {
+            exported.mutate(undefined, {
+              onSuccess: () => {
+                hapticNotify('success')
+              },
+              onError: () => {
+                hapticNotify('error')
+              },
+            })
+          }}
+        />
         <Button
           tone="destructive"
           icon={<Eraser aria-hidden className="size-5" />}

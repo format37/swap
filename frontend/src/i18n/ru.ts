@@ -300,6 +300,12 @@ export const ru = {
   'settings.contact': 'Написать разработчику',
   'settings.copied': 'Скопировано',
   'invite.copy_short': 'Скопировать',
+  'settings.export': 'Выгрузить сделки в CSV',
+  'settings.export_hint': 'Бот пришлёт файл со всеми вашими сделками в чат',
+  'settings.export_sent': 'Готово: файл придёт в чат с ботом',
+  'error.export_no_chat':
+    'Бот пока не может вам писать. Нажмите /start в чате с ним и попробуйте снова.',
+  'error.export_too_soon': 'Файл уже в пути. Попробуйте снова через минуту.',
   'settings.language': 'Язык',
   'language.title': 'Язык',
   'outside.title': 'Откройте Swap в Telegram',

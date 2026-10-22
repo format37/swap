@@ -2,17 +2,20 @@
 
 import uuid
 import zoneinfo
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Self
 
 from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import exists, func, select
 
 from swap import accounts
 from swap.api.deps import CurrentUser, Db
 from swap.api.errors import Problem
+from swap.errors import DomainError
 from swap.i18n import Locale, resolve_locale
-from swap.models import NotificationKind, User
+from swap.models import Notification, NotificationKind, User
+from swap.notifications import notify
 
 router = APIRouter(tags=["me"], responses={401: {"model": Problem}})
 
@@ -130,3 +133,31 @@ async def accept_terms(user: CurrentUser, db: Db) -> Me:
     user.terms_accepted_at = datetime.now(UTC)
     await db.commit()
     return Me.of(user)
+
+
+# One export at a time is plenty; a second tap within this sends nothing more.
+EXPORT_PAUSE_S = 60
+
+
+@router.post(
+    "/me/export", status_code=202, responses={409: {"model": Problem}, 429: {"model": Problem}}
+)
+async def export_deals(user: CurrentUser, db: Db) -> Response:
+    """Every deal you took part in, as a CSV file the bot sends to your chat (QUESTIONS K4)."""
+    if not user.can_message:
+        # The bot may not write to them until they press /start (Q-B12).
+        raise DomainError(409, "export.no_chat")
+    recent = await db.scalar(
+        select(
+            exists().where(
+                Notification.recipient_id == user.id,
+                Notification.type == "export.deals",
+                Notification.created_at > func.now() - timedelta(seconds=EXPORT_PAUSE_S),
+            )
+        )
+    )
+    if recent:
+        raise DomainError(429, "export.too_soon")
+    notify(db, user.id, "export.deals")
+    await db.commit()
+    return Response(status_code=202)

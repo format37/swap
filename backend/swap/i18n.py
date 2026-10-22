@@ -82,6 +82,26 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "deal.received": "Получение подтверждено: {amount} {currency} — {name}.",
         "deal.settled": "Сделка завершена: получение {amount} {currency} подтверждено — {name}.",
+        "export.caption": (
+            "Ваши сделки в Swap: {count}. Файл CSV открывается в Excel, Numbers и Google Таблицах."
+        ),
+        "export.header": (
+            "Предложена|Принята|Закрыта|Заявка №|Статус|С кем|Отдано: сумма|Отдано: валюта|"
+            "Отдано: страна|Отдано: как|Получено: сумма|Получено: валюта|Получено: страна|"
+            "Получено: как|Курс|Источник курса"
+        ),
+        "export.status.proposed": "предложена",
+        "export.status.accepted": "принята",
+        "export.status.disputed": "спор",
+        "export.status.settled": "завершена",
+        "export.status.cancelled": "отменена",
+        "export.status.expired": "истекла",
+        "export.way.cash": "наличные",
+        "export.way.bank": "банк",
+        "export.way.crypto": "крипто",
+        "export.rate.author": "курс автора заявки",
+        "export.rate.market": "Coinbase, {time}",
+        "export.deleted": "Удалённый участник",
         "bot.command.start": "Открыть Swap",
         "bot.short_description": (
             "Обмен деньгами между странами с людьми, которых вы знаете. Swap планирует "
@@ -148,6 +168,26 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "deal.received": "Receipt confirmed: {amount} {currency} — {name}.",
         "deal.settled": "Deal complete: receipt of {amount} {currency} confirmed — {name}.",
+        "export.caption": (
+            "Your deals in Swap: {count}. The CSV file opens in Excel, Numbers and Google Sheets."
+        ),
+        "export.header": (
+            "Proposed|Accepted|Closed|Offer No.|Status|With|Gave: amount|Gave: currency|"
+            "Gave: country|Gave: way|Got: amount|Got: currency|Got: country|Got: way|Rate|"
+            "Rate source"
+        ),
+        "export.status.proposed": "proposed",
+        "export.status.accepted": "accepted",
+        "export.status.disputed": "disputed",
+        "export.status.settled": "settled",
+        "export.status.cancelled": "cancelled",
+        "export.status.expired": "expired",
+        "export.way.cash": "cash",
+        "export.way.bank": "bank",
+        "export.way.crypto": "crypto",
+        "export.rate.author": "the offer author's rate",
+        "export.rate.market": "Coinbase, {time}",
+        "export.deleted": "Former member",
         "bot.command.start": "Open Swap",
         "bot.short_description": (
             "Swap money across countries with people you know. Swap plans and records; "
@@ -217,6 +257,27 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         ),
         "deal.received": "მიღება დადასტურებულია: {amount} {currency} — {name}.",
         "deal.settled": "გარიგება დასრულდა: მიღება დადასტურებულია, {amount} {currency} — {name}.",
+        "export.caption": (
+            "თქვენი გარიგებები Swap-ში: {count}. CSV ფაილი იხსნება Excel-ში, Numbers-სა და "
+            "Google Sheets-ში."
+        ),
+        "export.header": (
+            "შეთავაზებულია|მიღებულია|დახურულია|განცხადება №|სტატუსი|ვისთან|გაცემული: თანხა|"
+            "გაცემული: ვალუტა|გაცემული: ქვეყანა|გაცემული: როგორ|მიღებული: თანხა|"
+            "მიღებული: ვალუტა|მიღებული: ქვეყანა|მიღებული: როგორ|კურსი|კურსის წყარო"
+        ),
+        "export.status.proposed": "შეთავაზებული",
+        "export.status.accepted": "მიღებული",
+        "export.status.disputed": "დავა",
+        "export.status.settled": "დასრულებული",
+        "export.status.cancelled": "გაუქმებული",
+        "export.status.expired": "ვადაგასული",
+        "export.way.cash": "ნაღდი",
+        "export.way.bank": "ბანკი",
+        "export.way.crypto": "კრიპტო",
+        "export.rate.author": "განცხადების ავტორის კურსი",
+        "export.rate.market": "Coinbase, {time}",
+        "export.deleted": "წაშლილი მონაწილე",
         "bot.command.start": "Swap-ის გახსნა",
         "bot.short_description": (
             "ფულის გაცვლა ქვეყნებს შორის ნაცნობებთან. Swap გეგმავს და აღრიცხავს, ფულს არ ინახავს."

@@ -145,8 +145,10 @@ PARAMS = {
 
 
 def test_every_message_answers_to_a_switch() -> None:
+    # The bot's own replies, and the export its recipient asks for, answer to no switch.
+    unswitched = ("start", "button", "invite", "bot", "export")
     sent_by_the_outbox = {key for key in MESSAGES["en"] if "." in key} - {
-        key for key in MESSAGES["en"] if key.split(".")[0] in ("start", "button", "invite", "bot")
+        key for key in MESSAGES["en"] if key.split(".")[0] in unswitched
     }
     assert sent_by_the_outbox == set(KIND_OF)
 

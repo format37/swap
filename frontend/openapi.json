@@ -3976,6 +3976,61 @@
         ]
       }
     },
+    "/api/v1/me/export": {
+      "post": {
+        "description": "Every deal you took part in, as a CSV file the bot sends to your chat (QUESTIONS K4).",
+        "operationId": "export_deals",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Deals",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/api/v1/me/history": {
       "delete": {
         "description": "Every finished deal and order deleted for you at once (QUESTIONS K2, J3).",

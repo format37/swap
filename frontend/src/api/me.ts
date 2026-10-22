@@ -25,6 +25,11 @@ export function useUpdateMe() {
   })
 }
 
+/** Every deal one took part in, as CSV, which the bot sends to one's chat (QUESTIONS K4). */
+export function useExportDeals() {
+  return useMutation({ mutationFn: () => done(api.POST('/api/v1/me/export')) })
+}
+
 /** «Принимаю»: the agreement as it stands (Q-B15, QUESTIONS K3). */
 export function useAcceptTerms() {
   const queryClient = useQueryClient()

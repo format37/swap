@@ -6,7 +6,7 @@ from typing import Any
 
 from aiogram import Bot
 from aiogram.client.session.base import BaseSession
-from aiogram.methods import SendMessage, TelegramMethod
+from aiogram.methods import SendDocument, SendMessage, TelegramMethod
 from aiogram.types import Chat, Message
 
 
@@ -26,6 +26,13 @@ class RecordingSession(BaseSession):
         timeout: int | None = None,  # noqa: ASYNC109 - aiogram's BaseSession signature
     ) -> Any:
         self.calls.append(method)
+        if isinstance(method, SendDocument):
+            return Message(
+                message_id=len(self.calls),
+                date=datetime.now(UTC),
+                chat=Chat(id=int(method.chat_id), type="private"),
+                caption=method.caption,
+            )
         if isinstance(method, SendMessage):
             if self.failures:
                 raise self.failures.pop(0)(method)
