@@ -18,6 +18,8 @@ class Person(BaseModel):
     photo_url: str | None
     # How many different people they settled a deal with (QUESTIONS J5, ADR-0029).
     score: int
+    # They deleted their account: the app calls them «Удалённый участник» (QUESTIONS K2).
+    deleted: bool = False
 
     @classmethod
     def of(cls, user: User) -> Self:
@@ -28,4 +30,5 @@ class Person(BaseModel):
             username=user.username,
             photo_url=user.photo_url,
             score=user.score,
+            deleted=user.deleted_at is not None,
         )

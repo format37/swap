@@ -92,7 +92,9 @@ class User(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    # None once they deleted their account: the row stays as «Удалённый участник» for the
+    # deals others keep, and the same Telegram account starts afresh (Q-B10).
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True)
     first_name: Mapped[str] = mapped_column(Text)
     last_name: Mapped[str | None] = mapped_column(Text)
     username: Mapped[str | None] = mapped_column(Text)
@@ -114,6 +116,8 @@ class User(Base):
     muted_kinds: Mapped[list[str]] = mapped_column(
         ARRAY(Text), default=list, server_default=text("'{}'::text[]")
     )
+    # They deleted their account (QUESTIONS K2): everything about them is scrubbed.
+    deleted_at: Mapped[datetime | None]
     if TYPE_CHECKING:
         # How many different people they settled a deal with: counted, and mapped below,
         # once deals are (ADR-0029).

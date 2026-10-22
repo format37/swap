@@ -20,7 +20,9 @@ from swap.models import Deal, DealStatus, Order, User
 from swap.notifications import notify
 from swap.users import person_label
 
-type Reason = Literal["link_removed", "order_closed", "order_short"]
+type Reason = Literal["link_removed", "order_closed", "order_short", "account_deleted"]
+# A break tells nobody (ADR-0012), nor does someone leaving Swap (QUESTIONS K2).
+QUIET: frozenset[Reason] = frozenset({"link_removed", "account_deleted"})
 
 
 def give_amount(deal: Deal) -> Decimal:
@@ -33,8 +35,7 @@ async def _cancel(
 ) -> None:
     for deal in deals:
         await record(db, deal, actor, "cancelled", DealStatus.CANCELLED, reason=reason)
-        if reason != "link_removed":
-            # A break tells nobody (ADR-0012), and its proposals go with it quietly.
+        if reason not in QUIET:
             author = await db.get(User, deal.acceptor_id)
             notify(
                 db,
@@ -59,6 +60,16 @@ async def cancel_between(db: AsyncSession, a: uuid.UUID, b: uuid.UUID, actor: uu
         .with_for_update()
     )
     await _cancel(db, list(deals), actor, "link_removed")
+
+
+async def cancel_by(db: AsyncSession, proposer: uuid.UUID) -> None:
+    """Someone leaving Swap takes back every proposal they made (Q-B10, QUESTIONS K2)."""
+    deals = await db.scalars(
+        select(Deal)
+        .where(Deal.proposer_id == proposer, Deal.status == DealStatus.PROPOSED)
+        .with_for_update()
+    )
+    await _cancel(db, list(deals), proposer, "account_deleted")
 
 
 async def cancel_on_order(

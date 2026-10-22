@@ -472,6 +472,12 @@ async def delete(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> None:
         raise _refuse("deal.delete_with_order")
     if deal.status not in TERMINAL:
         raise _refuse("deal.running")
+    await delete_for_proposer(db, deal)
+
+
+async def delete_for_proposer(db: AsyncSession, deal: Deal) -> None:
+    """Mark a finished deal deleted by its proposer, and erase it if its author has deleted
+    the order already (ADR-0030). The caller has checked it may."""
     deal.proposer_deleted_at = datetime.now(UTC)
     order = await db.scalar(select(Order).where(Order.id == deal.order_id).with_for_update())
     if order is not None and order.deleted_at is not None:

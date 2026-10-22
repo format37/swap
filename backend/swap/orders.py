@@ -344,11 +344,19 @@ async def delete(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> No
     order = await _own(db, author, order_id)
     if order.status == OrderStatus.OPEN:
         raise DomainError(409, "order.open")
+    if not await delete_finished(db, order):
+        raise DomainError(409, "order.deals_running")
+
+
+async def delete_finished(db: AsyncSession, order: Order) -> bool:
+    """Mark an order that isn't open deleted by its author, with all its deals, and erase
+    what both sides have deleted (ADR-0030). False, and nothing done, while a deal runs."""
     deals = list(await db.scalars(select(Deal).where(Deal.order_id == order.id).with_for_update()))
     if any(deal.status not in TERMINAL for deal in deals):
-        raise DomainError(409, "order.deals_running")
+        return False
     order.deleted_at = datetime.now(UTC)
     for deal in deals:
         if deal.proposer_deleted_at is not None:
             await erase_deal(db, deal)
     await erase_order_if_bare(db, order)
+    return True
