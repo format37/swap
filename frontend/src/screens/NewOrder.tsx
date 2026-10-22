@@ -1,5 +1,5 @@
 import { ArrowLeftRight, Plus, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 import { fullName, useLinks } from '../api/links'
@@ -12,7 +12,7 @@ import {
   type QuoteRequest,
 } from '../api/orders'
 import { useBackOverride } from '../back'
-import { sortedCountries } from '../i18n/countries'
+import { countryName, sortedCountries } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
 import { formatTime } from '../i18n/format'
 import type { MessageKey } from '../i18n/ru'
@@ -26,7 +26,7 @@ import {
   giveProblem,
   isoDate,
   newWant,
-  quoteOf,
+  specOf,
   toDraft,
   toggled,
   wantProblem,
@@ -46,13 +46,13 @@ import { Section } from '../ui/Section'
 import { Switch } from '../ui/Switch'
 import { useDebounced } from '../useDebounced'
 
-type Step = 1 | 2 | 3
+type Step = 1 | 2
 const MAX_WANTS = 3
 
 /**
- * «Новая заявка»: what I give, what I want, who sees it (FR-2.1). The state stays here
- * until «Опубликовать»; there are no server drafts (Q-B17). BackButton steps back through
- * the steps, then leaves.
+ * «Новая заявка» in two steps (QUESTIONS J1): what I give and what I get, then who sees it.
+ * The state stays here until «Опубликовать»; there are no server drafts (Q-B17).
+ * BackButton steps back to step 1, then leaves.
  */
 export function NewOrder() {
   const { t } = useI18n()
@@ -76,17 +76,16 @@ export function NewOrder() {
       step > 1
         ? () => {
             setShown(null)
-            setStep((step - 1) as Step)
+            setStep(1)
           }
         : null,
     [step],
   )
   useBackOverride(stepBack)
 
-  const problem =
-    step === 1 ? giveProblem(form, today) : step === 2 ? wantProblem(form) : whoProblem(form)
+  const problem = step === 1 ? (giveProblem(form, today) ?? wantProblem(form)) : whoProblem(form)
   useMainButton({
-    text: t(step === 3 ? 'wizard.publish' : 'wizard.next'),
+    text: t(step === 2 ? 'wizard.publish' : 'wizard.next'),
     busy: publish.isPending,
     onClick: () => {
       if (problem) {
@@ -94,8 +93,8 @@ export function NewOrder() {
         hapticNotify('error')
         return
       }
-      if (step < 3) {
-        setStep((step + 1) as Step)
+      if (step === 1) {
+        setStep(2)
         window.scrollTo(0, 0)
         return
       }
@@ -117,10 +116,16 @@ export function NewOrder() {
       <header className="px-6 pt-4">
         <p className="text-sm text-hint">{t('wizard.step', { n: step })}</p>
         <h1 className="text-2xl font-semibold">{t('home.new_order')}</h1>
+        {/* What step 1 decided, in a line, before it goes out (J1). */}
+        {step === 2 && <Digest form={form} />}
       </header>
-      {step === 1 && <GiveStep form={form} today={today} change={change} />}
-      {step === 2 && <WantStep form={form} change={change} />}
-      {step === 3 && <WhoStep form={form} change={change} />}
+      {step === 1 && (
+        <>
+          <GiveGroup form={form} today={today} change={change} />
+          <WantGroup form={form} change={change} />
+        </>
+      )}
+      {step === 2 && <WhoStep form={form} change={change} />}
       <FormError>
         {shown ? t(shown) : publish.isError ? t(errorMessage(publish.error)) : null}
       </FormError>
@@ -201,29 +206,34 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (code: st
   )
 }
 
-/** The six ways money moves, as chips that each tap turns on or off (ADR-0016). */
+/** The ways money moves, as chips that each tap turns on or off, under their label. */
 function MethodChips({
+  label,
   chosen,
   onToggle,
 }: {
+  label: string
   chosen: PaymentKind[]
   onToggle: (kind: PaymentKind) => void
 }) {
   const { t } = useI18n()
   return (
-    <div className="flex flex-wrap gap-2 p-3">
-      {KINDS.map(({ kind, icon, label }) => (
-        <Chip
-          key={kind}
-          icon={icon}
-          label={t(label)}
-          selected={chosen.includes(kind)}
-          onToggle={() => {
-            hapticSelect()
-            onToggle(kind)
-          }}
-        />
-      ))}
+    <div role="group" aria-label={label} className="px-4 py-3">
+      <p>{label}</p>
+      <div className="flex flex-wrap gap-2 pt-2">
+        {KINDS.map(({ kind, icon, label: name }) => (
+          <Chip
+            key={kind}
+            icon={icon}
+            label={t(name)}
+            selected={chosen.includes(kind)}
+            onToggle={() => {
+              hapticSelect()
+              onToggle(kind)
+            }}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -262,110 +272,108 @@ function AmountInput({
   )
 }
 
-/** Step 1, «Отдаю»: currency, country, amount, how, when. */
-function GiveStep({ form, today, change }: StepProps & { today: string }) {
+/** Step 1's «Отдаёте»: currency, country, amount, how, when; one group, no titles (J1). */
+function GiveGroup({ form, today, change }: StepProps & { today: string }) {
   const { t } = useI18n()
   return (
-    <>
-      <Section title={t('wizard.give.title')}>
-        <CurrencySelect
-          label={t('wizard.currency')}
-          prompt={t('wizard.give.prompt')}
-          value={form.giveCurrency}
-          onChange={(code) => {
-            change({
-              giveCurrency: code,
-              giveCountry: look(code).home ?? form.giveCountry,
-              // A rate the author hasn't typed turns to read the right way round for the
-              // new currency, and the market's rate for the new pair fills it in again.
-              wants: form.wants.map((want) =>
-                want.typed ? want : newWant(code, want.currency, want.country),
-              ),
-            })
-          }}
-        />
-        <CountrySelect
-          value={form.giveCountry}
-          onChange={(code) => {
-            change({ giveCountry: code })
-          }}
-        />
-      </Section>
-      <Section title={t('wizard.amount')}>
+    <Section title={t('wizard.give')}>
+      <CurrencySelect
+        label={t('wizard.currency')}
+        prompt={t('wizard.give.prompt')}
+        value={form.giveCurrency}
+        onChange={(code) => {
+          change({
+            giveCurrency: code,
+            giveCountry: look(code).home ?? form.giveCountry,
+            // A rate the author hasn't typed turns to read the right way round for the
+            // new currency, and the market's rate for the new pair fills it in again.
+            wants: form.wants.map((want) =>
+              want.typed
+                ? want
+                : { ...newWant(code, want.currency, want.country), fixed: want.fixed },
+            ),
+          })
+        }}
+      />
+      <CountrySelect
+        value={form.giveCountry}
+        onChange={(code) => {
+          change({ giveCountry: code })
+        }}
+      />
+      <AmountInput
+        label={t('wizard.amount')}
+        currency={form.giveCurrency}
+        value={form.total}
+        onChange={(total) => {
+          change({ total })
+        }}
+      />
+      <Switch
+        label={t('wizard.amount_exact')}
+        checked={form.exact}
+        onChange={(exact) => {
+          change({ exact })
+        }}
+      />
+      {!form.exact && (
         <AmountInput
-          label={t('wizard.amount_total')}
+          label={t('wizard.amount_min')}
           currency={form.giveCurrency}
-          value={form.total}
-          onChange={(total) => {
-            change({ total })
+          value={form.least}
+          onChange={(least) => {
+            change({ least })
           }}
         />
-        <Switch
-          label={t('wizard.amount_exact')}
-          checked={form.exact}
-          onChange={(exact) => {
-            change({ exact })
+      )}
+      <MethodChips
+        label={t('wizard.methods')}
+        chosen={form.methods}
+        onToggle={(kind) => {
+          change(({ methods }) => ({ methods: toggled(methods, kind) }))
+        }}
+      />
+      <Field label={t('wizard.dates')}>
+        <input
+          type="date"
+          className={CONTROL}
+          min={today}
+          value={form.from}
+          onChange={(event) => {
+            change({ from: event.target.value })
           }}
         />
-        {!form.exact && (
-          <AmountInput
-            label={t('wizard.amount_min')}
-            currency={form.giveCurrency}
-            value={form.least}
-            onChange={(least) => {
-              change({ least })
-            }}
-          />
-        )}
-      </Section>
-      <Section title={t('wizard.methods')}>
-        <MethodChips
-          chosen={form.methods}
-          onToggle={(kind) => {
-            change(({ methods }) => ({ methods: toggled(methods, kind) }))
-          }}
-        />
-      </Section>
-      <Section title={t('wizard.dates')}>
-        <Field label={t('wizard.first_day')}>
+      </Field>
+      {/* Off by default: open until its author closes it (F3). */}
+      <Switch
+        label={t('wizard.limited')}
+        checked={form.limited}
+        onChange={(limited) => {
+          change({ limited })
+        }}
+      />
+      {form.limited && (
+        <Field label={t('wizard.last_day')}>
           <input
             type="date"
             className={CONTROL}
-            min={today}
-            value={form.from}
+            min={form.from || today}
+            value={form.until}
             onChange={(event) => {
-              change({ from: event.target.value })
+              change({ until: event.target.value })
             }}
           />
         </Field>
-        {/* Off by default: open until its author closes it (F3). */}
-        <Switch
-          label={t('wizard.limited')}
-          checked={form.limited}
-          onChange={(limited) => {
-            change({ limited })
-          }}
-        />
-        {form.limited && (
-          <Field label={t('wizard.last_day')}>
-            <input
-              type="date"
-              className={CONTROL}
-              min={form.from || today}
-              value={form.until}
-              onChange={(event) => {
-                change({ until: event.target.value })
-              }}
-            />
-          </Field>
-        )}
-      </Section>
-    </>
+      )}
+    </Section>
   )
 }
 
-/** Step 2, «Хочу»: each wanted currency with its rate, and a live preview. */
-function WantStep({ form, change }: StepProps) {
+/**
+ * Step 1's «Получаете»: each wanted currency with its rate, its own «Зафиксировать курс»
+ * and a live preview (J1), then how the author is paid.
+ */
+function WantGroup({ form, change }: StepProps) {
   const { t } = useI18n()
   const update = (index: number, changes: Partial<WantForm>) => {
     change(({ wants }) => ({
@@ -375,14 +383,19 @@ function WantStep({ form, change }: StepProps) {
   return (
     <>
       {form.wants.map((want, index) => (
-        <Section key={index} title={index === 0 ? t('wizard.want.title') : undefined}>
+        <Section key={index} title={index === 0 ? t('wizard.want') : undefined}>
           <CurrencySelect
             label={t('wizard.currency')}
             prompt={t('wizard.want.prompt')}
             value={want.currency}
             onChange={(code) => {
               const fresh = newWant(form.giveCurrency, code, look(code).home ?? want.country)
-              update(index, want.typed ? { currency: code, country: fresh.country } : fresh)
+              update(
+                index,
+                want.typed
+                  ? { currency: code, country: fresh.country }
+                  : { ...fresh, fixed: want.fixed },
+              )
             }}
           />
           <CountrySelect
@@ -394,9 +407,16 @@ function WantStep({ form, change }: StepProps) {
           <RateRow
             give={form.giveCurrency}
             want={want}
-            fixed={form.fixed}
             onChange={(changes) => {
               update(index, changes)
+            }}
+          />
+          {/* The market's rate unless the author fixes this one (QUESTIONS G2, J1). */}
+          <Switch
+            label={t('wizard.fixed')}
+            checked={want.fixed}
+            onChange={(fixed) => {
+              update(index, { fixed })
             }}
           />
           <Preview form={form} want={want} />
@@ -414,6 +434,9 @@ function WantStep({ form, change }: StepProps) {
           )}
         </Section>
       ))}
+      {form.wants.some((want) => !want.fixed) && (
+        <p className="-mt-2 px-6 text-sm text-hint">{t('wizard.market_hint')}</p>
+      )}
       {form.wants.length < MAX_WANTS && (
         <div className="mx-4">
           <Button
@@ -426,19 +449,9 @@ function WantStep({ form, change }: StepProps) {
           </Button>
         </div>
       )}
-      {/* The market's rate unless the author fixes their own (QUESTIONS G2). */}
-      <Section title={t('order.rate')}>
-        <Switch
-          label={t('wizard.fixed')}
-          checked={form.fixed}
-          onChange={(fixed) => {
-            change({ fixed })
-          }}
-        />
-      </Section>
-      {!form.fixed && <p className="-mt-2 px-6 text-sm text-hint">{t('wizard.market_hint')}</p>}
-      <Section title={t('wizard.receive_methods')}>
+      <Section>
         <MethodChips
+          label={t('wizard.receive_methods')}
           chosen={form.receiveMethods}
           onToggle={(kind) => {
             change(({ receiveMethods }) => ({ receiveMethods: toggled(receiveMethods, kind) }))
@@ -457,12 +470,10 @@ function WantStep({ form, change }: StepProps) {
 function RateRow({
   give,
   want,
-  fixed,
   onChange,
 }: {
   give: string
   want: WantForm
-  fixed: boolean
   onChange: (changes: Partial<WantForm>) => void
 }) {
   const { t, tn, locale } = useI18n()
@@ -473,7 +484,7 @@ function RateRow({
     if (suggested && !want.typed && !want.rate) onChange({ rate: suggested })
   }, [suggested, want.typed, want.rate, onChange])
   const label = (code: string): ReactNode => (code ? <Asset code={code} /> : '…')
-  if (!fixed)
+  if (!want.fixed)
     return (
       <div>
         <div className="flex min-h-12 items-center gap-2 px-4 py-2">
@@ -560,14 +571,12 @@ function Preview({ form, want }: { form: OrderForm; want: WantForm }) {
   const { tn, locale } = useI18n()
   const total = parseAmount(form.total)
   const request: QuoteRequest | null =
-    total && (!form.fixed || parseRate(want.rate)) && want.currency && form.giveCurrency
+    total && (!want.fixed || parseRate(want.rate)) && want.currency && form.giveCurrency
       ? {
           amount: total,
           give_currency: form.giveCurrency,
           want_currency: want.currency,
-          rate_spec: form.fixed
-            ? { v: 1, type: 'fixed', quotes: [quoteOf(form.giveCurrency, want)] }
-            : { v: 1, type: 'reference', source: 'coinbase' },
+          rate_spec: specOf(form.giveCurrency, want),
           whole: false,
         }
       : null
@@ -587,7 +596,47 @@ function Preview({ form, want }: { form: OrderForm; want: WantForm }) {
   )
 }
 
-/** Step 3, «Кому видно»: all links or chosen ones, and a note. */
+/**
+ * «Отдаёте 150 000 ₽ RUB · Россия → ₾ GEL по рынку или $ USD по 1 USD = 80 RUB»: step 1 in a
+ * line, at the head of step 2 (QUESTIONS J1).
+ */
+function Digest({ form }: { form: OrderForm }) {
+  const { t, tn, locale } = useI18n()
+  const wants = form.wants.map((want, index) => {
+    const [base, quote] = want.flipped
+      ? [form.giveCurrency, want.currency]
+      : [want.currency, form.giveCurrency]
+    const value = parseRate(want.rate)
+    return (
+      <Fragment key={want.currency}>
+        {index > 0 && ` ${t('order.or')} `}
+        {want.fixed && value
+          ? tn('wizard.digest.fixed', {
+              currency: <Asset code={want.currency} />,
+              rate: (
+                <>
+                  1 <Asset code={base} /> = {formatRate(locale, value)} <Asset code={quote} />
+                </>
+              ),
+            })
+          : tn('wizard.digest.market', { currency: <Asset code={want.currency} /> })}
+      </Fragment>
+    )
+  })
+  return (
+    <p className="mt-2">
+      {tn('wizard.digest', {
+        amount: (
+          <Money locale={locale} amount={parseAmount(form.total) ?? '0'} code={form.giveCurrency} />
+        ),
+        country: countryName(locale, form.giveCountry),
+        wants,
+      })}
+    </p>
+  )
+}
+
+/** Step 2, «Кому видно»: all links or chosen ones, and a note. */
 function WhoStep({ form, change }: StepProps) {
   const { t } = useI18n()
   const links = useLinks()
