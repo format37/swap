@@ -773,6 +773,9 @@
             "title": "Score",
             "type": "integer"
           },
+          "telegram_locale": {
+            "$ref": "#/components/schemas/Locale"
+          },
           "terms_accepted": {
             "title": "Terms Accepted",
             "type": "boolean"
@@ -809,6 +812,7 @@
           "score",
           "locale",
           "locale_chosen",
+          "telegram_locale",
           "tz",
           "notifications_off",
           "muted_kinds",
