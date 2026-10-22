@@ -11,6 +11,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part C** is for later phases and needs no answer now.
 - **Part D** records the owner's own decisions of 2026-10-21.
 - **Part E** was raised while planning phase 1. I follow its defaults until you answer.
+- **Part F** records the owner's notes after his first test of slice 1, on 2026-10-22.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -248,6 +249,8 @@ Without the tick, amounts are exact to 2 decimals.
 
 **Answer:** ok (the owner, 2026-10-21: «agree with everything else»).
 
+*Changed by F4 (2026-10-22): min may be 0, any amount.*
+
 ### Q-B6 · Counter-proposal and quiet hours: §6 says MVP, §12 says later
 
 FR-4.2 (counter-proposal) and the quiet hours in FR-7.2 sit in MVP sections. §12
@@ -426,6 +429,8 @@ speaks Russian, English and Georgian, with a switch (ADR-0009).
 **Answer:** ok. Payout methods gain «крипто», and the acceptor picks saved payment
 details instead of typing them (ADR-0010).
 
+*Changed by F3 (2026-10-22): `available_until` is optional, and empty by default.*
+
 ## C. Later phases (no answer needed now)
 
 ### Q-C1 · Source for the RUB rate (§13, v1)
@@ -433,6 +438,8 @@ details instead of typing them (ADR-0010).
 **Proposed:** CBR as the official rate, as the spec says. A market source comes only
 if participants ask for it. Before v1 I'll check that cbr.ru answers from the OVH
 address, and if it doesn't, use a mirror of CBR's data.
+
+*Answered by F5 (2026-10-22): a market outside Russia, not CBR.*
 
 ### Q-C2 · A deal made from a match suggestion (v1)
 
@@ -501,3 +508,60 @@ The demo, after slice 1, is a real deal among your acquaintances. The agreement 
 **Proposed:** run the demo without it. The bot's greeting, which everyone sees at
 /start (Q-B12), already says that Swap never holds or moves money. The agreement is in
 place before acceptance, as planned.
+
+## F. The owner's notes after his first test (2026-10-22)
+
+The owner ran slice 1 on his own and sent seven notes. They are decisions, so each is
+quoted, followed by what it changes. Where they differ from Q-B5, Q-B17 or Q-C1, they
+win. ADR-0019 and ADR-0020 hold the details.
+
+### F1 · «Отдаёте» instead of «Выберите»
+
+> Когда я выбираю валюту, там написано Выберите и список валют. Я бы лучше вместо
+> Выберете написал Отдаёте. Потому что рассеяный пользователь можть отвлечься и забыть
+> какая это валюта - та что он отдаёт или та что получает.
+
+The currency list opens with «Отдаёте» on step 1 and «Получаете» on step 2. → PR 1.8.
+
+### F2 · How the author can be paid
+
+> Как вы можете отдать я выбрал, но стоит сделать такой же селектор - как вы можете
+> получить.
+
+An order also says how its author can be paid, from the same six ways, on step 2. A
+proposal pays in one of them. Orders published earlier take all six. → PR 1.9.
+
+### F3 · The last day is optional
+
+> Последний день я бы разрешил оставить незаполненным - по-умолчанию.
+
+The last day is off by default, and such an order stays open until its author closes
+it. Asking for one still suggests two weeks, as Q-B17 did. → PR 1.8.
+
+### F4 · A minimum of 0
+
+> Минимум за сделку я бы тоже разрешил ставить 0 - просто что бы не мучать
+> пользователя выбором
+
+The minimum may be 0, and an empty field means 0: any amount up to the remainder. An
+order without a minimum is used up when nothing is left. → PR 1.8.
+
+### F5 · The market rate, at once
+
+> Курс сразу предлагать по курсу не-российской биржи - можно выбрать любую популярную,
+> которая бесплатно отдаёт курс по API.
+
+The wizard fills each rate in from Coinbase's public rates, with the source and time
+beside it, and the author can change it. What is published is still a fixed rate
+(ADR-0004). This answers Q-C1 too. → PR 1.10, ADR-0020.
+
+### F6, F7 · Deleting and restoring closed orders
+
+> Возможность удалять и / или архивировать / скрывать закрытые заявки
+
+> Возвожность восстанавливать закрытые (не удаленные) заявки
+
+The author can reopen an order they closed, as it was, and delete an order that is no
+longer open. A deleted order is gone from every list and card, the author's included,
+while its deals run to the end. Of delete, archive and hide, delete is built: next to
+reopening, an archive would be a second home for the same orders. → PR 1.11.
