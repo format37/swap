@@ -22,6 +22,8 @@ type NotificationType = Literal[
     "deal.sent",
     "deal.received",
     "deal.settled",
+    # Asked for by its recipient, so no switch silences it (QUESTIONS K4).
+    "export.deals",
 ]
 
 

@@ -16,11 +16,13 @@ from aiogram.exceptions import (
     TelegramForbiddenError,
     TelegramRetryAfter,
 )
+from aiogram.types import BufferedInputFile
 from sqlalchemy import func, select
 
 from swap.bot.handlers import open_card_keyboard
 from swap.config import Settings
 from swap.db import Sessionmaker
+from swap.export import deals_csv
 from swap.i18n import format_amount, resolve_locale, t
 from swap.logs import Redactor
 from swap.models import Notification, NotificationStatus, User
@@ -61,7 +63,12 @@ async def send_due(sessionmaker: Sessionmaker, bot: Bot, settings: Settings) -> 
             recipient = await db.get(User, note.recipient_id)
             if recipient is None:  # pragma: no cover - the foreign key guarantees the row
                 break
-            go_on = await _send(note, recipient, bot, settings, redactor)
+            # An export is made as it is sent, so it holds every deal up to that moment.
+            document = None
+            if note.type == "export.deals":
+                locale = resolve_locale(recipient.locale, recipient.language_code)
+                document = await deals_csv(db, recipient, locale)
+            go_on = await _send(note, recipient, bot, settings, redactor, document=document)
             await db.commit()
         if note.tg_status == NotificationStatus.SENT:
             sent += 1
@@ -71,14 +78,22 @@ async def send_due(sessionmaker: Sessionmaker, bot: Bot, settings: Settings) -> 
 
 
 async def _send(
-    note: Notification, recipient: User, bot: Bot, settings: Settings, redactor: Redactor
+    note: Notification,
+    recipient: User,
+    bot: Bot,
+    settings: Settings,
+    redactor: Redactor,
+    *,
+    document: tuple[bytes, int] | None = None,
 ) -> bool:
     """Try one message and record what happened. False means Telegram asked us to slow down."""
     if not recipient.can_message or recipient.telegram_id is None:
         note.tg_status = NotificationStatus.SKIPPED
         return True
-    # What the recipient switched off in the settings goes unsent (QUESTIONS K1).
-    if recipient.notifications_off or KIND_OF.get(note.type) in recipient.muted_kinds:
+    # What the recipient switched off in the settings goes unsent (QUESTIONS K1). What they
+    # asked for themselves answers to no switch.
+    kind = KIND_OF.get(note.type)
+    if kind is not None and (recipient.notifications_off or kind in recipient.muted_kinds):
         note.tg_status = NotificationStatus.SKIPPED
         note.last_error = "switched off"
         return True
@@ -88,13 +103,22 @@ async def _send(
             key: format_amount(Decimal(value), locale) if "amount" in key else value
             for key, value in note.params.items()
         }
-        text = t(locale, note.type, **values)
-        keyboard = (
-            open_card_keyboard(locale, settings.telegram_bot_username, note.target)
-            if note.target
-            else None
-        )
-        message = await bot.send_message(recipient.telegram_id, text, reply_markup=keyboard)
+        if document is not None:
+            data, count = document
+            day = datetime.now(UTC).date().isoformat()
+            message = await bot.send_document(
+                recipient.telegram_id,
+                BufferedInputFile(data, filename=f"swap-deals-{day}.csv"),
+                caption=t(locale, "export.caption", count=str(count)),
+            )
+        else:
+            text = t(locale, note.type, **values)
+            keyboard = (
+                open_card_keyboard(locale, settings.telegram_bot_username, note.target)
+                if note.target
+                else None
+            )
+            message = await bot.send_message(recipient.telegram_id, text, reply_markup=keyboard)
     except TelegramRetryAfter as exc:
         # Flood control: this one waits, and so does the rest of the sweep.
         note.next_attempt_at = datetime.now(UTC) + timedelta(seconds=exc.retry_after)
