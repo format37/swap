@@ -5,12 +5,14 @@ export const ALEX = {
   first_name: 'Alex',
   last_name: null,
   username: 'format37',
+  photo_url: null,
 }
 export const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
   first_name: 'Nino',
   last_name: 'B',
   username: 'nino',
+  photo_url: null,
 }
 export const DEAL_ID = 'f0000000-0000-4000-8000-000000000001'
 

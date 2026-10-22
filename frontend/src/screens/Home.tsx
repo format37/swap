@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
-import { fullName, useLinks } from '../api/links'
+import { useLinks } from '../api/links'
 import { useDeals } from '../api/deals'
 import { useOrders, type Order } from '../api/orders'
 import { DealRow } from '../deals/DealRow'
@@ -11,8 +11,8 @@ import { useI18n } from '../i18n/useI18n'
 import { OrderRow } from '../orders/OrderRow'
 import { useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
-import { Cell } from '../ui/Cell'
 import { EmptyState } from '../ui/EmptyState'
+import { PersonRow } from '../ui/Person'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 
@@ -57,7 +57,7 @@ export function Home({ me }: { me: Me }) {
           onClick={() => void navigate('/profile')}
           className="rounded-full active:opacity-70"
         >
-          <Avatar name={me.first_name} />
+          <Avatar name={me.first_name} photo={me.photo_url} />
         </button>
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold">
@@ -70,12 +70,10 @@ export function Home({ me }: { me: Me }) {
       {incoming.length > 0 && (
         <Section title={t('home.link_requests')}>
           {incoming.map((link) => (
-            <Cell
+            <PersonRow
               key={link.id}
-              icon={<Avatar name={fullName(link.person)} size="sm" />}
-              label={fullName(link.person)}
-              subtitle={t('link.incoming')}
-              opens
+              person={link.person}
+              detail={t('link.incoming')}
               onClick={() => void navigate(`/links/${link.id}`)}
             />
           ))}

@@ -713,6 +713,17 @@
             "title": "Locale Chosen",
             "type": "boolean"
           },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
           "tz": {
             "anyOf": [
               {
@@ -741,6 +752,7 @@
           "first_name",
           "last_name",
           "username",
+          "photo_url",
           "locale",
           "locale_chosen",
           "tz"
@@ -1097,6 +1109,17 @@
             ],
             "title": "Last Name"
           },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
           "username": {
             "anyOf": [
               {
@@ -1113,7 +1136,8 @@
           "id",
           "first_name",
           "last_name",
-          "username"
+          "username",
+          "photo_url"
         ],
         "title": "Person",
         "type": "object"

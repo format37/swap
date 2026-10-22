@@ -858,6 +858,8 @@ export interface components {
             locale: components["schemas"]["Locale"];
             /** Locale Chosen */
             locale_chosen: boolean;
+            /** Photo Url */
+            photo_url: string | null;
             /** Tz */
             tz: string | null;
             /** Username */
@@ -1002,6 +1004,8 @@ export interface components {
             id: string;
             /** Last Name */
             last_name: string | null;
+            /** Photo Url */
+            photo_url: string | null;
             /** Username */
             username: string | null;
         };

@@ -26,9 +26,11 @@ host, as in `https://t.me/i/userpic/320/<id>.svg`, and the picture is a JPEG or 
   point a browser elsewhere.
 - The bot's /start carries no photo and leaves the column alone.
 
-**The picture loads straight from Telegram.** The CSP's `img-src` gains `https://t.me`,
-and nothing else. After the deploy, I check the host in the stored URLs and count the
-users who have one.
+**The picture loads straight from Telegram.** The CSP's `img-src` gains `https://t.me`
+and `https://*.telesco.pe`, and nothing else. `t.me` answers a userpic with a 302 to
+Telegram's CDN, `cdn4.telesco.pe` and its siblings, and a CSP checks where a redirect
+leads too (checked with curl on 2026-10-22). After the deploy, I check the host in the
+stored URLs and count the users who have one.
 - If none comes, initials stay.
 - A copy through the bot is a follow-up to offer, not one to build unasked. It would
   call `getUserProfilePhotos` on the VPS's Bot API server, never api.telegram.org. And it
@@ -61,4 +63,4 @@ Chrome shows the same thing a phone does.
 - **Copying photos through the bot.** That means storage, a job, and care with the Bot
   API file links, which carry the token. The link is enough while Telegram provides it.
 - **Initials only** (ADR-0003). The owner asked for photos.
-- **Allowing any image host in the CSP.** One host is all Telegram uses.
+- **Allowing any image host in the CSP.** Telegram's own two are enough.

@@ -16,7 +16,7 @@ import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { formatAmount, formatRate } from '../money/format'
 import { confirmAction, hapticNotify, useMainButton } from '../telegram'
-import { Avatar } from '../ui/Avatar'
+import { Person } from '../ui/Person'
 import { Button } from '../ui/Button'
 import { FormError } from '../ui/FormError'
 import { Loading } from '../ui/Loading'
@@ -93,12 +93,8 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
 
   return (
     <Screen>
-      <header className="flex items-center gap-3 px-6 pt-4">
-        <Avatar name={fullName(other)} />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold">{fullName(other)}</h1>
-          <p className="text-sm text-hint">{t('deal.title')}</p>
-        </div>
+      <header className="flex items-center px-6 pt-4">
+        <Person person={other} size="lg" heading detail={t('deal.title')} />
       </header>
 
       <p className="mx-4 rounded-xl bg-section-bg px-4 py-3 font-medium">{statusLine}</p>

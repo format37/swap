@@ -70,6 +70,6 @@ export function useRemoveLink() {
   )
 }
 
-export function fullName(person: Person): string {
+export function fullName(person: Pick<Person, 'first_name' | 'last_name'>): string {
   return [person.first_name, person.last_name].filter(Boolean).join(' ')
 }

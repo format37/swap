@@ -117,6 +117,29 @@ def test_a_valid_launch_is_accepted() -> None:
     assert data.start_param == "inv_abc"
 
 
+PHOTO = "https://t.me/i/userpic/320/4FPEE4tmP3ATHa57u6MqTDih13LTOiMoKoLDRG4PnSA.svg"
+
+
+@pytest.mark.parametrize(
+    ("sent", "kept"),
+    [
+        (PHOTO, PHOTO),
+        (None, None),
+        # Only Telegram's own links are kept, so a stored one points nowhere else (ADR-0027).
+        ("https://evil.example/i/userpic/320/x.svg", None),
+        ("http://t.me/i/userpic/320/x.svg", None),
+        ("https://t.me.evil.example/x.svg", None),
+        ("https://t.me/x y.svg", None),
+        ("https://t.me/" + "x" * 600, None),
+        (42, None),
+    ],
+)
+def test_only_telegrams_own_photo_link_is_kept(sent: object, kept: str | None) -> None:
+    user = json.dumps({**USER, "photo_url": sent}, ensure_ascii=False)
+    data = validate_init_data(signed(fields(user=user)), TEST_BOT_TOKEN, max_age=HOUR, now=NOW)
+    assert data.user.photo_url == kept
+
+
 def test_our_signature_agrees_with_aiograms() -> None:
     assert check_webapp_signature(TEST_BOT_TOKEN, signed(fields()))
 

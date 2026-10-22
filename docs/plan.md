@@ -198,9 +198,9 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] Step 2: the digest of step 1, «Кому видно» and the comment.
 
 **PR 1.21 — People with photo, name and @username** (J4; ADR-0027)
-- [ ] Migration: `users.photo_url`, taken from `initData` at every sign-in. The CSP's
-      `img-src` gains `https://t.me`.
-- [ ] One `Person` component everywhere a person is shown, with initials when there is
+- [x] Migration: `users.photo_url`, taken from `initData` at every sign-in. The CSP's
+      `img-src` gains `https://t.me` and its CDN, `*.telesco.pe`.
+- [x] One `Person` component everywhere a person is shown, with initials when there is
       no photo.
 - [ ] `dev_launch --photo`. After the deploy, count who has a photo.
 

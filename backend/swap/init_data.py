@@ -15,6 +15,9 @@ from urllib.parse import parse_qsl
 # Telegram's clock and ours may disagree a little. More than this is a forgery or a
 # broken clock.
 CLOCK_SKEW = timedelta(seconds=60)
+# Where Telegram serves profile photos. A link anywhere else is dropped, so a stored URL
+# can only ever point a browser at Telegram (ADR-0027).
+PHOTO_PREFIX = "https://t.me/"
 
 
 class InitDataError(Exception):
@@ -33,6 +36,8 @@ class TelegramUser:
     username: str | None
     language_code: str | None
     allows_write_to_pm: bool
+    # Telegram's link to their photo, when their privacy settings let it come.
+    photo_url: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,6 +103,20 @@ def _user(raw: str | None) -> TelegramUser:
             username=data.get("username") or None,
             language_code=data.get("language_code") or None,
             allows_write_to_pm=bool(data.get("allows_write_to_pm", False)),
+            photo_url=_photo(data.get("photo_url")),
         )
     except (ValueError, KeyError, TypeError, AttributeError) as exc:
         raise InitDataError("init_data_no_user") from exc
+
+
+def _photo(url: object) -> str | None:
+    """Telegram's link to a profile photo, or None for anything that isn't one."""
+    if (
+        isinstance(url, str)
+        and url.startswith(PHOTO_PREFIX)
+        and len(url) <= 512
+        and url.isprintable()
+        and " " not in url
+    ):
+        return url
+    return None

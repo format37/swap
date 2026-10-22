@@ -84,6 +84,9 @@ class User(Base):
     # An IANA zone from the device, such as Asia/Tbilisi. Dates in orders and deals are
     # calendar dates in it (Q-B17).
     tz: Mapped[str | None] = mapped_column(Text)
+    # Their Telegram photo, as a link Telegram serves: taken from initData at every
+    # sign-in, never copied (QUESTIONS J4, ADR-0027).
+    photo_url: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 

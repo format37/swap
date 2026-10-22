@@ -153,6 +153,21 @@ async def test_signing_in_again_refreshes_the_profile(client: AsyncClient) -> No
     assert again["me"]["locale"] == "ka"
 
 
+async def test_each_sign_in_brings_the_photo_link_of_its_launch(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    photo = "https://t.me/i/userpic/320/abc.jpg"
+    first = await sign_in(client, user={"photo_url": photo})
+    assert first["me"]["photo_url"] == photo
+    # A launch without one means the photo is gone, or hidden now (ADR-0027).
+    again = await sign_in(client)
+    assert again["me"]["photo_url"] is None
+    async with sessionmaker() as db:
+        user = await db.scalar(select(User).where(User.telegram_id == 1001))
+    assert user is not None
+    assert user.photo_url is None
+
+
 async def test_a_username_moves_to_its_new_owner(
     client: AsyncClient, sessionmaker: Sessions
 ) -> None:

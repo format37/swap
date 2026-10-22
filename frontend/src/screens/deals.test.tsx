@@ -28,7 +28,7 @@ function press() {
   })
 }
 
-function meOf(person: Pick<Me, 'id' | 'first_name' | 'last_name' | 'username'>): Me {
+function meOf(person: Pick<Me, 'id' | 'first_name' | 'last_name' | 'username' | 'photo_url'>): Me {
   return { ...person, locale: 'ru', locale_chosen: false, tz: 'Asia/Tbilisi' }
 }
 

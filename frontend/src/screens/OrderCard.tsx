@@ -25,9 +25,9 @@ import { KINDS } from '../money/kinds'
 import { readsAs } from '../orders/form'
 import { orderDates } from '../orders/words'
 import { confirmAction, hapticNotify, useMainButton } from '../telegram'
-import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Loading } from '../ui/Loading'
+import { Person } from '../ui/Person'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 import { Problem } from './Problem'
@@ -114,22 +114,19 @@ function Shown({ order, me }: { order: Order; me: Me }) {
       ? { text: t('order.propose'), onClick: () => void navigate(`/orders/${order.id}/propose`) }
       : null,
   )
-  const name = fullName(order.author)
   const give = order.give_currency
   const money = (amount: string) => <Money locale={locale} amount={amount} code={give} />
   const exact = order.amount_min === order.amount_max
 
   return (
     <Screen>
-      <header className="flex items-center gap-3 px-6 pt-4">
-        <Avatar name={name} />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold">{name}</h1>
-          <p className="truncate text-sm text-hint">
-            {order.author.username ? `@${order.author.username} · ` : ''}
-            {t(`order.status.${order.status}`)}
-          </p>
-        </div>
+      <header className="flex items-center px-6 pt-4">
+        <Person
+          person={order.author}
+          size="lg"
+          heading
+          detail={t(`order.status.${order.status}`)}
+        />
       </header>
 
       <Section title={order.mine ? t('order.i_give') : t('order.gives')}>

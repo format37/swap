@@ -134,7 +134,7 @@ function Shown({ link, answer }: { link: LinkDetail; answer: ReturnType<typeof u
   return (
     <Screen>
       <div className="flex flex-col items-center gap-2 px-6 pt-8 text-center">
-        <Avatar name={name} size="xl" />
+        <Avatar name={name} photo={link.person.photo_url} size="xl" />
         <h1 className="text-2xl font-semibold break-words">{name}</h1>
         {link.person.username && <p className="text-hint">@{link.person.username}</p>}
         <p className="flex items-center gap-1.5 text-sm text-hint">
