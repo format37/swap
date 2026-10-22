@@ -9,19 +9,15 @@ roughly 2–4 hours of wall-clock work.
 
 ## Phase 1 — MVP (started 2026-10-22)
 
-Phase 1 is done when the owner and three acquaintances have run one real deal end to
-end, from the order to both «Получил», and §12's checklist holds:
-- three links made by invite links, and one by a request to an @username;
-- an order is visible to the author's links and to nobody else, and a test proves it;
-- a deal was proposed and accepted, both legs were marked, and a document was attached
-  through the bot;
-- the balance showed the open obligation and returned to zero after «Получил»;
-- every transition of the state machine is tested, and illegal ones are refused;
-- a backup was restored into a clean container.
+Phase 1 is done when parts J and K of `docs/QUESTIONS.md` are live and the owner
+confirms (K10, a default). §12's own checklist leaned on a document through the bot, a
+balance and a restored backup. Those wait in «Потенциальные планы» below, and the rest of
+the checklist goes with them. Its other items already hold: the first real deal settled
+on 2026-10-22 (part H), and every transition of the state machine is tested.
 
 Each PR carries its API, UI and tests, with every string in ru, en and ka, and is
 usable on the bot once merged (ADR-0006). After a merge with green CI I redeploy
-Swap's stack on the VPS (the kickoff's standing permission).
+Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUDE.md).
 
 ### Owner
 
@@ -33,11 +29,17 @@ Swap's stack on the VPS (the kickoff's standing permission).
       details and the key went in PR 1.16 (G7).
 - [x] Phone check of PRs 1.8–1.11 once deployed: a new order without a minimum or a
       last day, with its rate filled in; then close, reopen and delete one.
-- [ ] The demo, after slice 1: invite one or two people for a real link, order and
-      deal. Links and an order worked on 2026-10-22; the deal waits for PRs 1.12–1.15.
+- [x] The demo, after slice 1: invite one or two people for a real link, order and
+      deal. Links and an order worked on 2026-10-22, and the first real deal settled
+      the same day (part H).
 - [x] Answer G7 in `docs/QUESTIONS.md`: may the four saved payment details, their table
       and the key be deleted? Yes, on 2026-10-22.
-- [ ] By slice 5: the backup bucket and the `age` public key (Q-A7).
+- [ ] A phone check of PRs 1.17 and 1.18, and of each visible change after them. I ask
+      for each one as it ships.
+- [ ] Your veto, if any, on part J's defaults: mainly reach 2 for new orders, rings
+      instead of a web of lines, and proposals across handshakes.
+- [ ] K6: what did you find missing in switching the language?
+- [ ] Once PR 1.27 is live: set the privacy page's URL in BotFather.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
       list (Q-A6), and the agreement text (Q-B15).
 
@@ -181,50 +183,147 @@ both sides. The owner's notes are QUESTIONS part H.
       VPS's `.env`, passed as a build secret, never a build arg), and keep them out of
       `/assets`. Done when a production frontend issue shows `src/…` file and line.
 
-### Slices 2–7
+**The owner's notes and priority list (2026-10-22, evening).** Five notes on slice 1 are
+QUESTIONS part J and ADRs 0026–0030; the priority list for the rest of the phase is part
+K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Потенциальные
+планы» below.
 
-Each is broken into PRs when it starts.
+**PR 1.20 — The wizard in two steps, a rate per wanted currency** (J1; ADR-0026)
+- [ ] Migration: `order_wants.rate_spec`, copied from each order's spec; `orders.rate_spec`
+      goes.
+- [ ] api: a spec per wanted currency in the draft and the order; the quote and the
+      proposal use the chosen currency's. A currency appears once.
+- [ ] Step 1: «Отдаёте» and «Получаете» as two groups without section titles, and
+      «Зафиксировать курс» per currency, off by default.
+- [ ] Step 2: the digest of step 1, «Кому видно» and the comment.
 
-| Slice | Content |
-|---|---|
-| 2 | Balances (Q-B2); the deals list, active and history; «требует моего действия» on Home; order editing (FR-2.5) and the feed's filters (FR-2.4), which ADR-0006 left unplaced |
-| 3 | Documents through the bot (FR-5.1, 5.3–5.5, Q-B13) |
-| 4 | Cancel requests, disputes and their resolution, deal notes (FR-4.5–4.7) |
-| 5 | Reminders (Q-B7); order and proposal expiry; the in-app feed and its counter; muting a link's new orders; the retention and session sweeps; `requestWriteAccess` for those who skipped /start (Q-B12) |
-| 6 | The manual rate (Q-B3); the profile's display name, time zone and default currencies; blocks and the block list; account deletion (Q-B10) |
-| 7 | Encrypted off-box backups and a restore drill; hardening, including the rate limit on sign-in; the user agreement (Q-B15); Sentry source maps for the Mini App, if PR 1.19's follow-up is still open |
+**PR 1.21 — People with photo, name and @username** (J4; ADR-0027)
+- [ ] Migration: `users.photo_url`, taken from `initData` at every sign-in. The CSP's
+      `img-src` gains `https://t.me`.
+- [ ] One `Person` component everywhere a person is shown, with initials when there is
+      no photo.
+- [ ] `dev_launch --photo`. After the deploy, count who has a photo.
+
+**PR 1.22 — Reach by handshakes** (J2; ADR-0028)
+- [ ] Migration: `orders.reach`; 1 for orders without a list, 0 for those with one.
+- [ ] Visibility through a recursive CTE over active links. Negative tests first: one
+      ring too far, a broken link in the middle of a chain, an order at 0 and someone
+      not on its list, the filter.
+- [ ] api: the reach in the draft, `within` on «Открытые мне», the chain on the card,
+      and the rings for the wizard.
+- [ ] App: the slider on step 2 with who will see the order and the rings; the folded
+      filter on Home; the chain on the card.
+- [ ] The bot tells direct links only, and the words about links follow the new rule.
+
+**PR 1.23 — The score** (J5; ADR-0029)
+- [ ] api: each person's score, counted from settled deals.
+- [ ] In `Person`, beside the name, with a tap that explains it.
+
+**PR 1.24 — Deleting for oneself** (J3; ADR-0030)
+- [ ] Migration: `deals.proposer_deleted_at`. The journal lets a deal's lines go with the
+      whole deal, and in no other way.
+- [ ] api: a participant deletes a finished deal; the author deletes a finished order
+      with all its deals; the server erases what both sides have deleted.
+      Authorization tests first.
+- [ ] The deal card and the order card offer it.
+
+**PR 1.25 — The settings: notifications and the language** (K1, K6)
+- [ ] Migration: what each person switched off, and whose new orders they muted.
+- [ ] The settings on the profile screen: «Все уведомления» and a switch per kind;
+      «Язык». Muting a link's new orders on its screen.
+- [ ] The outbox skips what the recipient switched off.
+
+**PR 1.26 — Deleting all history, and the account** (K2; Q-B10)
+- [ ] «Удалить всю историю»: J3 for everything finished, and a word on what still runs.
+- [ ] «Удалить аккаунт»: refused while a deal runs; proposals cancelled, orders closed,
+      links, invites and sessions deleted, history deleted as J3 has it; the row
+      becomes «Удалённый участник».
+
+**PR 1.27 — The agreement, the privacy page, the contact** (K3, K9; Q-B15)
+- [ ] The agreement at first launch, with «Принимаю», in ru, en and ka.
+- [ ] https://swap.latentstate.dev/privacy, a plain page in three languages. Its URL goes
+      to the owner.
+- [ ] The settings link to it, and offer format37@gmail.com with «Скопировать».
+
+**PR 1.28 — Order numbers** (K8)
+- [ ] Migration: `orders.number` from one sequence; existing orders numbered by age.
+- [ ] «№ 17» on cards, rows and deals, and in bot messages.
+
+**PR 1.29 — CSV export** (K4; FR-6.3)
+- [ ] One row per deal the user took part in, in their language.
+- [ ] The bot sends the file to their chat.
+
+**PR 1.30 — Recurring orders** (K7)
+- [ ] «Повторять каждый месяц, N-го числа» in the wizard.
+- [ ] A worker job publishes each copy on its day, once, and announces it.
+- [ ] «Больше не повторять» on any copy.
+
+### Потенциальные планы: not now
+
+The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
+built until the owner brings it back.
+
+**From slices 2–7:**
+- balances (Q-B2);
+- the deals list, active and history, and «требует моего действия» on Home;
+- order editing (FR-2.5), and the feed's filters by currency and country (FR-2.4);
+- documents through the bot (FR-5.1, 5.3–5.5, Q-B13);
+- the cancel-request and dispute screens, whose api exists, and deal notes (FR-4.7);
+- reminders (Q-B7);
+- order and proposal expiry (FR-2.6, FR-4.4);
+- the in-app feed and its counter (FR-7.3);
+- the retention and session sweeps;
+- `requestWriteAccess` for whoever skipped /start (Q-B12);
+- the manual rate (Q-B3);
+- the profile's time zone and default currencies;
+- blocks and the block list (FR-1.4);
+- off-box encrypted backups and the restore drill (Q-A7: the bucket and the `age` key);
+- hardening, including the rate limit on sign-in.
+
+**From v1 and v2:**
+- NBG and CBR with a markup (FR-3.3);
+- match hints (FR-8.1);
+- counter-proposals (FR-4.2);
+- uploads from the app (FR-5.2);
+- browser sign-in (Q-C3);
+- netting (FR-8.2);
+- quiet hours (FR-7.2);
+- favourites, with the feed filter's 0 (J2).
+
+**Flagged to the owner on 2026-10-22:** without off-box backups, the only copies are the
+deploy-time dumps, the last five, on the same VPS. They survive a bad migration, not a
+lost server.
 
 ## Estimates
 
 | Phase | Sessions | Calendar |
 |---|---|---|
 | 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
-| 1 — MVP | ≈ 22.5 | ≈ 4 weeks; the last days wait on the group's real deal |
+| 1 — MVP | ≈ 22 | ≈ 2 more weeks, then the owner's confirmation |
 
-Phase 1 by slice (ADR-0006):
+Phase 1, PR by PR:
 
-| Slice | Sessions |
-|---|---|
-| Links, the outbox (PRs 1.1–1.2) | 1.75 |
-| Orders (PRs 1.3–1.4) | 2 |
-| Payment details, deals, the state machine (PRs 1.5–1.7) | 3.75 |
-| The owner's notes (PRs 1.8–1.11) | 1.5 |
-| The demo's notes (PRs 1.12–1.16) | 1.5 |
-| The first deal's notes (PRs 1.17–1.18) | 1 |
-| **Demo** | **≈ 11.5** |
-| Balances, lists, order editing and filters | 1.5 |
-| Documents through the bot | 1.5 |
-| Cancel, dispute, notes | 1 |
-| Reminders, expiry, feed | 1.5 |
-| Manual rate, profile, blocks, deletion | 1.5 |
-| Backups, hardening, agreement | 1.5 |
-| Georgian review, acceptance fixes | 1.5 |
-| **Total** | **≈ 22.5** |
+| PRs | Item | Sessions |
+|---|---|---|
+| 1.1–1.18 | Slice 1 and three rounds of the owner's notes | 11.5 (done) |
+| 1.19 | Error reports (part I) | 0.5 (done) |
+| 1.20 | J1 · the wizard in two steps, a rate per wanted currency | 1 |
+| 1.21 | J4 · people with photo, name and @username | 0.5 |
+| 1.22 | J2 · reach by handshakes, the feed's filter, the rings | 1.5 |
+| 1.23 | J5 · the score | 0.5 |
+| 1.24 | J3 · deleting for oneself, and erasing once all have | 1 |
+| 1.25 | K1, K6 · the settings: notifications and the language | 1 |
+| 1.26 | K2 · deleting all history, and the account | 1 |
+| 1.27 | K3, K9 · the agreement, the privacy page, the contact | 0.75 |
+| 1.28 | K8 · order numbers | 0.25 |
+| 1.29 | K4 · CSV export | 0.5 |
+| 1.30 | K7 · recurring orders | 0.75 |
+| | Georgian review, acceptance fixes | 1 |
+| | **Total** | **≈ 21.75** |
 
-Slice 2 grew by half a session on 2026-10-22: order editing and the filters had no
-slice. Slice 1 grew by one and a half the same day, for the owner's notes after his
-first test, by one and a half again for his notes after the demo, and by one for his
-notes after the first real deal.
+On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
+sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
+K9 into the privacy page's, because each touches the same screens.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
