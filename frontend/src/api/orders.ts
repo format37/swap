@@ -73,10 +73,18 @@ export function useStopRepeating() {
 }
 
 /** Gone for everyone, its author included; its deals carry on (QUESTIONS F6). */
+/** Deletes an order for oneself (QUESTIONS J3, L4), and so the deals that go with it. */
 export function useDeleteOrder() {
-  return useOrdersMutation((id: string) =>
-    done(api.DELETE('/api/v1/orders/{order_id}', { params: { path: { order_id: id } } })),
-  )
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      done(api.DELETE('/api/v1/orders/{order_id}', { params: { path: { order_id: id } } })),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ORDERS }),
+        queryClient.invalidateQueries({ queryKey: ['deals'] }),
+      ]),
+  })
 }
 
 /** What orders may give and want; config on the server (FR-2.2). */

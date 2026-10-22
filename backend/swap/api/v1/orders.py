@@ -9,7 +9,7 @@ from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from swap import orders
+from swap import deals, orders
 from swap.api.deps import AppSettings, CurrentUser, Db
 from swap.api.errors import Problem
 from swap.api.v1.people import Person
@@ -166,8 +166,9 @@ async def stop_repeating(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Orde
     "/{order_id}", status_code=204, responses={404: {"model": Problem}, 409: {"model": Problem}}
 )
 async def delete_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Response:
-    """Delete a finished order with all its deals, for yourself alone (QUESTIONS J3). Whoever
-    dealt on it keeps their deals and the order with them."""
-    await orders.delete(db, user.id, order_id)
+    """Delete an order for yourself alone (QUESTIONS J3, L4). Its author deletes a finished
+    order with all its deals; whoever dealt on it deletes all their own deals on it, once
+    they are over. The other side keeps theirs, and the order with them."""
+    await deals.delete_order(db, user.id, order_id)
     await db.commit()
     return Response(status_code=204)

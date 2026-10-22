@@ -105,6 +105,9 @@ export const ru = {
   'order.delete': 'Удалить заявку',
   'order.delete_confirm':
     'Удалить заявку и все сделки по ней у себя? У других участников они останутся. Вернуть их нельзя.',
+  'order.delete_mine': 'Удалить у себя',
+  'order.delete_mine_confirm':
+    'Удалить у себя ваши сделки по этой заявке? У автора они останутся. Вернуть их нельзя.',
   'order.status.open': 'Открыта',
   'order.status.fulfilled': 'Исполнена',
   'order.status.closed': 'Закрыта',

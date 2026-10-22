@@ -567,8 +567,9 @@ export interface paths {
         post?: never;
         /**
          * Delete Order
-         * @description Delete a finished order with all its deals, for yourself alone (QUESTIONS J3). Whoever
-         *     dealt on it keeps their deals and the order with them.
+         * @description Delete an order for yourself alone (QUESTIONS J3, L4). Its author deletes a finished
+         *     order with all its deals; whoever dealt on it deletes all their own deals on it, once
+         *     they are over. The other side keeps theirs, and the order with them.
          */
         delete: operations["delete_order"];
         options?: never;

@@ -105,6 +105,9 @@ export const en: Messages = {
   'order.delete': 'Delete offer',
   'order.delete_confirm':
     'Delete the offer and all its deals, for you alone? The others keep theirs. This can’t be undone.',
+  'order.delete_mine': 'Delete for me',
+  'order.delete_mine_confirm':
+    'Delete your deals on this offer, for you alone? The author keeps them. This can’t be undone.',
   'order.status.open': 'Open',
   'order.status.fulfilled': 'Done',
   'order.status.closed': 'Closed',

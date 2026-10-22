@@ -30,6 +30,11 @@ async def delete_order(world: World) -> Any:
     return await world.client.delete(order, headers=world.alex)
 
 
+async def delete_mine(world: World, headers: dict[str, str]) -> Any:
+    """«Удалить у себя» on Alex's order, by someone who isn't its author (QUESTIONS L4)."""
+    return await world.client.delete(f"/api/v1/orders/{world.order['id']}", headers=headers)
+
+
 async def rows(sessions: Sessions, deal: dict[str, Any]) -> dict[str, int]:
     """What the server still holds of a deal and its order."""
     deal_id = uuid.UUID(deal["id"])
@@ -94,6 +99,27 @@ async def test_an_open_order_or_one_with_a_running_deal_cannot_be_deleted(world:
     running = await delete_order(world)
     assert running.status_code == 409
     assert running.json()["code"] == "order.deals_running"
+
+
+async def test_nobody_without_a_deal_on_it_deletes_someone_elses_order(world: World) -> None:
+    # Nino may see the open order, and Gio may not: both get the same answer.
+    for headers in (world.nino, world.gio):
+        response = await delete_mine(world, headers)
+        assert response.status_code == 404
+        assert response.json()["code"] == "order.not_found"
+
+
+async def test_a_participant_keeps_the_order_while_any_of_their_deals_runs(
+    world: World, sessionmaker: Sessions
+) -> None:
+    settled = await settle(world, world.nino)
+    running = await world.propose(world.nino)
+    await world.ok(world.alex, running, "accept")
+    response = await delete_mine(world, world.nino)
+    assert response.status_code == 409
+    assert response.json()["code"] == "deal.running"
+    # Nothing was deleted, the finished deal included.
+    assert seen(await world.client.get(f"/api/v1/deals/{settled['id']}", headers=world.nino))
 
 
 # --- allowed ---------------------------------------------------------------------------
@@ -181,6 +207,51 @@ async def test_an_order_stays_while_any_of_its_deals_does(
     # The last deal deleted takes the order with it.
     await delete_deal(world, world.nino, kept)
     assert await rows(sessionmaker, kept) == {
+        "deal": 0,
+        "legs": 0,
+        "journal": 0,
+        "messages": 0,
+        "order": 0,
+    }
+
+
+async def test_a_participant_deletes_all_their_deals_on_an_order_at_once(
+    world: World, sessionmaker: Sessions
+) -> None:
+    first = await settle(world, world.nino)
+    second = await settle(world, world.nino)
+    order = f"/api/v1/orders/{world.order['id']}"
+    await world.client.post(f"{order}/close", headers=world.alex)
+    assert (await delete_mine(world, world.nino)).status_code == 204
+    # Gone from their history and their deals, as if they had deleted each (QUESTIONS L4).
+    assert not seen(await world.client.get(order, headers=world.nino))
+    history = await world.client.get("/api/v1/orders?scope=history", headers=world.nino)
+    assert history.json() == []
+    assert (await world.client.get("/api/v1/deals?scope=all", headers=world.nino)).json() == []
+    # The author keeps the order and both deals.
+    on_it = {"scope": "all", "order_id": world.order["id"]}
+    kept = await world.client.get("/api/v1/deals", params=on_it, headers=world.alex)
+    assert {deal["id"] for deal in kept.json()} == {first["id"], second["id"]}
+    assert (await rows(sessionmaker, first))["deal"] == 1
+    # Once the author deletes the order too, nothing of it is left.
+    assert (await world.client.delete(order, headers=world.alex)).status_code == 204
+    for deal in (first, second):
+        assert await rows(sessionmaker, deal) == {
+            "deal": 0,
+            "legs": 0,
+            "journal": 0,
+            "messages": 0,
+            "order": 0,
+        }
+
+
+async def test_after_the_author_deleted_the_order_a_participant_erases_it(
+    world: World, sessionmaker: Sessions
+) -> None:
+    deal = await settle(world, world.nino)
+    assert (await delete_order(world)).status_code == 204
+    assert (await delete_mine(world, world.nino)).status_code == 204
+    assert await rows(sessionmaker, deal) == {
         "deal": 0,
         "legs": 0,
         "journal": 0,

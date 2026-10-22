@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Me } from '../api/client'
+import type { Deal } from '../api/deals'
 import type { Order, RateSpec } from '../api/orders'
 import { backOverride } from '../back'
 import { confirmAction, useMainButton, type MainAction } from '../telegram'
@@ -672,6 +673,45 @@ describe('the order card', () => {
     renderScreen(<OrderCard me={me} />, { route, path })
     await screen.findByText(/Сделки по заявке/i)
     expect(screen.queryByRole('button', { name: 'Удалить заявку' })).toBeNull()
+  })
+
+  it('offers whoever dealt on it to delete their deals on it, once all are over (L4)', async () => {
+    const { served } = fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ status: 'fulfilled' })),
+      'GET /api/v1/deals': () => json(200, [deal({ status: 'settled' })]),
+      [`DELETE /api/v1/orders/${ORDER_ID}`]: () => new Response(null, { status: 204 }),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    fireEvent.click(await screen.findByRole('button', { name: 'Удалить у себя' }))
+    await waitFor(() => {
+      expect(served).toContain(`DELETE /api/v1/orders/${ORDER_ID}`)
+    })
+    expect(confirmAction).toHaveBeenCalledWith(
+      'Удалить у себя ваши сделки по этой заявке? У автора они останутся. Вернуть их нельзя.',
+      'Удалить у себя',
+      { destructive: true },
+    )
+  })
+
+  it.each<[string, Deal[]]>([
+    [
+      'while a deal of theirs runs',
+      [
+        deal({ status: 'settled' }),
+        deal({ id: 'f0000000-0000-4000-8000-000000000002', status: 'accepted' }),
+      ],
+    ],
+    ['to someone with no deal on it', []],
+  ])('offers no deletion of someone else’s order %s', async (_, theirs) => {
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ status: 'fulfilled' })),
+      'GET /api/v1/deals': () => json(200, theirs),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    await screen.findByText(/Осталось/)
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Удалить у себя' })).toBeNull()
+    })
   })
 
   it('says why a closed order past its last day can’t reopen', async () => {
