@@ -246,8 +246,8 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] The settings link to it, and offer format37@gmail.com with «Скопировать».
 
 **PR 1.28 — Order numbers** (K8)
-- [ ] Migration: `orders.number` from one sequence; existing orders numbered by age.
-- [ ] «№ 17» on cards, rows and deals, and in bot messages.
+- [x] Migration: `orders.number` from one sequence; existing orders numbered by age.
+- [x] «№ 17» on cards, rows and deals, and in bot messages.
 
 **PR 1.29 — CSV export** (K4; FR-6.3)
 - [ ] One row per deal the user took part in, in their language.
