@@ -33,10 +33,12 @@ The owner accepted phase 0 (skeleton) on 2026-10-22; it is live at
 https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
 - Slice 1 and three rounds of the owner's notes on it are live (PRs 1.1–1.18), and so
   are error reports (PR 1.19).
-- What remains is QUESTIONS part J (the owner's notes) and part K (the owner's priority
-  list): PRs 1.20–1.30 in `docs/plan.md`.
+- QUESTIONS part J (the owner's notes) and part K (the owner's priority list) are live
+  too: PRs 1.20–1.30, GitHub #29–#41, deployed on 2026-10-22. Production runs migration
+  0023.
+- Phase 1 is accepted when the owner confirms (K10). The owner's open items are in
+  plan.md: phone checks, the privacy URL in BotFather, K6, and the Georgian read.
 - Everything else waits in plan.md's «Потенциальные планы».
-- Phase 1 is accepted when parts J and K are live and the owner confirms (K10).
 
 ## Commands
 
