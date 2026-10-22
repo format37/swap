@@ -111,9 +111,9 @@ notes (QUESTIONS part F, ADR-0019). They change orders, so they come before the 
 with others.
 
 **PR 1.8 — Orders: less to fill in** (F1, F3, F4)
-- [ ] Migration: `amount_min` may be 0, and `available_until` may be empty.
-- [ ] The currency lists open with «Отдаёте» and «Получаете».
-- [ ] An empty minimum is any amount; the last day sits behind «Ограничить срок», off
+- [x] Migration: `amount_min` may be 0, and `available_until` may be empty.
+- [x] The currency lists open with «Отдаёте» and «Получаете».
+- [x] An empty minimum is any amount; the last day sits behind «Ограничить срок», off
       by default.
 
 **PR 1.9 — Orders: how the author is paid** (F2)
