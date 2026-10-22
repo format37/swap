@@ -238,7 +238,10 @@ describe('the request screen', () => {
     pressMainButton()
     expect(await screen.findByText('Связь установлена 22 октября')).toBeInTheDocument()
     expect(served).toContain(`POST /api/v1/links/${LINK_ID}/accept`)
-    expect(mainButton()).toBeNull()
+    // Nothing is left to answer, so the main button leads on (QUESTIONS G6).
+    expect(mainButton()?.text).toBe('На главную')
+    pressMainButton()
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent('/')
   })
 
   it('declines after confirmation and goes back to the tab', async () => {
@@ -271,7 +274,7 @@ describe('the request screen', () => {
     const { unmount } = renderScreen(<LinkScreen />, { route, path })
     expect(await screen.findByText('Ждём ответа')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Отозвать запрос' })).toBeInTheDocument()
-    expect(mainButton()).toBeNull()
+    expect(mainButton()?.text).toBe('На главную')
     unmount()
 
     fakeApi({ [`GET /api/v1/links/${LINK_ID}`]: () => json(200, { ...link(), mutual_links: 0 }) })

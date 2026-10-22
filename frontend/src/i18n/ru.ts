@@ -36,6 +36,7 @@ export const ru = {
   'link.none': 'Связи нет',
   'link.mutual': 'Общие связи: {count}',
   'link.accept': 'Установить связь',
+  'link.home': 'На главную',
   'link.decline': 'Отклонить',
   'link.decline_confirm': 'Отклонить запрос?',
   'link.withdraw': 'Отозвать запрос',

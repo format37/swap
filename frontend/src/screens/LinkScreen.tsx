@@ -16,35 +16,40 @@ import { Problem } from './Problem'
 
 /**
  * One link from the signed-in user's side (FR-1.2, ADR-0012): who, how many mutual
- * links, and what can be done now. A request is answered here, however it came.
+ * links, and what can be done now. A request is answered here, however it came. Once
+ * there is nothing to answer, the main button leads Home: the bot's «Открыть» lands here
+ * with no history, and the back arrow alone left people stuck (QUESTIONS G6).
  */
 export function LinkScreen() {
   const { id = '' } = useParams()
   const link = useLink(id)
   const answer = useAnswerLink()
+  const navigate = useNavigate()
   const incoming = link.data?.status === 'pending' && link.data.direction === 'incoming'
 
   const { t } = useI18n()
   useMainButton(
-    incoming
-      ? {
-          text: t('link.accept'),
-          busy: answer.isPending,
-          onClick: () => {
-            answer.mutate(
-              { id, answer: 'accept' },
-              {
-                onSuccess: () => {
-                  hapticNotify('success')
+    !link.data
+      ? null
+      : !incoming
+        ? { text: t('link.home'), onClick: () => void navigate('/', { replace: true }) }
+        : {
+            text: t('link.accept'),
+            busy: answer.isPending,
+            onClick: () => {
+              answer.mutate(
+                { id, answer: 'accept' },
+                {
+                  onSuccess: () => {
+                    hapticNotify('success')
+                  },
+                  onError: () => {
+                    hapticNotify('error')
+                  },
                 },
-                onError: () => {
-                  hapticNotify('error')
-                },
-              },
-            )
+              )
+            },
           },
-        }
-      : null,
   )
 
   if (link.isPending)
