@@ -19,6 +19,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
   deleting, photos and the score. Its defaults are marked; I follow them until the owner
   says otherwise.
 - **Part K** records the owner's priority list for the rest of phase 1, with its defaults.
+- **Part L** records the owner's notes after testing parts J and K, the same evening.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1043,3 +1044,89 @@ rest of §12's checklist moves to «Потенциальные планы» with
 **Flagged to the owner (2026-10-22):** without off-box backups, the only copies are the
 deploy-time dumps, the last five, on the same VPS. They survive a bad migration, not a
 lost server.
+
+## L. The owner's notes after testing parts J and K (2026-10-22)
+
+The owner tested parts J and K on the phone and sent six notes. Like parts F–K, they are
+decisions; where they differ from ADR-0019, ADR-0026, ADR-0027, ADR-0030 or Q-B14, they
+win. The owner also answered what part J and K asked:
+
+> no veto. I agree with your proposals.
+
+Every default marked in parts J and K stands. The privacy URL is set in BotFather (K3).
+Sentry's «Prevent Storing of IP Addresses» is on for the whole organization, the only
+place it could be set, which covers the `swap` project too.
+
+### L1 · How to be paid, per currency
+
+> Когда мы оформляем заявку, категория как получаете должна быть отдельно для каждой
+> валюты. Например я готов получить gel и наличными и банком. А usd только банком.
+
+Each wanted currency has its own «Как получать», on its own card in the wizard and on
+the order's card. A proposal pays in one of the ways of the currency it picks. This
+reverses ADR-0019's one set per order, which it chose until somebody needed this.
+→ PR 1.33, ADR-0037.
+
+### L2 · Write only what one gets, and let it be typed
+
+> В плашке получения - там где мы выбрали валюту, сейчас написано: Отдав 3000 руб получите
+> 36 долл. Я предлагаю изменить эту строку. Пишем только то что получим. И не только
+> пишем но можем и поменять. Меняя например в одной валюте мы меняем сразу и то что
+> отдаём и сразу влияем на то что написано в других валютах.
+
+Each wanted currency's card says «Получите ≈ 36 $ USD», and the amount is a field.
+Typing there works out the amount given from that currency's rate, and every other
+currency's amount follows from it. The api still does the arithmetic. → PR 1.34,
+ADR-0038.
+
+### L3 · Photos in the rings and in the list of those chosen
+
+> Криуги получились очень красиво! Жаль только в них нет аватаров - думаю мы смогли бы их
+> туда добавить. И в список выбранных получателей.
+
+Both already draw people's photos (PR 1.21), from the link Telegram sends with each
+launch. What production held after the test:
+- The owner's own link is Telegram's letter picture, a gradient with an initial. Telegram
+  sends it instead of the photo when it doesn't share the photo with the app, as when
+  privacy settings hide it from bots.
+- The third person linked to the owner hasn't opened Swap since PR 1.21, so there is
+  no link for them yet.
+- Ira's link is there, from her latest launch. She had also opened Swap before the
+  owner's test, but a launch that brings no link erased the stored one (ADR-0027 took
+  each launch's word). So whether her photo was there during the test can't be told.
+
+**Default:** a launch that brings no link keeps the stored one; Telegram's letter picture
+still replaces a photo that is hidden. The owner looks at the rings again; if Ira's photo
+is missing then, Swap copies photos through the bot, the follow-up ADR-0027 offered.
+→ PR 1.35, ADR-0027 amended.
+
+### L4 · Deleting a finished order one only dealt on
+
+> format37 не может удалить завершенные сделки. Хоть он и не владелец этих сделок, он
+> должен иметь возможность удалить их после завершения.
+
+Here too «сделка» is the whole order (J3). Someone who dealt on another's order can
+delete it from their own history once their deals on it are over: «Удалить у себя» on
+the order's card deletes all their deals on it at once, each the way ADR-0030 deletes
+one. → PR 1.32.
+
+### L5 · A settings button
+
+> Нет кнопки настроек, возможности удалить историю и аккаунт, выгрузить csv, настроек
+> уведомления,
+
+They were behind Home's avatar, which nothing marked as a button. The settings get a
+tab of their own, «Настройки», beside «Главная» and «Связи». The avatar still opens them.
+This amends Q-B14's tabs. → PR 1.31.
+
+### L6 · The language Telegram has
+
+> У иры интерфейс телеграма русский и интерфейс swap тоже русский. Однако у меня
+> интерфейс телеграма английский, а swap все равно русский. Я думал это подтянется из
+> настроек телеграм или будет отдельная настройка. Но как я уже говорил, кнопки настроек
+> у нас нет.
+
+The owner's account had Russian chosen in the app, which wins over Telegram's language
+(ADR-0009), and nothing let it go back. The language screen gains «Как в Telegram», which
+follows Telegram's language again and is what a new account starts with. It is reached
+from the new tab. This answers K6. → PR 1.31.
