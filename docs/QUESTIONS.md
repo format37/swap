@@ -20,6 +20,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
   says otherwise.
 - **Part K** records the owner's priority list for the rest of phase 1, with its defaults.
 - **Part L** records the owner's notes after testing parts J and K, the same evening.
+- **Part M** records the owner's notes after testing part L, the same evening.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1130,3 +1131,44 @@ The owner's account had Russian chosen in the app, which wins over Telegram's la
 (ADR-0009), and nothing let it go back. The language screen gains «Как в Telegram», which
 follows Telegram's language again and is what a new account starts with. It is reached
 from the new tab. This answers K6. → PR 1.31.
+
+## M. The owner's notes after testing part L (2026-10-22)
+
+The owner tested part L on the phone, with Swap in English since L6, and sent three
+notes. Two are bugs; the third is a new line on the order's card.
+
+### M1 · After deleting, Home
+
+> Теперь когад я нажимаю удалить у себя - заявка конечно удаляется, но я попадаю на
+> страницу заявка не найдена. а было бы логичнее переходить на главный экран
+
+Deleting refreshed the order's own card before the card could leave, so it turned into
+«не найдена» and stayed. After «Удалить у себя» or «Удалить заявку» on an order, and
+«Удалить у себя» on a deal, the app goes to Home. → PR 1.37.
+
+### M2 · «You get» in English
+
+> Когда я добавил отдаю рубли, установил цену, потом добавил получаю лари, обновил лари
+> сумму. И потом добавил доллары - you get доллары не посчитались. Это путь к ошибке. Во
+> всех других вариантах доллары считаются. И дело коенчно не в долларах а именно в том
+> что в первой плашеке я поменял, а потом добавил вторую. Потом я обнаружил что you get
+> обнуляется в другой плашке даже если я поменяю в последней. Да, стабильно
+> воспроизводится. когда два варианта что я получаю, правлю один и второй тут же
+> очищается а он должен подстраиваться по курсу.
+
+A bug in PR 1.34, in English only. The sum worked out from a typed «You get» was written
+the English way, «2,920», and read back with the comma as a decimal point: 2.920, which
+is no amount. The other currencies then had no sum to follow, and emptied. The same
+misreading refused the proposal's prefilled «150,000». Amount fields now read every
+language's way of writing a number. → PR 1.36, ADR-0040.
+
+### M3 · What the other side gives, on the order's card
+
+> Когда Rin видит мою заявку, она видит сколько я готов отдать рублей. Видит что я хочу
+> взамен лари и какой курс. Но было бы удобно сразу показать сколько лари она должна будет
+> отдать по этой сделке, в т.ч. от и до если я допускаю выплатить сделку не целиком
+
+Someone else's open order shows, under each wanted currency, what they would give:
+«Вы отдадите от 342,47 до 5 136,99 ₾ GEL», from the smallest deal to all that remains.
+It says «до …» when any amount goes, and one amount when the order is all or nothing.
+«≈» marks a market rate. The api works the amounts out, as in the wizard. → PR 1.38.
