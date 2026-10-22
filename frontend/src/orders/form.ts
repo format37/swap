@@ -16,6 +16,8 @@ export interface WantForm {
   fixed: boolean
   /** How the author takes this currency: GEL in cash or by bank, USD by bank (L1). */
   receiveMethods: PaymentKind[]
+  /** «Получите», as the author typed it; it counts while this currency leads (L2). */
+  get: string
 }
 
 /** The wizard's state: strings as typed, until «Опубликовать» (Q-B17: no server drafts). */
@@ -37,6 +39,9 @@ export interface OrderForm {
   /** N in «N-го числа», as the select holds it. */
   repeatDay: string
   wants: WantForm[]
+  /** The wanted currency whose «Получите» the author typed last, which sets the sum; null
+   * while the sum leads (QUESTIONS L2, ADR-0038). */
+  lead: string | null
   /** How far it is seen, in handshakes: 0 for those chosen, null for ∞ (QUESTIONS J2). */
   reach: Reach
   /** At reach 0, the links who may see it. */
@@ -75,6 +80,7 @@ export function newWant(giveCurrency: string, currency = '', country = ''): Want
     typed: false,
     fixed: false,
     receiveMethods: [],
+    get: '',
   }
 }
 
@@ -108,6 +114,7 @@ export function emptyForm(today: string): OrderForm {
     repeatDay: String(Number(today.split('-')[2] ?? '1')),
     until: addDays(today, 14),
     wants: [newWant('')],
+    lead: null,
     reach: DEFAULT_REACH,
     chosen: [],
     note: '',

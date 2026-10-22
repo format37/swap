@@ -290,8 +290,8 @@ veto on parts J and K.
       of the chosen currency's.
 
 **PR 1.34 — Write what one gets, and let it be typed** (L2; ADR-0038)
-- [ ] `POST /quote` works the other way too: what to give for an amount wanted.
-- [ ] Each wanted currency's card holds «Получите», a field that sets what is given, and
+- [x] `POST /quote` works the other way too: what to give for an amount wanted.
+- [x] Each wanted currency's card holds «Получите», a field that sets what is given, and
       the other currencies follow.
 
 **PR 1.35 — Keep a photo's link when a launch brings none** (L3; ADR-0027)

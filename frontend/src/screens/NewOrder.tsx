@@ -21,7 +21,7 @@ import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { assetText, look } from '../money/looks'
-import { formatRate, parseAmount, parseRate } from '../money/format'
+import { formatAmount, formatRate, parseAmount, parseRate } from '../money/format'
 import { KINDS } from '../money/kinds'
 import {
   emptyForm,
@@ -289,6 +289,7 @@ function GiveGroup({ form, today, change }: StepProps & { today: string }) {
           change({
             giveCurrency: code,
             giveCountry: look(code).home ?? form.giveCountry,
+            lead: null,
             // A rate the author hasn't typed turns to read the right way round for the
             // new currency, and the market's rate for the new pair fills it in again.
             wants: form.wants.map((want) =>
@@ -314,7 +315,8 @@ function GiveGroup({ form, today, change }: StepProps & { today: string }) {
         currency={form.giveCurrency}
         value={form.total}
         onChange={(total) => {
-          change({ total })
+          // Typed here, the sum leads again (ADR-0038).
+          change({ total, lead: null })
         }}
       />
       <Switch
@@ -414,6 +416,10 @@ function WantGroup({ form, change }: StepProps) {
       wants: wants.map((want, at) => (at === index ? { ...want, ...changes } : want)),
     }))
   }
+  // A currency that changes or goes hands the lead back to the sum (ADR-0038).
+  const release = (want: WantForm) => {
+    change(({ lead }) => (lead === want.currency ? { lead: null } : {}))
+  }
   return (
     <>
       {form.wants.map((want, index) => (
@@ -424,6 +430,7 @@ function WantGroup({ form, change }: StepProps) {
             value={want.currency}
             onChange={(code) => {
               const fresh = newWant(form.giveCurrency, code, look(code).home ?? want.country)
+              release(want)
               update(
                 index,
                 want.typed
@@ -453,7 +460,7 @@ function WantGroup({ form, change }: StepProps) {
               update(index, { fixed })
             }}
           />
-          <Preview form={form} want={want} />
+          <Receive form={form} want={want} change={change} />
           <MethodChips
             label={t('wizard.receive_methods')}
             chosen={want.receiveMethods}
@@ -471,6 +478,7 @@ function WantGroup({ form, change }: StepProps) {
             <button
               type="button"
               onClick={() => {
+                release(want)
                 change(({ wants }) => ({ wants: wants.filter((_, at) => at !== index) }))
               }}
               className="flex w-full items-center justify-center gap-2 px-4 py-3 text-destructive"
@@ -610,33 +618,69 @@ function RateRow({
   )
 }
 
-/** «Отдав 150 000 ₽ RUB, получите ≈ 5 136,99 ₾ GEL», asked of the api as it changes. */
-function Preview({ form, want }: { form: OrderForm; want: WantForm }) {
-  const { tn, locale } = useI18n()
+/** The api's quote once typing settles: debounced as text, since a new object every render
+ * would never settle. */
+function useSettledQuote(request: QuoteRequest | null) {
+  const settled = useDebounced(request ? JSON.stringify(request) : null)
+  return useQuote(
+    useMemo(() => (settled ? (JSON.parse(settled) as QuoteRequest) : null), [settled]),
+  )
+}
+
+/**
+ * «Получите ≈ [5 136,99] ₾ GEL» (QUESTIONS L2, ADR-0038): what the sum comes to in this
+ * currency, in a field. Typed there, it leads: the api works out the sum from it, and every
+ * other currency follows the sum. The api does the arithmetic both ways.
+ */
+function Receive({ form, want, change }: StepProps & { want: WantForm }) {
+  const { t, locale } = useI18n()
+  const ready = Boolean(form.giveCurrency && want.currency && (!want.fixed || parseRate(want.rate)))
+  const leads = ready && form.lead === want.currency
   const total = parseAmount(form.total)
-  const request: QuoteRequest | null =
-    total && (!want.fixed || parseRate(want.rate)) && want.currency && form.giveCurrency
+  const ask = (amount: string | null, side: QuoteRequest['side']): QuoteRequest | null =>
+    ready && amount
       ? {
-          amount: total,
+          amount,
           give_currency: form.giveCurrency,
           want_currency: want.currency,
           rate_spec: specOf(form.giveCurrency, want),
           whole: false,
+          side,
         }
       : null
-  // Debounced as text: a new object every render would never settle.
-  const settled = useDebounced(request ? JSON.stringify(request) : null)
-  const quote = useQuote(
-    useMemo(() => (settled ? (JSON.parse(settled) as QuoteRequest) : null), [settled]),
-  )
-  if (!request || !total || !quote.data) return null
+  // What the sum comes to here, unless the author is typing here...
+  const comes = useSettledQuote(leads ? null : ask(total, 'give'))
+  // ...and while they are, what to give for what they typed.
+  const takes = useSettledQuote(leads ? ask(parseAmount(want.get), 'want') : null)
+  const sum = takes.data && !takes.isPlaceholderData ? takes.data.amount : null
+  useEffect(() => {
+    if (sum === null) return
+    change((current) =>
+      current.lead === want.currency ? { total: formatAmount(locale, sum) } : {},
+    )
+  }, [sum, change, want.currency, locale])
+
+  if (!ready) return null
+  const shown = leads
+    ? want.get
+    : total && comes.data
+      ? formatAmount(locale, comes.data.amount)
+      : ''
   return (
-    <p className="px-4 pb-3 text-sm text-hint">
-      {tn('wizard.preview', {
-        give: <Money locale={locale} amount={total} code={form.giveCurrency} />,
-        want: <Money locale={locale} amount={quote.data.amount} code={want.currency} />,
-      })}
-    </p>
+    <AmountInput
+      // «≈» while the market sets the rate, which moves until a proposal locks it (G2).
+      label={t(want.fixed ? 'wizard.get' : 'wizard.get_market')}
+      currency={want.currency}
+      value={shown}
+      onChange={(text) => {
+        change(({ wants }) => ({
+          lead: want.currency,
+          wants: wants.map((other) =>
+            other.currency === want.currency ? { ...other, get: text } : other,
+          ),
+        }))
+      }}
+    />
   )
 }
 
