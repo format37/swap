@@ -152,3 +152,15 @@ describe('about Swap (K3, K9)', () => {
     expect(copyText).toHaveBeenCalledWith('format37@gmail.com')
   })
 })
+
+describe('the export (K4)', () => {
+  it('asks the bot for the file, and says where it comes', async () => {
+    const { served } = fakeApi({
+      'POST /api/v1/me/export': () => new Response(null, { status: 202 }),
+    })
+    renderScreen(<Profile me={me} />, { route: '/profile' })
+    fireEvent.click(screen.getByRole('button', { name: /Выгрузить сделки в CSV/ }))
+    expect(await screen.findByText('Готово: файл придёт в чат с ботом')).toBeInTheDocument()
+    expect(served).toContain('POST /api/v1/me/export')
+  })
+})
