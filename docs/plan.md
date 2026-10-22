@@ -126,8 +126,8 @@ with others.
       change it.
 
 **PR 1.11 — Orders: reopen and delete** (F6, F7)
-- [ ] api: reopen a closed order; delete one that isn't open.
-- [ ] The order card offers both to its author.
+- [x] api: reopen a closed order; delete one that isn't open.
+- [x] The order card offers both to its author.
 
 **Demo.** Deploy, then stop and ask the owner to invite one or two people.
 

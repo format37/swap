@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, unwrap } from './client'
+import { api, done, unwrap } from './client'
 import type { components } from './schema'
 
 export type Order = components['schemas']['Order']
@@ -47,6 +47,20 @@ export function usePublishOrder() {
 export function useCloseOrder() {
   return useOrdersMutation((id: string) =>
     unwrap(api.POST('/api/v1/orders/{order_id}/close', { params: { path: { order_id: id } } })),
+  )
+}
+
+/** A closed order, open again as it was (QUESTIONS F7). */
+export function useReopenOrder() {
+  return useOrdersMutation((id: string) =>
+    unwrap(api.POST('/api/v1/orders/{order_id}/reopen', { params: { path: { order_id: id } } })),
+  )
+}
+
+/** Gone for everyone, its author included; its deals carry on (QUESTIONS F6). */
+export function useDeleteOrder() {
+  return useOrdersMutation((id: string) =>
+    done(api.DELETE('/api/v1/orders/{order_id}', { params: { path: { order_id: id } } })),
   )
 }
 

@@ -1,11 +1,18 @@
-import { CalendarDays, Eye, Lock, MessageSquareText } from 'lucide-react'
+import { CalendarDays, Eye, Lock, MessageSquareText, RotateCcw, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { fullName } from '../api/links'
 import type { Me } from '../api/client'
 import { useDeals } from '../api/deals'
-import { useCloseOrder, useOrder, type Order, type PaymentKind } from '../api/orders'
+import {
+  useCloseOrder,
+  useDeleteOrder,
+  useOrder,
+  useReopenOrder,
+  type Order,
+  type PaymentKind,
+} from '../api/orders'
 import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
@@ -70,6 +77,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
   const { t, tn, locale } = i18n
   const navigate = useNavigate()
   const close = useCloseOrder()
+  const reopen = useReopenOrder()
+  const remove = useDeleteOrder()
   const deals = useDeals('active', order.id)
 
   // Someone else's open order: the main action is a proposal (§11).
@@ -201,7 +210,62 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           </Button>
         </div>
       )}
-      {close.isError && <p className="px-6 text-destructive">{t(errorMessage(close.error))}</p>}
+      {/* A closed order can open again as it was (F7); any that isn't open can go (F6). */}
+      {order.mine && order.status === 'closed' && (
+        <div className="mx-4">
+          <Button
+            icon={<RotateCcw aria-hidden className="size-5" />}
+            disabled={reopen.isPending}
+            onClick={() => {
+              reopen.mutate(order.id, {
+                onSuccess: () => {
+                  hapticNotify('success')
+                },
+                onError: () => {
+                  hapticNotify('error')
+                },
+              })
+            }}
+          >
+            {t('order.reopen')}
+          </Button>
+        </div>
+      )}
+      {order.mine && order.status !== 'open' && (
+        <div className="mx-4">
+          <Button
+            tone="destructive"
+            icon={<Trash2 aria-hidden className="size-5" />}
+            disabled={remove.isPending}
+            onClick={() => {
+              void confirmAction(t('order.delete_confirm'), t('order.delete'), {
+                destructive: true,
+              }).then((confirmed) => {
+                if (!confirmed) return
+                remove.mutate(order.id, {
+                  onSuccess: () => {
+                    hapticNotify('success')
+                    void navigate(-1)
+                  },
+                  onError: () => {
+                    hapticNotify('error')
+                  },
+                })
+              })
+            }}
+          >
+            {t('order.delete')}
+          </Button>
+        </div>
+      )}
+      {[close, reopen, remove].map(
+        (action, index) =>
+          action.isError && (
+            <p key={index} className="px-6 text-destructive">
+              {t(errorMessage(action.error))}
+            </p>
+          ),
+      )}
     </Screen>
   )
 }
