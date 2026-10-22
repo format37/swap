@@ -21,6 +21,8 @@ export interface OrderForm {
   /** Empty or 0: any amount (QUESTIONS F4). */
   least: string
   methods: PaymentKind[]
+  /** How the author can be paid, whichever currency they get (QUESTIONS F2). */
+  receiveMethods: PaymentKind[]
   from: string
   /** «Ограничить срок»: off, the order is open until its author closes it (F3). */
   limited: boolean
@@ -50,6 +52,11 @@ export function newWant(giveCurrency: string, currency = '', country = ''): Want
   }
 }
 
+/** The list with `item` taken out if it was in, or added at the end if it wasn't. */
+export function toggled<T>(list: T[], item: T): T[] {
+  return list.includes(item) ? list.filter((other) => other !== item) : [...list, item]
+}
+
 export function isoDate(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -69,6 +76,7 @@ export function emptyForm(today: string): OrderForm {
     exact: false,
     least: '',
     methods: [],
+    receiveMethods: [],
     from: today,
     limited: false,
     until: addDays(today, 14),
@@ -113,7 +121,8 @@ export function wantProblem(form: OrderForm): MessageKey | null {
     seen.add(want.currency)
     if (!parseRate(want.rate)) return 'wizard.error.rate'
   }
-  return form.wants.length === 0 ? 'wizard.error.choose' : null
+  if (form.wants.length === 0) return 'wizard.error.choose'
+  return form.receiveMethods.length === 0 ? 'wizard.error.methods' : null
 }
 
 /** What is wrong with step 3, «Кому видно», if anything. */
@@ -140,6 +149,7 @@ export function toDraft(form: OrderForm): OrderDraft {
     available_from: form.from,
     available_until: form.limited ? form.until : null,
     payout_methods: form.methods,
+    receive_methods: form.receiveMethods,
     wants: form.wants.map(({ currency, country }) => ({ currency, country })),
     rate_spec: {
       v: 1,

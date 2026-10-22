@@ -105,6 +105,7 @@ export const ru = {
   'wizard.amount_exact': 'Только целиком',
   'wizard.amount_min': 'Минимум за сделку',
   'wizard.methods': 'Как вы можете отдать',
+  'wizard.receive_methods': 'Как вы можете получить',
   'wizard.dates': 'Когда',
   'wizard.first_day': 'Первый день',
   'wizard.limited': 'Ограничить срок',

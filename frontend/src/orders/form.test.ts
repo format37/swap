@@ -19,6 +19,7 @@ function filled(changes: Partial<OrderForm> = {}): OrderForm {
     total: '150 000',
     least: '10000',
     methods: ['card', 'phone'],
+    receiveMethods: ['cash'],
     wants: [
       { ...newWant('RUB', 'GEL', 'GE'), rate: '29,20' },
       { ...newWant('RUB', 'USD', 'GE'), rate: '81.5' },
@@ -50,6 +51,7 @@ it('turns a filled wizard into exactly what the api takes', () => {
     available_from: TODAY,
     available_until: null,
     payout_methods: ['card', 'phone'],
+    receive_methods: ['cash'],
     wants: [
       { currency: 'GEL', country: 'GE' },
       { currency: 'USD', country: 'GE' },
@@ -124,6 +126,10 @@ it.each<[OrderForm['wants'], string]>([
   [[], 'wizard.error.choose'],
 ])('refuses step 2 with %j', (wants, problem) => {
   expect(wantProblem(filled({ wants }))).toBe(problem)
+})
+
+it('wants a way to be paid (F2)', () => {
+  expect(wantProblem(filled({ receiveMethods: [] }))).toBe('wizard.error.methods')
 })
 
 it('wants someone chosen when it isn’t for everyone', () => {

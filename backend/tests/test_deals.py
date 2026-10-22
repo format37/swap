@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swap.deals import expire_due
 from swap.models import Deal, DealLeg, Notification, Order, User
-from tests.test_links import ALEX, GIO, NINO, Headers, linked, person
+from tests.test_links import ALEX, GIO, NINO, WRITTEN, Headers, linked, person
 from tests.test_orders import publish
 
 Sessions = async_sessionmaker[AsyncSession]
@@ -96,7 +96,7 @@ class World:
                 select(User.first_name, Notification.params, Notification.target)
                 .join(User, User.id == Notification.recipient_id)
                 .where(Notification.type == kind)
-                .order_by(Notification.created_at)
+                .order_by(Notification.created_at, WRITTEN)
             )
             return [(name, params, card) for name, params, card in rows]
 
@@ -200,6 +200,8 @@ async def test_a_closed_order_takes_no_proposals(world: World) -> None:
         ({"amount": "150000.01"}, "deal.amount_range"),
         ({"want_currency": "EUR"}, "deal.unknown_want"),
         ({"give_method": "crypto"}, "deal.method_not_offered"),
+        # Alex is paid in cash or by bank, not by card (QUESTIONS F2).
+        ({"counter_method": "card"}, "deal.method_not_accepted"),
         ({"receive_with": None}, "deal.details_required"),
         ({"receive_with": str(uuid.uuid4())}, "deal.details_unknown"),
         ({"my_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),

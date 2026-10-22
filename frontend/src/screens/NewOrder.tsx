@@ -3,7 +3,13 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 import { fullName, useLinks } from '../api/links'
-import { useAssets, usePublishOrder, useQuote, type QuoteRequest } from '../api/orders'
+import {
+  useAssets,
+  usePublishOrder,
+  useQuote,
+  type PaymentKind,
+  type QuoteRequest,
+} from '../api/orders'
 import { useBackOverride } from '../back'
 import { sortedCountries } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
@@ -20,6 +26,7 @@ import {
   newWant,
   quoteOf,
   toDraft,
+  toggled,
   wantProblem,
   whoProblem,
   type OrderForm,
@@ -190,6 +197,33 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (code: st
   )
 }
 
+/** The six ways money moves, as chips that each tap turns on or off (ADR-0016). */
+function MethodChips({
+  chosen,
+  onToggle,
+}: {
+  chosen: PaymentKind[]
+  onToggle: (kind: PaymentKind) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <div className="flex flex-wrap gap-2 p-3">
+      {KINDS.map(({ kind, icon, label }) => (
+        <Chip
+          key={kind}
+          icon={icon}
+          label={t(label)}
+          selected={chosen.includes(kind)}
+          onToggle={() => {
+            hapticSelect()
+            onToggle(kind)
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function AmountInput({
   value,
   onChange,
@@ -280,27 +314,12 @@ function GiveStep({ form, today, change }: StepProps & { today: string }) {
         )}
       </Section>
       <Section title={t('wizard.methods')}>
-        <div className="flex flex-wrap gap-2 p-3">
-          {KINDS.map(({ kind, icon, label }) => {
-            const selected = form.methods.includes(kind)
-            return (
-              <Chip
-                key={kind}
-                icon={icon}
-                label={t(label)}
-                selected={selected}
-                onToggle={() => {
-                  hapticSelect()
-                  change(({ methods }) => ({
-                    methods: methods.includes(kind)
-                      ? methods.filter((method) => method !== kind)
-                      : [...methods, kind],
-                  }))
-                }}
-              />
-            )
-          })}
-        </div>
+        <MethodChips
+          chosen={form.methods}
+          onToggle={(kind) => {
+            change(({ methods }) => ({ methods: toggled(methods, kind) }))
+          }}
+        />
       </Section>
       <Section title={t('wizard.dates')}>
         <Field label={t('wizard.first_day')}>
@@ -401,6 +420,14 @@ function WantStep({ form, change }: StepProps) {
           </Button>
         </div>
       )}
+      <Section title={t('wizard.receive_methods')}>
+        <MethodChips
+          chosen={form.receiveMethods}
+          onToggle={(kind) => {
+            change(({ receiveMethods }) => ({ receiveMethods: toggled(receiveMethods, kind) }))
+          }}
+        />
+      </Section>
     </>
   )
 }

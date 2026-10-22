@@ -142,6 +142,7 @@ describe('the proposal', () => {
     available_from: '2026-10-22',
     available_until: '2099-11-05',
     payout_methods: ['card', 'cash'],
+    receive_methods: ['cash', 'bank'],
     wants: [{ currency: 'GEL', country: 'GE' }],
     rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
     note: null,
@@ -184,6 +185,9 @@ describe('the proposal', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Карта' })[0] as HTMLElement)
     fireEvent.click(await screen.findByRole('radio', { name: /Бабушка/ }))
     fireEvent.click(screen.getAllByRole('button', { name: 'Наличные' })[1] as HTMLElement)
+    // Only the ways Alex is paid are offered for the other currency (F2).
+    expect(screen.getAllByRole('button', { name: 'Карта' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'Банк' })).toHaveLength(1)
     expect(mainButton()?.text).toBe('Отправить предложение')
     press()
     expect(await screen.findByTestId('elsewhere')).toHaveTextContent(`/deals/${DEAL_ID}`)

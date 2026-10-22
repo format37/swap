@@ -56,6 +56,7 @@ function order(changes: Partial<Order> = {}): Order {
     available_from: '2026-10-25',
     available_until: '2026-11-08',
     payout_methods: ['card', 'phone'],
+    receive_methods: ['cash', 'bank'],
     wants: [
       { currency: 'GEL', country: 'GE' },
       { currency: 'USD', country: 'GE' },
@@ -241,6 +242,7 @@ describe('the wizard', () => {
       expect(document.body).toHaveTextContent('Отдав 150 000₽RUB, получите ≈ 5 136,99₾GEL')
     })
     expect(served).toContain('POST /api/v1/quote')
+    fireEvent.click(screen.getByRole('button', { name: 'Наличные' }))
     press()
 
     await screen.findByText('Шаг 3 из 3')
@@ -260,6 +262,7 @@ describe('the wizard', () => {
       amount_min: '10000',
       available_until: null,
       payout_methods: ['card'],
+      receive_methods: ['cash'],
       wants: [{ currency: 'GEL', country: 'GE' }],
       rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
       visible_to: null,
@@ -283,6 +286,9 @@ describe('the order card', () => {
     )
     expect(screen.getByText('Карта')).toBeInTheDocument()
     expect(screen.getByText('Телефон (СБП)')).toBeInTheDocument()
+    // How the author is paid sits with what they want (F2).
+    expect(within(wants as HTMLElement).getByText('Наличные')).toBeInTheDocument()
+    expect(within(wants as HTMLElement).getByText('Банк')).toBeInTheDocument()
     expect(screen.getByText('наличные у метро')).toBeInTheDocument()
     // Someone else's order: no list of who sees it, and nothing to close.
     expect(screen.queryByText(/Видно/)).toBeNull()

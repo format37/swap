@@ -41,6 +41,7 @@ class Order(BaseModel):
     # None: open until its author closes it.
     available_until: date | None
     payout_methods: list[PaymentKind]
+    receive_methods: list[PaymentKind]
     wants: list[Want]
     rate_spec: FixedRate
     note: str | None
@@ -63,6 +64,7 @@ class Order(BaseModel):
             available_from=order.available_from,
             available_until=order.available_until,
             payout_methods=[PaymentKind(kind) for kind in order.payout_methods],
+            receive_methods=[PaymentKind(kind) for kind in order.receive_methods],
             wants=[Want(currency=want.currency, country=want.country) for want in order.wants],
             rate_spec=FixedRate.model_validate(order.rate_spec),
             note=order.note,

@@ -275,6 +275,7 @@ class Order(Base):
         # Holds when there is no last day too: a comparison with NULL passes a CHECK.
         CheckConstraint("available_from <= available_until", name="window"),
         CheckConstraint(_kinds_check("payout_methods"), name="payout_methods"),
+        CheckConstraint(_kinds_check("receive_methods"), name="receive_methods"),
         CheckConstraint("rate_spec->>'type' IN ('fixed', 'reference')", name="rate_spec_type"),
         CheckConstraint(one_of("status", OrderStatus), name="status"),
         # What feeds and the expiry sweep look for (ADR-0002).
@@ -293,7 +294,9 @@ class Order(Base):
     available_from: Mapped[date]
     # None: open until its author closes it (QUESTIONS F3).
     available_until: Mapped[date | None]
+    # How the author pays out, and how they can be paid (QUESTIONS F2).
     payout_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    receive_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     note: Mapped[str | None] = mapped_column(Text)
     # A versioned union, validated by swap/rates.py (ADR-0004).
     rate_spec: Mapped[dict[str, Any]] = mapped_column(JSONB)

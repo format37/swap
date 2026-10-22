@@ -105,6 +105,7 @@ export const en: Messages = {
   'wizard.amount_exact': 'All at once only',
   'wizard.amount_min': 'Least per deal',
   'wizard.methods': 'How you can pay it out',
+  'wizard.receive_methods': 'How you can receive it',
   'wizard.dates': 'When',
   'wizard.first_day': 'First day',
   'wizard.limited': 'Set a last day',

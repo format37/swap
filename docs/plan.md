@@ -117,8 +117,8 @@ with others.
       by default.
 
 **PR 1.9 — Orders: how the author is paid** (F2)
-- [ ] Migration: `orders.receive_methods`; orders published earlier get all six.
-- [ ] Step 2 asks for them, the card shows them, and a proposal pays in one of them.
+- [x] Migration: `orders.receive_methods`; orders published earlier get all six.
+- [x] Step 2 asks for them, the card shows them, and a proposal pays in one of them.
 
 **PR 1.10 — Orders: the market rate** (F5, ADR-0020)
 - [ ] api: Coinbase's public rates, cached, as one endpoint.

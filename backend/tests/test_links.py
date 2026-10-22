@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import func, select, update
+from sqlalchemy import func, literal_column, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swap.links import MAX_OUTSTANDING_INVITES, Opened, OpenedInvite, open_invite
@@ -70,13 +70,18 @@ async def ask_by_username(client: AsyncClient, headers: Headers, username: str) 
     return await client.post("/api/v1/links/requests", json={"username": username}, headers=headers)
 
 
+# A test's rows share its transaction, and so its now(): created_at ties. Each request
+# runs in a savepoint with a transaction id of its own, which orders the requests.
+WRITTEN = literal_column("notifications.xmin::text::bigint")
+
+
 async def told(sessions: Sessions) -> list[tuple[str, str, dict[str, str], str | None]]:
     """Every queued message: to whom (first name), its type, its words' values, its card."""
     async with sessions() as db:
         rows = await db.execute(
             select(User.first_name, Notification.type, Notification.params, Notification.target)
             .join(User, User.id == Notification.recipient_id)
-            .order_by(Notification.created_at)
+            .order_by(Notification.created_at, WRITTEN)
         )
         return [(name, type_, params, target) for name, type_, params, target in rows]
 

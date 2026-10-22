@@ -108,6 +108,7 @@ export const ka: Messages = {
   'wizard.amount_exact': 'მხოლოდ მთლიანად',
   'wizard.amount_min': 'მინიმუმი ერთ გარიგებაზე',
   'wizard.methods': 'როგორ შეგიძლიათ გადაცემა',
+  'wizard.receive_methods': 'როგორ შეგიძლიათ მიღება',
   'wizard.dates': 'როდის',
   'wizard.first_day': 'პირველი დღე',
   'wizard.limited': 'ვადის შეზღუდვა',

@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router'
 import { fullName } from '../api/links'
 import type { Me } from '../api/client'
 import { useDeals } from '../api/deals'
-import { useCloseOrder, useOrder, type Order } from '../api/orders'
+import { useCloseOrder, useOrder, type Order, type PaymentKind } from '../api/orders'
 import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
@@ -43,6 +43,24 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
         {icon}
       </span>
       <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  )
+}
+
+/** The ways money can move, as plain pills: «Карта», «Наличные». */
+function Methods({ kinds }: { kinds: PaymentKind[] }) {
+  const { t } = useI18n()
+  return (
+    <div className="flex flex-wrap gap-2 px-4 py-3">
+      {KINDS.filter(({ kind }) => kinds.includes(kind)).map(({ kind, icon: Icon, label }) => (
+        <span
+          key={kind}
+          className="flex items-center gap-1.5 rounded-full bg-secondary-bg px-3 py-1.5 text-sm"
+        >
+          <Icon aria-hidden className="size-4 text-accent" />
+          {t(label)}
+        </span>
+      ))}
     </div>
   )
 }
@@ -92,19 +110,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 px-4 pb-3">
-          {KINDS.filter(({ kind }) => order.payout_methods.includes(kind)).map(
-            ({ kind, icon: Icon, label }) => (
-              <span
-                key={kind}
-                className="flex items-center gap-1.5 rounded-full bg-secondary-bg px-3 py-1.5 text-sm"
-              >
-                <Icon aria-hidden className="size-4 text-accent" />
-                {t(label)}
-              </span>
-            ),
-          )}
-        </div>
+        <Methods kinds={order.payout_methods} />
         <Row icon={<CalendarDays className="size-5" />}>{orderDates(i18n, order)}</Row>
       </Section>
 
@@ -131,6 +137,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
             </div>
           )
         })}
+        {/* How the author can be paid, whichever currency comes (F2). */}
+        <Methods kinds={order.receive_methods} />
       </Section>
 
       {order.note && (
