@@ -73,15 +73,21 @@ export function useStopRepeating() {
 }
 
 /** Gone for everyone, its author included; its deals carry on (QUESTIONS F6). */
-/** Deletes an order for oneself (QUESTIONS J3, L4), and so the deals that go with it. */
+/**
+ * Deletes an order for oneself (QUESTIONS J3, L4), and so the deals that go with it. Its
+ * own card isn't asked again: it would turn into «не найдена» before it leaves (M1).
+ */
 export function useDeleteOrder() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) =>
       done(api.DELETE('/api/v1/orders/{order_id}', { params: { path: { order_id: id } } })),
-    onSettled: () =>
+    onSettled: (_, __, id) =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ORDERS }),
+        queryClient.invalidateQueries({
+          queryKey: ORDERS,
+          predicate: (query) => query.queryKey[2] !== id,
+        }),
         queryClient.invalidateQueries({ queryKey: ['deals'] }),
       ]),
   })

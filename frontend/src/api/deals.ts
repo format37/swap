@@ -63,15 +63,21 @@ export function usePropose(orderId: string) {
   )
 }
 
-/** A finished deal, deleted for its proposer alone (QUESTIONS J3). */
+/**
+ * A finished deal, deleted for its proposer alone (QUESTIONS J3). Its own card isn't asked
+ * again: it would turn into «не найдена» before it leaves (M1).
+ */
 export function useDeleteDeal() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) =>
       done(api.DELETE('/api/v1/deals/{deal_id}', { params: { path: { deal_id: id } } })),
-    onSettled: () =>
+    onSettled: (_, __, id) =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: DEALS }),
+        queryClient.invalidateQueries({
+          queryKey: DEALS,
+          predicate: (query) => query.queryKey[2] !== id,
+        }),
         queryClient.invalidateQueries({ queryKey: ['orders'] }),
       ]),
   })

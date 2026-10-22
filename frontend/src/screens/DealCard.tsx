@@ -180,7 +180,8 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
             onClick={() =>
               void run(t('deal.delete_confirm'), t('deal.delete'), async () => {
                 await remove.mutateAsync(deal.id)
-                void navigate(-1)
+                // Home: back could lead to the order, gone too if it was the last (M1).
+                void navigate('/', { replace: true })
               })
             }
           >

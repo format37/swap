@@ -310,7 +310,7 @@ card and the tab bar.
 - [x] The wizard's «You get» and the proposal's amount work in English.
 
 **PR 1.37 — After deleting, Home** (M1)
-- [ ] Deleting an order or a deal leaves for Home, without refreshing the card it leaves.
+- [x] Deleting an order or a deal leaves for Home, without refreshing the card it leaves.
 
 **PR 1.38 — What the other side gives, on the order's card** (M3)
 - [ ] Someone else's open order shows, per wanted currency, «Вы отдадите от … до …».
