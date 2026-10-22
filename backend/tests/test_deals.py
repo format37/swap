@@ -392,6 +392,21 @@ async def test_an_order_without_a_minimum_is_used_up_only_when_nothing_is_left(
     assert await world.remaining() == "149999.00:open"
 
 
+async def test_deleting_a_used_up_order_leaves_its_deal_running(world: World) -> None:
+    deal = await world.propose(amount="145000.00")
+    await world.ok(world.alex, deal, "accept")
+    assert await world.remaining() == "5000.00:fulfilled"
+    deleted = await world.client.delete(f"/api/v1/orders/{world.order['id']}", headers=world.alex)
+    assert deleted.status_code == 204
+    # Both still have the deal, and can still move it (QUESTIONS F6).
+    for headers in (world.alex, world.nino):
+        shown = await world.client.get(f"/api/v1/deals/{deal['id']}", headers=headers)
+        assert shown.json()["status"] == "accepted"
+    await world.ok(world.nino, deal, "cancel")
+    # The amount comes back, but the order doesn't: deleted is deleted.
+    assert await world.remaining() == "150000.00:fulfilled"
+
+
 async def test_closing_an_order_cancels_its_proposals_but_not_its_deals(world: World) -> None:
     proposed = await world.propose()
     accepted = await world.propose(amount="20000.00")

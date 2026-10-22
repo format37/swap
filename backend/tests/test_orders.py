@@ -81,6 +81,8 @@ async def test_every_order_endpoint_needs_a_session(client: AsyncClient) -> None
         ("GET", "/api/v1/orders"),
         ("GET", f"/api/v1/orders/{some}"),
         ("POST", f"/api/v1/orders/{some}/close"),
+        ("POST", f"/api/v1/orders/{some}/reopen"),
+        ("DELETE", f"/api/v1/orders/{some}"),
         ("POST", "/api/v1/quote"),
     ]:
         response = await client.request(method, path)
@@ -187,6 +189,51 @@ async def test_only_the_author_closes_an_order(client: AsyncClient, sessionmaker
         assert response.status_code == 404
         assert response.json()["code"] == "order.not_found"
     assert await sees(client, nino, order["id"])
+
+
+async def test_only_the_author_reopens_or_deletes_an_order(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    gio = await person(client, GIO)
+    await linked(client, sessionmaker, alex, NINO)
+    order = await publish(client, alex)
+    await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
+    for headers in (nino, gio):
+        for method, path in [
+            ("POST", f"/api/v1/orders/{order['id']}/reopen"),
+            ("DELETE", f"/api/v1/orders/{order['id']}"),
+        ]:
+            response = await client.request(method, path, headers=headers)
+            assert response.status_code == 404, (method, path)
+            assert response.json()["code"] == "order.not_found"
+    card = await client.get(f"/api/v1/orders/{order['id']}", headers=alex)
+    assert card.json()["status"] == "closed"
+
+
+async def test_a_deleted_order_is_gone_for_everyone_its_author_too(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    await linked(client, sessionmaker, alex, NINO)
+    order = await publish(client, alex)
+    await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
+    deleted = await client.delete(f"/api/v1/orders/{order['id']}", headers=alex)
+    assert deleted.status_code == 204
+    for headers in (alex, nino):
+        assert not await sees(client, headers, order["id"])
+    mine = await client.get("/api/v1/orders", params={"scope": "mine"}, headers=alex)
+    assert mine.json() == []
+    # Nothing more can be done with it: it answers as one that never existed.
+    for method, path in [
+        ("POST", f"/api/v1/orders/{order['id']}/close"),
+        ("POST", f"/api/v1/orders/{order['id']}/reopen"),
+        ("DELETE", f"/api/v1/orders/{order['id']}"),
+    ]:
+        response = await client.request(method, path, headers=alex)
+        assert response.status_code == 404, (method, path)
 
 
 async def test_who_else_may_see_it_is_the_authors_to_know(
@@ -442,6 +489,68 @@ async def test_an_order_needs_no_minimum_and_no_last_day(
     del default["available_until"]
     response = await client.post("/api/v1/orders", json=default, headers=alex)
     assert response.json()["available_until"] is None
+
+
+async def test_a_closed_order_reopens_as_it_was_and_tells_nobody(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    gio = await person(client, GIO)
+    await linked(client, sessionmaker, alex, NINO)
+    await linked(client, sessionmaker, alex, GIO)
+    order = await publish(client, alex, visible_to=[await user_id(client, nino)])
+    await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
+    async with sessionmaker() as db:
+        before = len(list(await db.scalars(select(Notification))))
+    reopened = await client.post(f"/api/v1/orders/{order['id']}/reopen", headers=alex)
+    assert reopened.status_code == 200, reopened.text
+    body = reopened.json()
+    assert body["status"] == "open"
+    assert body["amount_remaining"] == order["amount_remaining"]
+    assert [p["first_name"] for p in body["visibility"]["people"]] == ["Nino"]
+    # Its list holds as before: Nino sees it again, Gio still doesn't.
+    assert await sees(client, nino, order["id"])
+    assert not await sees(client, gio, order["id"])
+    async with sessionmaker() as db:
+        assert len(list(await db.scalars(select(Notification)))) == before
+
+
+async def test_only_a_closed_order_reopens_and_only_one_not_open_is_deleted(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    order = await publish(client, alex)
+    reopen = f"/api/v1/orders/{order['id']}/reopen"
+    again = await client.post(reopen, headers=alex)
+    assert (again.status_code, again.json()["code"]) == (409, "order.not_closed")
+    # An open order is closed first, so its proposals go the one way they do (Q-E2).
+    gone = await client.delete(f"/api/v1/orders/{order['id']}", headers=alex)
+    assert (gone.status_code, gone.json()["code"]) == (409, "order.open")
+    async with sessionmaker() as db:
+        await db.execute(update(Order).values(status="fulfilled"))
+        await db.commit()
+    used_up = await client.post(reopen, headers=alex)
+    assert (used_up.status_code, used_up.json()["code"]) == (409, "order.not_closed")
+    assert (await client.delete(f"/api/v1/orders/{order['id']}", headers=alex)).status_code == 204
+
+
+async def test_an_order_past_its_last_day_doesnt_reopen(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    order = await publish(client, alex)
+    await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
+    async with sessionmaker() as db:
+        await db.execute(
+            update(Order).values(
+                available_from=TODAY - timedelta(days=10),
+                available_until=TODAY - timedelta(days=1),
+            )
+        )
+        await db.commit()
+    response = await client.post(f"/api/v1/orders/{order['id']}/reopen", headers=alex)
+    assert (response.status_code, response.json()["code"]) == (409, "order.window_past")
 
 
 async def test_exactly_one_amount_is_an_order_too(client: AsyncClient) -> None:

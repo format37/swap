@@ -177,7 +177,8 @@ async def _restore(db: AsyncSession, deal: Deal) -> None:
         return
     order.amount_remaining = min(order.amount_max, order.amount_remaining + give_amount(deal))
     fits = order.amount_remaining >= orders.smallest_deal(order)
-    if order.status == OrderStatus.FULFILLED and fits:
+    # A deleted order stays gone (QUESTIONS F6).
+    if order.status == OrderStatus.FULFILLED and fits and order.deleted_at is None:
         order.status = OrderStatus.OPEN
 
 

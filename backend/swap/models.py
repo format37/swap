@@ -303,6 +303,9 @@ class Order(Base):
     status: Mapped[str] = mapped_column(Text, server_default=OrderStatus.OPEN.value)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    # Its author deleted it (QUESTIONS F6): gone from every list and card, theirs too. The
+    # row stays, because its deals point at it.
+    deleted_at: Mapped[datetime | None]
 
     wants: Mapped[list["OrderWant"]] = relationship(
         lazy="selectin", cascade="all, delete-orphan", order_by="OrderWant.position"

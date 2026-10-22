@@ -1,13 +1,14 @@
 """Orders: intents to give one currency and take another, seen only through links (ADR-0016).
 
-Who sees an order is one predicate, `seen_by`, used by every query here: the author
-always; anyone else only while it is open and its last day, if it has one, hasn't passed,
-through an active link with the author, and when they are on its list, if it has one (§3).
+Who sees an order is one predicate, `seen_by`, used by every query here: nobody once it
+is deleted; the author always until then; anyone else only while it is open and its last
+day, if it has one, hasn't passed, through an active link with the author, and when they
+are on its list, if it has one (§3).
 """
 
 import uuid
 from collections.abc import Collection
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -80,14 +81,18 @@ def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
     """Whether `viewer` may see an order: the trust boundary of §3, in one place."""
     unlisted = ~exists().where(OrderVisibility.order_id == Order.id)
     listed = exists().where(OrderVisibility.order_id == Order.id, OrderVisibility.user_id == viewer)
-    return or_(
-        Order.author_id == viewer,
-        and_(
-            Order.status == OrderStatus.OPEN,
-            # Until the expiry sweep (slice 5) marks it, an order past its dates is over.
-            or_(Order.available_until.is_(None), Order.available_until >= _authors_today()),
-            Order.author_id.in_(linked_ids(viewer)),
-            or_(unlisted, listed),
+    return and_(
+        # A deleted order is nobody's, its author's included (QUESTIONS F6).
+        Order.deleted_at.is_(None),
+        or_(
+            Order.author_id == viewer,
+            and_(
+                Order.status == OrderStatus.OPEN,
+                # Until the expiry sweep (slice 5) marks it, an order past its dates is over.
+                or_(Order.available_until.is_(None), Order.available_until >= _authors_today()),
+                Order.author_id.in_(linked_ids(viewer)),
+                or_(unlisted, listed),
+            ),
         ),
     )
 
@@ -175,7 +180,7 @@ async def feed(
     """«Открытые мне», earliest available first (FR-2.4); or «Мои», open ones first."""
     query = select(Order, User).join(User, User.id == Order.author_id)
     if scope == "mine":
-        query = query.where(Order.author_id == viewer).order_by(
+        query = query.where(Order.author_id == viewer, seen_by(viewer)).order_by(
             (Order.status != OrderStatus.OPEN), Order.created_at.desc()
         )
     else:
@@ -213,16 +218,49 @@ async def chosen_viewers(db: AsyncSession, order_id: uuid.UUID) -> list[User] | 
     return people or None
 
 
-async def close(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> Order:
-    """The author closes what remains (FR-2.5). Accepted deals carry on."""
+async def _own(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> Order:
+    """The author's own order, locked; 404 for anyone else's, or for one deleted."""
     order = await db.scalar(
-        select(Order).where(Order.id == order_id, Order.author_id == author).with_for_update()
+        select(Order)
+        .where(Order.id == order_id, Order.author_id == author, Order.deleted_at.is_(None))
+        .with_for_update()
     )
     if order is None:
         raise DomainError(404, "order.not_found")
+    return order
+
+
+async def close(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> Order:
+    """The author closes what remains (FR-2.5). Accepted deals carry on."""
+    order = await _own(db, author, order_id)
     if order.status != OrderStatus.OPEN:
         raise DomainError(409, "order.not_open")
     order.status = OrderStatus.CLOSED
     # Its unanswered proposals have nothing left to take (Q-E2).
     await cancel_on_order(db, order, author)
     return order
+
+
+async def reopen(db: AsyncSession, author: User, order_id: uuid.UUID) -> Order:
+    """A closed order opens again as it was: its remainder, list and dates (QUESTIONS F7).
+
+    Nobody is told again, and the proposals cancelled at closing stay cancelled.
+    """
+    order = await _own(db, author.id, order_id)
+    if order.status != OrderStatus.CLOSED:
+        raise DomainError(409, "order.not_closed")
+    if order.available_until is not None and order.available_until < today(author):
+        raise DomainError(409, "order.window_past")
+    order.status = OrderStatus.OPEN
+    return order
+
+
+async def delete(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> None:
+    """The author deletes an order that isn't open (QUESTIONS F6). Its deals carry on.
+
+    An open one is closed first, which cancels its proposals (Q-E2).
+    """
+    order = await _own(db, author, order_id)
+    if order.status == OrderStatus.OPEN:
+        raise DomainError(409, "order.open")
+    order.deleted_at = datetime.now(UTC)
