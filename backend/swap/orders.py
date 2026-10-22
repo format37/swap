@@ -1,22 +1,23 @@
-"""Orders: intents to give one currency and take another, seen only through links (ADR-0016).
+"""Orders: intents to give one currency and take another, seen along chains of links
+(ADR-0016, ADR-0028).
 
 Who may take up an order is one predicate, `open_to`, used by the feed and by proposals:
 nobody once it is deleted; the author always until then; anyone else only while it is
-open and its last day, if it has one, hasn't passed, through an active link with the
-author, and when they are on its list, if it has one (§3). `seen_by` adds the order's
-history: whoever had a deal on it may still open it, but not take it up again
-(QUESTIONS H4).
+open and its last day, if it has one, hasn't passed, and while they are within its reach:
+on its list and still linked at 0, or at most that many handshakes away, or joined by any
+chain at ∞ (QUESTIONS J2). `seen_by` adds the order's history: whoever had a deal on it
+may still open it, but not take it up again (QUESTIONS H4).
 """
 
 import uuid
 from collections.abc import Collection
 from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import ColumnElement, Date, and_, cast, exists, func, or_, select
+from sqlalchemy import ColumnElement, Date, and_, cast, exists, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -25,6 +26,7 @@ from swap.errors import DomainError
 from swap.links import linked_ids
 from swap.models import Deal, Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
 from swap.money import Asset, Country, Money, MoneyOrZero
+from swap.network import FAR, distances
 from swap.notifications import notify
 from swap.proposals import cancel_on_order
 from swap.rates import CENT, FixedRate, RateSpec
@@ -40,6 +42,14 @@ class Want(BaseModel):
     country: Country
     # Fixed by the author, or the market's until a proposal locks it (QUESTIONS G2, J1).
     rate_spec: RateSpec
+
+
+# How far an order is seen, in handshakes (ADR-0028): 0 is its list, None is ∞.
+Reach = Annotated[int, Field(ge=0, le=3)] | None
+# «Мои связи и их связи» for a new order (QUESTIONS J2, a default).
+DEFAULT_REACH = 2
+# The feed's filter, 1 to 3: how many handshakes away an author may be. None is ∞.
+type Within = int | None
 
 
 class OrderDraft(BaseModel):
@@ -60,7 +70,8 @@ class OrderDraft(BaseModel):
     # How the author can be paid, whichever currency they get (QUESTIONS F2).
     receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
     wants: list[Want] = Field(min_length=1, max_length=8)
-    # None: all active links, now and later. Otherwise only these, who must be links now.
+    reach: Reach = DEFAULT_REACH
+    # At reach 0, «Только выбранным»: the author's links who may see it, at least one.
     visible_to: list[uuid.UUID] | None = Field(default=None, max_length=200)
     note: str | None = Field(default=None, max_length=500)
 
@@ -82,10 +93,17 @@ def _authors_today() -> ColumnElement[date]:
     return cast(func.timezone(tz.scalar_subquery(), func.now()), Date)
 
 
-def open_to(viewer: uuid.UUID) -> ColumnElement[bool]:
-    """Whether `viewer` may see an order and propose on it: the trust boundary of §3."""
-    unlisted = ~exists().where(OrderVisibility.order_id == Order.id)
+def open_to(viewer: uuid.UUID, within: Within = None) -> ColumnElement[bool]:
+    """Whether `viewer` may see an order and propose on it: the trust boundary of §3, as
+    QUESTIONS J2 moved it. `within` is the viewer's own filter, at most so many handshakes.
+    """
+    ring = distances(viewer)
+
+    def near(most: ColumnElement[int]) -> ColumnElement[bool]:
+        return exists().where(ring.c.user_id == Order.author_id, ring.c.depth <= most)
+
     listed = exists().where(OrderVisibility.order_id == Order.id, OrderVisibility.user_id == viewer)
+    furthest = literal(within or FAR)
     return and_(
         # A deleted order is nobody's, its author's included (QUESTIONS F6).
         Order.deleted_at.is_(None),
@@ -95,8 +113,15 @@ def open_to(viewer: uuid.UUID) -> ColumnElement[bool]:
                 Order.status == OrderStatus.OPEN,
                 # Until the expiry sweep (slice 5) marks it, an order past its dates is over.
                 or_(Order.available_until.is_(None), Order.available_until >= _authors_today()),
-                Order.author_id.in_(linked_ids(viewer)),
-                or_(unlisted, listed),
+                or_(
+                    # «Только выбранным»: on its list, and still linked to the author.
+                    and_(Order.reach == 0, listed, near(literal(1))),
+                    # Within its reach and within the viewer's filter; ∞ is any chain.
+                    and_(
+                        or_(Order.reach.is_(None), Order.reach > 0),
+                        near(func.least(func.coalesce(Order.reach, FAR), furthest)),
+                    ),
+                ),
             ),
         ),
     )
@@ -137,15 +162,19 @@ def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
 async def create(
     db: AsyncSession, author: User, draft: OrderDraft, assets: Collection[str]
 ) -> Order:
-    """Publish an order and tell everyone who can see it (FR-2.1, FR-7.1)."""
+    """Publish an order and tell the author's links, or its list (FR-2.1, FR-7.1). People
+    further away find it in their feed (QUESTIONS J2)."""
     _check(draft, author, assets)
     links = set(await db.scalars(linked_ids(author.id)))
-    if draft.visible_to is not None:
-        chosen = set(draft.visible_to)
+    if draft.reach == 0:
+        # «Только выбранным» needs someone chosen, so the slider has no broken state.
+        chosen = set(draft.visible_to or [])
         if not chosen:
             raise DomainError(422, "order.visible_to_nobody")
         if not chosen <= links:
             raise DomainError(422, "order.visible_to_unlinked")
+    elif draft.visible_to is not None:
+        raise DomainError(422, "order.visible_to_needs_reach_0")
     # In cents, as numeric(18,2) keeps them: "0" reads back as "0.00".
     least, most = draft.amount_min.quantize(CENT), draft.amount_max.quantize(CENT)
     order = Order(
@@ -161,6 +190,7 @@ async def create(
         payout_methods=list(dict.fromkeys(draft.payout_methods)),
         receive_methods=list(dict.fromkeys(draft.receive_methods)),
         note=(draft.note or "").strip() or None,
+        reach=draft.reach,
         status=OrderStatus.OPEN,
         wants=[
             OrderWant(
@@ -173,9 +203,9 @@ async def create(
         ],
     )
     db.add(order)
-    audience = links if draft.visible_to is None else set(draft.visible_to)
+    audience = set(draft.visible_to or []) if draft.reach == 0 else links
     for viewer in audience:
-        if draft.visible_to is not None:
+        if draft.reach == 0:
             db.add(OrderVisibility(order_id=order.id, user_id=viewer))
         notify(
             db,
@@ -192,11 +222,14 @@ async def create(
 
 
 async def feed(
-    db: AsyncSession, viewer: uuid.UUID, scope: Literal["visible", "mine", "history"]
+    db: AsyncSession,
+    viewer: uuid.UUID,
+    scope: Literal["visible", "mine", "history"],
+    within: Within = None,
 ) -> list[tuple[Order, User]]:
-    """«Открытые мне», earliest available first (FR-2.4); «Мои», the open ones, newest
-    first; or the history: orders no longer open that are mine or that I had a deal on,
-    latest change first (QUESTIONS H4)."""
+    """«Открытые мне», earliest available first (FR-2.4), from authors at most `within`
+    handshakes away; «Мои», the open ones, newest first; or the history: orders no longer
+    open that are mine or that I had a deal on, latest change first (QUESTIONS H4)."""
     query = select(Order, User).join(User, User.id == Order.author_id)
     if scope == "mine":
         query = query.where(
@@ -207,7 +240,7 @@ async def feed(
             Order.updated_at.desc()
         )
     else:
-        query = query.where(Order.author_id != viewer, open_to(viewer)).order_by(
+        query = query.where(Order.author_id != viewer, open_to(viewer, within)).order_by(
             Order.available_from, Order.created_at
         )
     return [(order, author) for order, author in await db.execute(query)]
@@ -234,7 +267,7 @@ async def get(
 
 
 async def chosen_viewers(db: AsyncSession, order_id: uuid.UUID) -> list[User] | None:
-    """Who an order is limited to; None when it is for all links. For its author only."""
+    """Who an order of reach 0 is limited to; None for any other. For its author only."""
     people = list(
         await db.scalars(
             select(User)

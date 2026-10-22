@@ -42,17 +42,18 @@ def other_side(link: Link, me: uuid.UUID) -> uuid.UUID:
     return link.user_hi_id if link.user_lo_id == me else link.user_lo_id
 
 
-def _other_side_of(me: uuid.UUID) -> ColumnElement[uuid.UUID]:
+def other_side_of(me: uuid.UUID) -> ColumnElement[uuid.UUID]:
     return case((Link.user_lo_id == me, Link.user_hi_id), else_=Link.user_lo_id)
 
 
-def _involves(me: uuid.UUID) -> ColumnElement[bool]:
+def involves(me: uuid.UUID) -> ColumnElement[bool]:
     return or_(Link.user_lo_id == me, Link.user_hi_id == me)
 
 
 def linked_ids(me: uuid.UUID) -> Select[uuid.UUID]:
-    """Everyone `me` is actively linked to. Links are not transitive (§3)."""
-    return select(_other_side_of(me)).where(_involves(me), Link.status == LinkStatus.ACTIVE)
+    """Everyone `me` is actively linked to: one handshake away. Orders reach further
+    along chains of these (ADR-0028, swap/network.py)."""
+    return select(other_side_of(me)).where(involves(me), Link.status == LinkStatus.ACTIVE)
 
 
 async def mutual_count(db: AsyncSession, a: uuid.UUID, b: uuid.UUID) -> int:
@@ -134,7 +135,7 @@ async def ask(
 
 
 async def _lock_own(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID) -> Link:
-    link = await db.scalar(select(Link).where(Link.id == link_id, _involves(me)).with_for_update())
+    link = await db.scalar(select(Link).where(Link.id == link_id, involves(me)).with_for_update())
     if link is None:
         # The same answer whether the row is someone else's or doesn't exist.
         raise DomainError(404, "link.not_found")
@@ -224,8 +225,8 @@ async def overview(db: AsyncSession, me: uuid.UUID) -> Overview:
     """Everything the «Связи» tab lists."""
     rows = await db.execute(
         select(Link, User)
-        .join(User, User.id == _other_side_of(me))
-        .where(_involves(me), Link.status.in_([LinkStatus.ACTIVE, LinkStatus.PENDING]))
+        .join(User, User.id == other_side_of(me))
+        .where(involves(me), Link.status.in_([LinkStatus.ACTIVE, LinkStatus.PENDING]))
         .order_by(Link.accepted_at.desc().nulls_last(), Link.requested_at.desc())
     )
     result = Overview(active=[], incoming=[], outgoing=[], invites=[])
@@ -248,8 +249,8 @@ async def view(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID) -> tuple[Lin
     row = (
         await db.execute(
             select(Link, User)
-            .join(User, User.id == _other_side_of(me))
-            .where(Link.id == link_id, _involves(me))
+            .join(User, User.id == other_side_of(me))
+            .where(Link.id == link_id, involves(me))
         )
     ).first()
     if row is None:
