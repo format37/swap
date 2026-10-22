@@ -22,7 +22,8 @@ def content_security_policy(sentry_dsn: str | None = None) -> str:
             "script-src 'self'",
             # React and the Telegram SDK set inline styles and CSS variables.
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: blob:",
+            # Telegram's profile photos: t.me answers with a redirect to its CDN (ADR-0027).
+            "img-src 'self' data: blob: https://t.me https://*.telesco.pe",
             "font-src 'self'",
             connect,
             "object-src 'none'",

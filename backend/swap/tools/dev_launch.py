@@ -66,15 +66,18 @@ def launch_url(
     username: str | None,
     language_code: str,
     theme: str,
+    photo_url: str | None = None,
     now: int | None = None,
 ) -> str:
-    user = {
+    user: dict[str, object] = {
         "id": user_id,
         "first_name": first_name,
         "username": username,
         "language_code": language_code,
         "allows_write_to_pm": True,
     }
+    if photo_url:
+        user["photo_url"] = photo_url
     fields = {
         "query_id": "AAHdevlaunch",
         "user": json.dumps(user, ensure_ascii=False, separators=(",", ":")),
@@ -102,6 +105,8 @@ def main() -> None:
     parser.add_argument("--username", default="dev_alex")
     parser.add_argument("--lang", default="ru", help="Telegram's language_code")
     parser.add_argument("--theme", choices=sorted(THEMES), default="light")
+    # A public userpic serves well: https://t.me/i/userpic/320/<username>.jpg (ADR-0027).
+    parser.add_argument("--photo", help="a photo_url, as Telegram would send it")
     args = parser.parse_args()
     print(
         launch_url(
@@ -112,6 +117,7 @@ def main() -> None:
             username=args.username,
             language_code=args.lang,
             theme=args.theme,
+            photo_url=args.photo,
         )
     )
 

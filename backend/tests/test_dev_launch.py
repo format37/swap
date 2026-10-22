@@ -16,6 +16,7 @@ def test_the_dev_launch_url_passes_the_real_validation() -> None:
         username="nino",
         language_code="ka",
         theme="dark",
+        photo_url="https://t.me/i/userpic/320/nino.jpg",
         now=int(now.timestamp()),
     )
     parts = urlsplit(url)
@@ -27,4 +28,5 @@ def test_the_dev_launch_url_passes_the_real_validation() -> None:
     assert launch.user.id == 7
     assert launch.user.first_name == "Нино"
     assert launch.user.language_code == "ka"
+    assert launch.user.photo_url == "https://t.me/i/userpic/320/nino.jpg"
     assert params["tgWebAppPlatform"] == ["tdesktop"]
