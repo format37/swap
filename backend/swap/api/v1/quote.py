@@ -1,14 +1,18 @@
-"""What the wizard and the proposal need about money: the assets, and live previews of a
-counter-amount (ADR-0004). The UI never does money arithmetic, so it asks here, debounced.
+"""What the wizard and the proposal need about money: the assets, live previews of a
+counter-amount (ADR-0004), and the market rate to start from (ADR-0020). The UI never does
+money arithmetic, so it asks here, debounced.
 """
 
+from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict
 
-from swap.api.deps import AppSettings, CurrentUser
+from swap.api.deps import AppSettings, CurrentUser, MarketRates
 from swap.api.errors import Problem
+from swap.errors import DomainError
 from swap.money import Asset, Money
 from swap.rates import FixedRate, convert
 
@@ -37,6 +41,34 @@ async def quote(body: QuoteRequest, user: CurrentUser) -> QuoteResult:
         body.amount, body.rate_spec, body.give_currency, body.want_currency, whole=body.whole
     )
     return QuoteResult(amount=amount)
+
+
+class MarketQuote(BaseModel):
+    """1 `base` = `value` `quote` on the market, rounded the way people type a rate."""
+
+    base: str
+    quote: str
+    value: Decimal
+    source: Literal["coinbase"]
+    # When the source said so: shown beside the rate (§11).
+    fetched_at: datetime
+
+
+@router.get("/rates/market", responses={422: {"model": Problem}, 503: {"model": Problem}})
+async def market_rate(
+    base: str, quote: str, user: CurrentUser, settings: AppSettings, market: MarketRates
+) -> MarketQuote:
+    """The market's rate, which the wizard fills in for the author to keep or change (F5)."""
+    if base not in settings.assets or quote not in settings.assets:
+        raise DomainError(422, "rate.unknown_currency")
+    if base == quote:
+        raise DomainError(422, "rate.same_currency")
+    found = await market.rate(base, quote)
+    if found is None:
+        raise DomainError(503, "rate.unavailable")
+    return MarketQuote(
+        base=base, quote=quote, value=found.value, source="coinbase", fetched_at=found.fetched_at
+    )
 
 
 @router.get("/assets")

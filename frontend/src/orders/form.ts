@@ -9,6 +9,8 @@ export interface WantForm {
   rate: string
   /** False: «1 {want} = rate {give}». True: «1 {give} = rate {want}». */
   flipped: boolean
+  /** Typed by the author. Until then the rate is the market's, and follows the pair (F5). */
+  typed: boolean
 }
 
 /** The wizard's state: strings as typed, until «Опубликовать» (Q-B17: no server drafts). */
@@ -49,6 +51,7 @@ export function newWant(giveCurrency: string, currency = '', country = ''): Want
     country,
     rate: '',
     flipped: strength(giveCurrency) < strength(currency),
+    typed: false,
   }
 }
 

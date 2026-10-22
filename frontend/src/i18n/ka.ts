@@ -118,6 +118,8 @@ export const ka: Messages = {
   'wizard.add_want': 'კიდევ ერთი ვალუტა',
   'wizard.remove_want': 'ვალუტის წაშლა',
   'wizard.flip': 'კურსის მიმართულების შეცვლა',
+  'wizard.market': 'Coinbase-ის კურსი, {time}: {rate}',
+  'wizard.market_source': 'Coinbase-ის კურსი, {time}',
   'wizard.preview': 'თუ გასცემთ {give}, მიიღებთ ≈ {want}',
   'wizard.who.title': 'ვინ ხედავს',
   'wizard.who.all': 'ყველა ჩემს კავშირს',

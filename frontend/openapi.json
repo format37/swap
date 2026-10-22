@@ -641,6 +641,43 @@
         ],
         "type": "string"
       },
+      "MarketQuote": {
+        "description": "1 `base` = `value` `quote` on the market, rounded the way people type a rate.",
+        "properties": {
+          "base": {
+            "title": "Base",
+            "type": "string"
+          },
+          "fetched_at": {
+            "format": "date-time",
+            "title": "Fetched At",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          },
+          "source": {
+            "const": "coinbase",
+            "title": "Source",
+            "type": "string"
+          },
+          "value": {
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "quote",
+          "value",
+          "source",
+          "fetched_at"
+        ],
+        "title": "MarketQuote",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "first_name": {
@@ -4164,6 +4201,83 @@
           }
         ],
         "summary": "Quote",
+        "tags": [
+          "rates"
+        ]
+      }
+    },
+    "/api/v1/rates/market": {
+      "get": {
+        "description": "The market's rate, which the wizard fills in for the author to keep or change (F5).",
+        "operationId": "market_rate",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "base",
+            "required": true,
+            "schema": {
+              "title": "Base",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quote",
+            "required": true,
+            "schema": {
+              "title": "Quote",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketQuote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Market Rate",
         "tags": [
           "rates"
         ]

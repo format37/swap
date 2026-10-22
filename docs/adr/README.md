@@ -28,6 +28,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0017](0017-forms-without-a-form-library.md) | Forms keep state in React and rules in one pure module; no react-hook-form or zod | Accepted |
 | [0018](0018-deals.md) | Deals: one state machine, two legs, a journal guard that fires at once | Accepted |
 | [0019](0019-orders-after-the-first-test.md) | Orders after the first test: no minimum or last day needed, ways to be paid, reopen and delete | Accepted |
+| [0020](0020-market-rate-from-coinbase.md) | The wizard's rate starts at the market's: Coinbase's public rates | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the

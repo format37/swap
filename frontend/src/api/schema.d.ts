@@ -554,6 +554,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rates/market": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Rate
+         * @description The market's rate, which the wizard fills in for the author to keep or change (F5).
+         */
+        get: operations["market_rate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -812,6 +832,28 @@ export interface components {
         };
         /** @enum {string} */
         Locale: "ru" | "en" | "ka";
+        /**
+         * MarketQuote
+         * @description 1 `base` = `value` `quote` on the market, rounded the way people type a rate.
+         */
+        MarketQuote: {
+            /** Base */
+            base: string;
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Quote */
+            quote: string;
+            /**
+             * Source
+             * @constant
+             */
+            source: "coinbase";
+            /** Value */
+            value: string;
+        };
         /** Me */
         Me: {
             /** First Name */
@@ -3071,6 +3113,56 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    market_rate: {
+        parameters: {
+            query: {
+                base: string;
+                quote: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketQuote"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

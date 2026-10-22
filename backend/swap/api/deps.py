@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from swap.api.errors import ApiError
 from swap.config import Settings
 from swap.db import Sessionmaker
+from swap.market import Market
 from swap.models import AuthSession, User
 from swap.sessions import hash_token
 
@@ -25,8 +26,13 @@ def get_app_settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
 
 
+def get_market(request: Request) -> Market:
+    return cast(Market, request.app.state.market)
+
+
 Db = Annotated[AsyncSession, Depends(get_db)]
 AppSettings = Annotated[Settings, Depends(get_app_settings)]
+MarketRates = Annotated[Market, Depends(get_market)]
 
 # auto_error=False: a missing header is our own 401 problem, not FastAPI's 403.
 _bearer = HTTPBearer(auto_error=False)
