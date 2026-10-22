@@ -137,10 +137,10 @@ with others.
 through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
 
 **PR 1.12 — Deals ask only what the exchange needs** (G1, G3, G4, G5; ADR-0021)
-- [ ] Migration: `deals.note`; the legs' payment details go.
-- [ ] The proposal starts at all that remains, asks for no payment details, and takes an
+- [x] Migration: `deals.note`; the legs' payment details go.
+- [x] The proposal starts at all that remains, asks for no payment details, and takes an
       optional comment. Accepting is one confirmation.
-- [ ] The profile without «Реквизиты»; what stops a form shows above the main button.
+- [x] The profile without «Реквизиты»; what stops a form shows above the main button.
 
 **PR 1.13 — Three ways: cash, bank, crypto** (G3; ADR-0021)
 - [ ] Migration: card, SBP and «other» become bank; the CHECKs allow three.
