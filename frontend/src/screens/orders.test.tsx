@@ -527,6 +527,73 @@ describe('the wizard', () => {
 })
 
 describe('what one gets (L2)', () => {
+  it('follows in English too, whichever currency was typed and added first (M2)', async () => {
+    // The owner's steps: the sum, GEL typed, then USD added, then USD typed.
+    const answers: Record<string, string> = {
+      'want 100 GEL': '2920.00',
+      'give 2920 USD': '35.83',
+      'want 50 USD': '4075.00',
+      'give 4075 GEL': '139.55',
+    }
+    fakeApi({
+      'GET /api/v1/assets': () => json(200, ['RUB', 'GEL', 'USD']),
+      'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
+      'GET /api/v1/rates/market': () => problem(503, 'rate.unavailable'),
+      'POST /api/v1/quote': async (request) => {
+        const body = (await request.json()) as QuoteRequest
+        const amount = answers[`${body.side} ${body.amount} ${body.want_currency}`] ?? '0.00'
+        return json(200, {
+          amount,
+          rate: {
+            base: body.want_currency,
+            quote: 'RUB',
+            value: '1',
+            source: null,
+            fetched_at: null,
+          },
+        })
+      },
+    })
+    renderScreen(<NewOrder />, { route: '/orders/new', locale: 'en' })
+    await screen.findAllByRole('option', { name: '₽ RUB' })
+    const [give, first] = screen.getAllByRole('combobox', { name: /^Currency/ })
+    fireEvent.change(give as HTMLElement, { target: { value: 'RUB' } })
+    const sum = screen.getByRole('textbox', { name: /^Amount/ })
+    fireEvent.change(sum, { target: { value: '150000' } })
+    fireEvent.change(first as HTMLElement, { target: { value: 'GEL' } })
+    fireEvent.click(screen.getByRole('switch', { name: 'Fix the rate' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Rate' }), { target: { value: '29.20' } })
+    const gets = () => screen.getAllByRole('textbox', { name: /^You get/ })
+
+    fireEvent.change(gets()[0] as HTMLElement, { target: { value: '100' } })
+    await waitFor(() => {
+      expect(sum).toHaveValue('2,920')
+    })
+    // USD, added after GEL was typed, follows the sum as written in English.
+    fireEvent.click(screen.getByRole('button', { name: 'Another currency' }))
+    fireEvent.change(screen.getAllByRole('combobox', { name: /^Currency/ })[2] as HTMLElement, {
+      target: { value: 'USD' },
+    })
+    fireEvent.change(screen.getAllByRole('combobox', { name: /^Country/ })[2] as HTMLElement, {
+      target: { value: 'GE' },
+    })
+    fireEvent.click(screen.getAllByRole('switch', { name: 'Fix the rate' })[1] as HTMLElement)
+    fireEvent.change(screen.getAllByRole('textbox', { name: 'Rate' })[1] as HTMLElement, {
+      target: { value: '81.50' },
+    })
+    await waitFor(() => {
+      expect(gets()[1]).toHaveValue('35.83')
+    })
+    // Typing USD now: GEL follows the new sum instead of emptying.
+    fireEvent.change(gets()[1] as HTMLElement, { target: { value: '50' } })
+    await waitFor(() => {
+      expect(sum).toHaveValue('4,075')
+    })
+    await waitFor(() => {
+      expect(gets()[0]).toHaveValue('139.55')
+    })
+  })
+
   it('can be typed, and the sum and the other currencies follow it', async () => {
     const asked: QuoteRequest[] = []
     // What the api answers, «1 GEL = 29,20 RUB» and «1 USD = 81,50 RUB»: no arithmetic here.
