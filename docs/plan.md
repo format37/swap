@@ -173,6 +173,10 @@ both sides. The owner's notes are QUESTIONS part H.
 
 **Demo, again.** Deploy, then ask the owner to run the deal.
 
+**PR 1.19 — Error reports** (I1; ADR-0025)
+- [x] One Sentry project, `swap`; the api, the worker and the Mini App report to it.
+- [x] Nothing personal: no bodies, no local variables, no initData, no bot token.
+
 ### Slices 2–7
 
 Each is broken into PRs when it starts.

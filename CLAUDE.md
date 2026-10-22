@@ -16,8 +16,8 @@ Read before changing anything:
 - `docs/QUESTIONS.md` holds the questions and the owner's answers. An answer there
   overrides the spec and the kickoff. Part D lists the owner's own decisions of
   2026-10-21, part F his notes after his first test on 2026-10-22, part G his notes
-  after the demo with others, and part H his notes after the first real deal, both the
-  same day.
+  after the demo with others, part H his notes after the first real deal, and part I
+  his Sentry setup, all the same day.
 - `docs/adr/` has every decision another engineer would ask about, one page each.
   Never leave a decision only in chat.
 - `docs/plan.md` has the current phase's checklist and the estimates.
@@ -100,8 +100,9 @@ directly.
 - **Swap stores no payment details** (ADR-0021). A deal says which currency, how
   much, by when and how (cash, bank or crypto); where to pay is the parties' own
   business, and a proposal's comment can carry it.
-- **No analytics and no third-party scripts in the frontend.** Sentry comes in v1,
-  with the owner's DSN.
+- **No analytics and no third-party scripts in the frontend.** The one exception is
+  Sentry's SDK, bundled, which reports errors to the owner's `swap` project when the
+  build has `SENTRY_DSN` (ADR-0025). Nothing personal goes into a report.
 - **Every user-facing string lives in a dictionary, in Russian, English and Georgian**
   (ADR-0009), UI and bot alike. A PR that adds a string adds all three.
 - **§2 is product policy.** No public order board, no search among strangers, no

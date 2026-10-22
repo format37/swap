@@ -703,3 +703,12 @@ Whoever had a deal on an order can still open it after it ends, though not propo
 again. Home folds finished orders, the author's own and those one dealt on, under
 «Завершённые заявки». An order's card lists its finished deals too. → PR 1.17,
 ADR-0023.
+
+## I. Error reports (2026-10-22)
+
+### I1 · Sentry now, in one project
+
+The owner set Sentry up in phase 1, ahead of v1, from Sentry's own onboarding: one new
+project for Swap, apart from Phonyx's, and only production. On what to send he took
+errors and tracing with no personal data. → ADR-0025.
+
