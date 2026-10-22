@@ -1,13 +1,15 @@
-import { Bell, Eraser, Globe, UserX } from 'lucide-react'
+import { Bell, Eraser, Globe, Mail, ShieldCheck, UserX } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
 import { useDeleteAccount, useDeleteHistory } from '../api/me'
 import { errorMessage } from '../i18n/errors'
 import { useI18n } from '../i18n/useI18n'
+import { DEVELOPER_EMAIL, privacyUrl } from '../settings/about'
 import { notificationsState } from '../settings/notifications'
 import { LANGUAGE_NAMES } from '../i18n/locale'
-import { confirmAction, hapticNotify } from '../telegram'
+import { confirmAction, copyText, hapticNotify, openPage } from '../telegram'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Cell } from '../ui/Cell'
@@ -27,6 +29,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
   const account = useDeleteAccount()
   const name = [me.first_name, me.last_name].filter(Boolean).join(' ')
   const failure = history.error ?? account.error
+  const [copied, setCopied] = useState(false)
 
   return (
     <Screen>
@@ -53,6 +56,32 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
           detail={LANGUAGE_NAMES[locale]}
           opens
           onClick={() => void navigate('/language')}
+        />
+      </Section>
+
+      <Section title={t('settings.about')}>
+        <Cell
+          icon={<ShieldCheck aria-hidden className="size-6" />}
+          label={t('settings.privacy')}
+          opens
+          onClick={() => {
+            openPage(privacyUrl())
+          }}
+        />
+        {/* mailto: may not open inside Telegram, so the address is copied (QUESTIONS K9). */}
+        <Cell
+          icon={<Mail aria-hidden className="size-6" />}
+          label={t('settings.contact')}
+          subtitle={DEVELOPER_EMAIL}
+          detail={copied ? t('settings.copied') : t('invite.copy_short')}
+          onClick={() => {
+            void copyText(DEVELOPER_EMAIL).then((done) => {
+              if (done) {
+                hapticNotify('success')
+                setCopied(true)
+              }
+            })
+          }}
         />
       </Section>
 

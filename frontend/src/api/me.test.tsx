@@ -18,6 +18,7 @@ const me: Me = {
   tz: null,
   notifications_off: false,
   muted_kinds: [],
+  terms_accepted: true,
 }
 
 function Probe({ who }: { who: Me }) {

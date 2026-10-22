@@ -38,6 +38,7 @@ function meOf(
     tz: 'Asia/Tbilisi',
     notifications_off: false,
     muted_kinds: [],
+    terms_accepted: true,
   }
 }
 
