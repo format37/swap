@@ -89,7 +89,7 @@ export interface paths {
         put?: never;
         /**
          * Accept Deal
-         * @description Accept a proposal on your order. Cash needs no payment details, so no body either.
+         * @description Accept a proposal on your order: one tap, no payment details (QUESTIONS G1).
          */
         post: operations["accept_deal"];
         delete?: never;
@@ -651,6 +651,8 @@ export interface components {
             id: string;
             /** Legs */
             legs: components["schemas"]["Leg"][];
+            /** Note */
+            note: string | null;
             /**
              * Order Id
              * Format: uuid
@@ -781,7 +783,6 @@ export interface components {
             payer: components["schemas"]["Person"];
             /** Received At */
             received_at: string | null;
-            recipient: components["schemas"]["Recipient"] | null;
             /** Sent At */
             sent_at: string | null;
             /** Seq */
@@ -1115,8 +1116,8 @@ export interface components {
              * Format: date
              */
             my_due: string;
-            /** Receive With */
-            receive_with?: string | null;
+            /** Note */
+            note?: string | null;
             /**
              * Their Due
              * Format: date
@@ -1194,26 +1195,6 @@ export interface components {
             quote: string;
             /** Value */
             value: string;
-        };
-        /**
-         * Receipt
-         * @description What accepting sends: where the author wants the other currency. None for cash.
-         */
-        Receipt: {
-            /** Receive With */
-            receive_with?: string | null;
-        };
-        /**
-         * Recipient
-         * @description Where the payer sends: the payee's chosen payment details (ADR-0010).
-         */
-        Recipient: {
-            /** Full */
-            full: string | null;
-            /** Masked */
-            masked: string | null;
-            /** Title */
-            title: string | null;
         };
         /** Resolution */
         Resolution: {
@@ -1464,11 +1445,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["Receipt"] | null;
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -1515,22 +1492,13 @@ export interface operations {
                     "application/json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Validation Error */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Service Unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Problem"];
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3006,15 +2974,6 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Service Unavailable */
-            503: {
                 headers: {
                     [name: string]: unknown;
                 };

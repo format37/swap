@@ -63,14 +63,10 @@ export function usePropose(orderId: string) {
   )
 }
 
+/** One tap: accepting asks for no payment details (QUESTIONS G1). */
 export function useAccept(dealId: string) {
-  return useDealsMutation((receiveWith: string | null) =>
-    unwrap(
-      api.POST('/api/v1/deals/{deal_id}/accept', {
-        params: { path: { deal_id: dealId } },
-        body: { receive_with: receiveWith },
-      }),
-    ),
+  return useDealsMutation(() =>
+    unwrap(api.POST('/api/v1/deals/{deal_id}/accept', { params: { path: { deal_id: dealId } } })),
   )
 }
 

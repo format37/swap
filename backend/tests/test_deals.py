@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select, text, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swap.deals import expire_due
@@ -17,7 +17,6 @@ from tests.test_orders import publish
 
 Sessions = async_sessionmaker[AsyncSession]
 TODAY = datetime.now(UTC).date()
-GRANDMA = "Сбербанк, карта 2202 2061 1234 5678, Иванова Мария"
 
 
 class World:
@@ -35,24 +34,13 @@ class World:
         self.order = await publish(
             self.client, self.alex, payout_methods=["card", "phone", "cash"], **order
         )
-        self.nino_rub = await self.details(self.nino, asset="RUB", kind="card", text=GRANDMA)
-        self.alex_gel = await self.details(
-            self.alex, asset="GEL", kind="bank", text="TBC, GE29TB7777777777777777"
-        )
         return self
-
-    async def details(self, headers: Headers, **entry: Any) -> str:
-        body = {"title": "Saved", **entry}
-        response = await self.client.post("/api/v1/payment-methods", json=body, headers=headers)
-        assert response.status_code == 201, response.text
-        return str(response.json()["id"])
 
     def proposal(self, **changes: Any) -> dict[str, Any]:
         return {
             "amount": "50000.00",
             "want_currency": "GEL",
             "give_method": "card",
-            "receive_with": self.nino_rub,
             "counter_method": "cash",
             "my_due": str(TODAY + timedelta(days=3)),
             "their_due": str(TODAY + timedelta(days=2)),
@@ -175,7 +163,7 @@ async def test_nobody_proposes_on_an_order_they_cant_see(world: World) -> None:
 async def test_nobody_proposes_on_their_own_order(world: World) -> None:
     response = await world.client.post(
         f"/api/v1/orders/{world.order['id']}/deals",
-        json=world.proposal(receive_with=None, give_method="cash"),
+        json=world.proposal(give_method="cash"),
         headers=world.alex,
     )
     assert response.status_code == 409
@@ -202,13 +190,14 @@ async def test_a_closed_order_takes_no_proposals(world: World) -> None:
         ({"give_method": "crypto"}, "deal.method_not_offered"),
         # Alex is paid in cash or by bank, not by card (QUESTIONS F2).
         ({"counter_method": "card"}, "deal.method_not_accepted"),
-        ({"receive_with": None}, "deal.details_required"),
-        ({"receive_with": str(uuid.uuid4())}, "deal.details_unknown"),
         ({"my_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),
         ({"their_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),
         ({"amount": 50000}, "validation_error"),
         ({"amount": "50000.001"}, "validation_error"),
         ({"first": "nobody"}, "validation_error"),
+        ({"note": "x" * 501}, "validation_error"),
+        # Payment details are no part of a deal any more (QUESTIONS G1).
+        ({"receive_with": str(uuid.uuid4())}, "validation_error"),
         ({"extra": 1}, "validation_error"),
     ],
 )
@@ -224,23 +213,6 @@ async def test_a_malformed_proposal_is_refused(
     assert response.json()["code"] == code
     async with world.sessions() as db:
         assert list(await db.scalars(select(Deal))) == []
-
-
-async def test_payment_details_must_be_the_proposers_own_and_in_the_right_currency(
-    world: World,
-) -> None:
-    usd = await world.details(world.nino, asset="USD", kind="card", text="4111 1111 1111 1111")
-    for receive_with, code in [
-        (world.alex_gel, "deal.details_unknown"),
-        (usd, "deal.details_mismatch"),
-    ]:
-        response = await world.client.post(
-            f"/api/v1/orders/{world.order['id']}/deals",
-            json=world.proposal(receive_with=receive_with),
-            headers=world.nino,
-        )
-        assert response.status_code == 422, receive_with
-        assert response.json()["code"] == code
 
 
 # --- allowed: a whole deal --------------------------------------------------------------
@@ -259,13 +231,11 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
         "1712.33",
     )
     assert first["method"] == "cash"
-    assert first["recipient"] is None  # Alex chooses when accepting
     assert (second["payer"]["first_name"], second["currency"], second["amount"]) == (
         "Alex",
         "RUB",
         "50000.00",
     )
-    assert second["recipient"]["full"] == GRANDMA  # the payee reads their own
     assert await world.told("deal.proposed") == [
         (
             "Alex",
@@ -281,7 +251,7 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
     ]
     assert await world.remaining() == "150000.00:open"
 
-    accepted = await world.ok(world.alex, deal, "accept", receive_with=None)
+    accepted = await world.ok(world.alex, deal, "accept")
     assert accepted["status"] == "accepted"
     assert accepted["accepted_at"] is not None
     assert await world.remaining() == "100000.00:open"  # FR-2.3
@@ -315,40 +285,17 @@ async def test_the_author_may_go_first_and_round_to_whole_units(world: World) ->
     assert deal["whole"] is True
 
 
-async def test_a_card_for_the_counter_leg_needs_the_authors_details(world: World) -> None:
-    deal = await world.propose(counter_method="bank")
-    missing = await world.act(world.alex, deal, "accept")
-    assert missing.status_code == 422
-    assert missing.json()["code"] == "deal.details_required"
-    accepted = await world.ok(world.alex, deal, "accept", receive_with=world.alex_gel)
-    assert accepted["legs"][0]["recipient"]["full"] == "TBC, GE29TB7777777777777777"
-
-
-# --- payment details in a deal (ADR-0010, Q-B8) ----------------------------------------
-
-
-async def test_the_payer_reads_the_details_only_once_the_deal_is_accepted(world: World) -> None:
-    deal = await world.propose()
-    before = await world.client.get(f"/api/v1/deals/{deal['id']}", headers=world.alex)
-    card_leg = before.json()["legs"][1]
-    assert card_leg["recipient"] == {"title": "Saved", "masked": "•••• 5678", "full": None}
-    await world.ok(world.alex, deal, "accept")
-    after = await world.client.get(f"/api/v1/deals/{deal['id']}", headers=world.alex)
-    assert after.json()["legs"][1]["recipient"]["full"] == GRANDMA
-
-
-async def test_a_deal_keeps_its_own_sealed_copy_of_the_details(world: World) -> None:
-    deal = await world.propose()
-    await world.client.delete(f"/api/v1/payment-methods/{world.nino_rub}", headers=world.nino)
-    shown = await world.client.get(f"/api/v1/deals/{deal['id']}", headers=world.nino)
-    assert shown.json()["legs"][1]["recipient"]["full"] == GRANDMA
-    async with world.sessions() as db:
-        stored = await db.scalar(
-            text("SELECT recipient_details::text FROM deal_legs WHERE seq = 2")
-        )
-    assert stored is not None
-    assert "2202" not in stored
-    assert "Иванова" not in stored
+async def test_a_deal_asks_no_payment_details_and_keeps_the_proposers_note(
+    world: World,
+) -> None:
+    deal = await world.propose(counter_method="bank", note="  Т-Банк, по номеру телефона  ")
+    assert deal["note"] == "Т-Банк, по номеру телефона"
+    assert all("recipient" not in leg for leg in deal["legs"])
+    # Accepting is one tap, whatever the ways are (QUESTIONS G1).
+    accepted = await world.ok(world.alex, deal, "accept")
+    assert (accepted["status"], accepted["note"]) == ("accepted", "Т-Банк, по номеру телефона")
+    blank = await world.propose(amount="20000.00", note="   ")
+    assert blank["note"] is None
 
 
 # --- remainders (FR-2.3, Q-B5, Q-E2, Q-B9) ----------------------------------------------

@@ -433,6 +433,8 @@ class Deal(Base):
     cancel_requested_by: Mapped[uuid.UUID | None]
     disputed_by: Mapped[uuid.UUID | None]
     dispute_note: Mapped[str | None] = mapped_column(Text)
+    # The proposer's word on the rest, such as which bank (QUESTIONS G3).
+    note: Mapped[str | None] = mapped_column(Text)
     # A dispute ends when one side proposes an outcome and the other confirms it (FR-4.6).
     resolution: Mapped[str | None] = mapped_column(Text)
     resolution_by: Mapped[uuid.UUID | None]
@@ -473,10 +475,6 @@ class DealLeg(Base):
     # How the payer pays: an order's payout way for its own currency, the proposer's
     # word for the other.
     method: Mapped[str] = mapped_column(Text)
-    # A copy of the payee's chosen payment details, sealed for this row (ADR-0004,
-    # ADR-0010). The title stays in the clear, for lists and bot messages.
-    recipient_title: Mapped[str | None] = mapped_column(Text)
-    recipient_details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     due_date: Mapped[date] = mapped_column(Date)
     sent_at: Mapped[datetime | None]
     received_at: Mapped[datetime | None]
