@@ -191,7 +191,11 @@ describe('the wizard', () => {
           outgoing: [],
           invites: [],
         }),
-      'POST /api/v1/quote': () => json(200, { amount: '5136.99' }),
+      'POST /api/v1/quote': () =>
+        json(200, {
+          amount: '5136.99',
+          rate: { base: 'GEL', quote: 'RUB', value: '29.20', source: null, fetched_at: null },
+        }),
       'POST /api/v1/orders': async (request) => {
         published = await request.json()
         return json(201, order({ mine: true }))
@@ -236,6 +240,8 @@ describe('the wizard', () => {
       target: { value: 'GEL' },
     })
     expect(screen.getByRole('combobox', { name: /^Страна/ })).toHaveValue('GE')
+    // The author's own rate, fixed (QUESTIONS G2).
+    fireEvent.click(screen.getByRole('switch', { name: 'Зафиксировать курс' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Курс' }), { target: { value: '29,20' } })
     // The preview comes from the api, which does the arithmetic.
     await waitFor(() => {
@@ -288,7 +294,11 @@ describe('the wizard’s rate', () => {
           fetched_at: at.toISOString(),
         })
       },
-      'POST /api/v1/quote': () => json(200, { amount: '4778.59' }),
+      'POST /api/v1/quote': () =>
+        json(200, {
+          amount: '4778.59',
+          rate: { base: 'GEL', quote: 'RUB', value: '29.20', source: null, fetched_at: null },
+        }),
     })
     renderScreen(<NewOrder />, { route: '/orders/new' })
     await screen.findByRole('option', { name: '₽ RUB' })
@@ -304,8 +314,14 @@ describe('the wizard’s rate', () => {
     fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
       target: { value: 'GEL' },
     })
+    // Followed, the market's rate only shows (QUESTIONS G2).
+    await waitFor(() => {
+      expect(document.body).toHaveTextContent('Курс1 ₾GEL = 31,39 ₽RUB')
+    })
+    expect(screen.queryByRole('textbox', { name: 'Курс' })).toBeNull()
+    fireEvent.click(screen.getByRole('switch', { name: 'Зафиксировать курс' }))
 
-    // Filled in at once, with where it comes from and when (F5, §11).
+    // Fixed, it starts at the market's, with where it comes from and when (F5, §11).
     const rate = screen.getByRole('textbox', { name: 'Курс' })
     await waitFor(() => {
       expect(rate).toHaveValue('31,39')
@@ -436,6 +452,36 @@ describe('the order card', () => {
     expect(
       await screen.findByText('Последний день заявки прошёл, открыть её снова нельзя.'),
     ).toBeInTheDocument()
+  })
+
+  it('shows the market rate of the moment for an order that follows it', async () => {
+    const at = new Date()
+    at.setHours(12, 0, 0, 0)
+    const { served } = fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+        json(
+          200,
+          order({
+            rate_spec: { v: 1, type: 'reference', source: 'coinbase' },
+            wants: [{ currency: 'GEL', country: 'GE' }],
+          }),
+        ),
+      'GET /api/v1/rates/market': () =>
+        json(200, {
+          base: 'GEL',
+          quote: 'RUB',
+          value: '31.39',
+          source: 'coinbase',
+          fetched_at: at.toISOString(),
+        }),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    // Whoever opens it gets the rate of this moment (QUESTIONS G2).
+    expect(await screen.findByText(/Coinbase, 12:00/)).toBeInTheDocument()
+    expect(screen.getByText(/Курс по рынку/).parentElement).toHaveTextContent(
+      'Курс по рынку: 1 ₾GEL = 31,39 ₽RUB· Coinbase, 12:00',
+    )
+    expect(served).toContain('GET /api/v1/rates/market')
   })
 
   it('tells a stranger only that there is no such order', async () => {

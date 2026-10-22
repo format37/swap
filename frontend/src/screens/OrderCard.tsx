@@ -8,6 +8,7 @@ import { useDeals } from '../api/deals'
 import {
   useCloseOrder,
   useDeleteOrder,
+  useMarketRate,
   useOrder,
   useReopenOrder,
   type Order,
@@ -16,10 +17,12 @@ import {
 import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
+import { formatTime } from '../i18n/format'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { formatRate, isZero } from '../money/format'
 import { KINDS } from '../money/kinds'
+import { readsAs } from '../orders/form'
 import { orderDates } from '../orders/words'
 import { confirmAction, hapticNotify, useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
@@ -54,7 +57,30 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   )
 }
 
-/** The ways money can move, as plain pills: «Карта», «Наличные». */
+/** The market's rate of this moment for an order that follows it (QUESTIONS G2). */
+function MarketRate({ give, want }: { give: string; want: string }) {
+  const { t, tn, locale } = useI18n()
+  const [base, quote] = readsAs(give, want)
+  const market = useMarketRate(base, quote).data
+  return (
+    <p className="flex flex-wrap items-center gap-1 text-sm text-hint">
+      {tn('order.rate_market', {
+        rate: market ? (
+          <>
+            1 <Asset code={base} /> = {formatRate(locale, market.value)} <Asset code={quote} />
+          </>
+        ) : (
+          '…'
+        ),
+      })}
+      {market && (
+        <span>· {t('order.market_source', { time: formatTime(locale, market.fetched_at) })}</span>
+      )}
+    </p>
+  )
+}
+
+/** The ways money can move, as plain pills: «Наличные», «Банк». */
 function Methods({ kinds }: { kinds: PaymentKind[] }) {
   const { t } = useI18n()
   return (
@@ -125,9 +151,12 @@ function Shown({ order, me }: { order: Order; me: Me }) {
 
       <Section title={order.mine ? t('order.i_want') : t('order.wants')}>
         {order.wants.map((want) => {
-          const quote = order.rate_spec.quotes.find(
-            (q) => q.base === want.currency || q.quote === want.currency,
-          )
+          const quote =
+            order.rate_spec.type === 'fixed'
+              ? order.rate_spec.quotes.find(
+                  (q) => q.base === want.currency || q.quote === want.currency,
+                )
+              : undefined
           return (
             <div
               key={`${want.currency}-${want.country}`}
@@ -142,6 +171,9 @@ function Shown({ order, me }: { order: Order; me: Me }) {
                   {t('order.rate')}: 1 <Asset code={quote.base} /> ={' '}
                   {formatRate(locale, quote.value)} <Asset code={quote.quote} />
                 </p>
+              )}
+              {order.rate_spec.type === 'reference' && (
+                <MarketRate give={order.give_currency} want={want.currency} />
               )}
             </div>
           )

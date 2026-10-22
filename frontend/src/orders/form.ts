@@ -30,6 +30,9 @@ export interface OrderForm {
   limited: boolean
   until: string
   wants: WantForm[]
+  /** «Зафиксировать курс»: off, the order follows the market until a proposal locks it
+   * (QUESTIONS G2). */
+  fixed: boolean
   everyone: boolean
   chosen: string[]
   note: string
@@ -42,6 +45,13 @@ const STRENGTH = ['EUR', 'USD', 'USDC', 'USDT', 'GEL', 'TRY', 'RUB', 'AMD', 'KZT
 function strength(code: string): number {
   const rank = STRENGTH.indexOf(code)
   return rank === -1 ? STRENGTH.length : rank
+}
+
+/** The pair the way a rate reads best, «1 strong = so many weak»: [base, quote]. */
+export function readsAs(giveCurrency: string, currency: string): [string, string] {
+  return strength(giveCurrency) < strength(currency)
+    ? [giveCurrency, currency]
+    : [currency, giveCurrency]
 }
 
 /** A new wanted currency, its rate the right way round for the given one. */
@@ -84,6 +94,7 @@ export function emptyForm(today: string): OrderForm {
     limited: false,
     until: addDays(today, 14),
     wants: [newWant('')],
+    fixed: false,
     everyone: true,
     chosen: [],
     note: '',
@@ -122,7 +133,8 @@ export function wantProblem(form: OrderForm): MessageKey | null {
     // One rate per currency (ADR-0004), so one row per currency.
     if (seen.has(want.currency)) return 'wizard.error.repeated'
     seen.add(want.currency)
-    if (!parseRate(want.rate)) return 'wizard.error.rate'
+    // The market's rate needs nothing typed (QUESTIONS G2).
+    if (form.fixed && !parseRate(want.rate)) return 'wizard.error.rate'
   }
   if (form.wants.length === 0) return 'wizard.error.choose'
   return form.receiveMethods.length === 0 ? 'wizard.error.methods' : null
@@ -154,11 +166,9 @@ export function toDraft(form: OrderForm): OrderDraft {
     payout_methods: form.methods,
     receive_methods: form.receiveMethods,
     wants: form.wants.map(({ currency, country }) => ({ currency, country })),
-    rate_spec: {
-      v: 1,
-      type: 'fixed',
-      quotes: form.wants.map((want) => quoteOf(form.giveCurrency, want)),
-    },
+    rate_spec: form.fixed
+      ? { v: 1, type: 'fixed', quotes: form.wants.map((want) => quoteOf(form.giveCurrency, want)) }
+      : { v: 1, type: 'reference', source: 'coinbase' },
     visible_to: form.everyone ? null : form.chosen,
     note: form.note.trim() || null,
   }

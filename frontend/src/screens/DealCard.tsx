@@ -8,6 +8,7 @@ import { fullName } from '../api/links'
 import { nextFor } from '../deals/next'
 import { LegCard } from '../deals/LegCard'
 import { errorMessage } from '../i18n/errors'
+import { formatTime } from '../i18n/format'
 import { INTL_LOCALES } from '../i18n/locale'
 import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
@@ -126,6 +127,10 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
             </span>
           ),
         })}
+        {/* The market's: where it came from, and when it said so (FR-3.5). */}
+        {deal.rate.fetched_at && (
+          <span>· {t('deal.rate_market', { time: formatTime(locale, deal.rate.fetched_at) })}</span>
+        )}
       </p>
 
       {deal.note && (

@@ -3,6 +3,7 @@ import {
   emptyForm,
   giveProblem,
   newWant,
+  readsAs,
   toDraft,
   wantProblem,
   whoProblem,
@@ -24,6 +25,7 @@ function filled(changes: Partial<OrderForm> = {}): OrderForm {
       { ...newWant('RUB', 'GEL', 'GE'), rate: '29,20' },
       { ...newWant('RUB', 'USD', 'GE'), rate: '81.5' },
     ],
+    fixed: true,
     ...changes,
   }
 }
@@ -40,7 +42,17 @@ it('leaves a new rate to the market until the author types one (F5)', () => {
   expect(newWant('RUB', 'GEL')).toMatchObject({ rate: '', typed: false })
 })
 
+it('follows the market unless the rate is fixed (G2)', () => {
+  expect(emptyForm(TODAY).fixed).toBe(false)
+  const market = filled({ fixed: false, wants: [{ ...newWant('RUB', 'GEL', 'GE'), rate: '' }] })
+  // Nothing to type: the market has the rate.
+  expect(wantProblem(market)).toBeNull()
+  expect(toDraft(market).rate_spec).toEqual({ v: 1, type: 'reference', source: 'coinbase' })
+})
+
 it('reads a rate as «1 strong = so many weak», whichever is given', () => {
+  expect(readsAs('RUB', 'GEL')).toEqual(['GEL', 'RUB'])
+  expect(readsAs('USD', 'GEL')).toEqual(['USD', 'GEL'])
   expect(newWant('RUB', 'GEL').flipped).toBe(false) // 1 GEL = … RUB
   expect(newWant('GEL', 'RUB').flipped).toBe(true) // 1 GEL = … RUB
   expect(newWant('USD', 'GEL').flipped).toBe(true) // 1 USD = … GEL

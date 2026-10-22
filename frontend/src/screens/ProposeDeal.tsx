@@ -15,7 +15,7 @@ import { errorMessage } from '../i18n/errors'
 import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
-import { isZero, parseAmount } from '../money/format'
+import { formatRate, isZero, parseAmount } from '../money/format'
 import { KINDS } from '../money/kinds'
 import { isoDate } from '../orders/form'
 import { hapticNotify, hapticSelect, useMainButton } from '../telegram'
@@ -197,6 +197,19 @@ function Form({ order }: { order: Order }) {
           <p className="px-4 py-3">
             {tn('propose.result', {
               amount: <Money locale={locale} amount={quote.data.amount} code={form.want} />,
+            })}
+          </p>
+        )}
+        {/* An order that follows the market: the rate this proposal will lock (G2). */}
+        {quote.data?.rate.source && (
+          <p className="flex flex-wrap items-center gap-1 px-4 pb-3 text-sm text-hint">
+            {tn('propose.rate_market', {
+              rate: (
+                <>
+                  1 <Asset code={quote.data.rate.base} /> ={' '}
+                  {formatRate(locale, quote.data.rate.value)} <Asset code={quote.data.rate.quote} />
+                </>
+              ),
             })}
           </p>
         )}

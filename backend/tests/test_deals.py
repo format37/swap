@@ -222,7 +222,13 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
     deal = await world.propose()
     assert deal["status"] == "proposed"
     assert deal["role"] == "proposer"
-    assert deal["rate"] == {"base": "GEL", "quote": "RUB", "value": "29.20"}
+    assert deal["rate"] == {
+        "base": "GEL",
+        "quote": "RUB",
+        "value": "29.20",
+        "source": None,
+        "fetched_at": None,
+    }
     first, second = deal["legs"]
     # The proposer sends first by default (Q-B16): GEL cash to Alex, then RUB to the card.
     assert (first["payer"]["first_name"], first["currency"], first["amount"]) == (
@@ -352,6 +358,49 @@ async def test_deleting_a_used_up_order_leaves_its_deal_running(world: World) ->
     await world.ok(world.nino, deal, "cancel")
     # The amount comes back, but the order doesn't: deleted is deleted.
     assert await world.remaining() == "150000.00:fulfilled"
+
+
+async def test_a_proposal_locks_the_market_rate_of_its_moment(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    market = {"v": 1, "type": "reference", "source": "coinbase"}
+    world = await World(client, sessionmaker).build(rate_spec=market)
+    deal = await world.propose()
+    # Coinbase's 1 GEL = 31,39 RUB, with its source and time (QUESTIONS G2, FR-3.5).
+    assert {k: deal["rate"][k] for k in ("base", "quote", "value", "source")} == {
+        "base": "GEL",
+        "quote": "RUB",
+        "value": "31.39",
+        "source": "coinbase",
+    }
+    assert deal["rate"]["fetched_at"] is not None
+    assert [leg["amount"] for leg in deal["legs"]] == ["1592.86", "50000.00"]
+    # The deal keeps its own copy as a fixed rate: the market moving changes nothing.
+    async with sessionmaker() as db:
+        stored = await db.get(Deal, uuid.UUID(deal["id"]))
+    assert stored is not None
+    assert stored.rate_spec == {
+        "v": 1,
+        "type": "fixed",
+        "quotes": [{"base": "GEL", "quote": "RUB", "value": "31.39"}],
+    }
+
+
+async def test_without_a_market_rate_there_is_no_proposal(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    market = {"v": 1, "type": "reference", "source": "coinbase"}
+    # KZT isn't in the recorded table, as when Coinbase has been away for a day.
+    world = await World(client, sessionmaker).build(
+        rate_spec=market, wants=[{"currency": "KZT", "country": "KZ"}]
+    )
+    response = await world.client.post(
+        f"/api/v1/orders/{world.order['id']}/deals",
+        json=world.proposal(want_currency="KZT"),
+        headers=world.nino,
+    )
+    assert response.status_code == 503
+    assert response.json()["code"] == "rate.unavailable"
 
 
 async def test_closing_an_order_cancels_its_proposals_but_not_its_deals(world: World) -> None:

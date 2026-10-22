@@ -394,6 +394,7 @@ function WantStep({ form, change }: StepProps) {
           <RateRow
             give={form.giveCurrency}
             want={want}
+            fixed={form.fixed}
             onChange={(changes) => {
               update(index, changes)
             }}
@@ -425,6 +426,17 @@ function WantStep({ form, change }: StepProps) {
           </Button>
         </div>
       )}
+      {/* The market's rate unless the author fixes their own (QUESTIONS G2). */}
+      <Section title={t('order.rate')}>
+        <Switch
+          label={t('wizard.fixed')}
+          checked={form.fixed}
+          onChange={(fixed) => {
+            change({ fixed })
+          }}
+        />
+      </Section>
+      {!form.fixed && <p className="-mt-2 px-6 text-sm text-hint">{t('wizard.market_hint')}</p>}
       <Section title={t('wizard.receive_methods')}>
         <MethodChips
           chosen={form.receiveMethods}
@@ -439,15 +451,18 @@ function WantStep({ form, change }: StepProps) {
 
 /**
  * «1 GEL = [29,20] RUB ⇄», typed the way the author thinks (ADR-0004). Until they type,
- * it holds the market's rate for the pair, with its source and time beneath (F5).
+ * it holds the market's rate for the pair, with its source and time beneath (F5). While
+ * the order follows the market, it only shows the market's rate (QUESTIONS G2).
  */
 function RateRow({
   give,
   want,
+  fixed,
   onChange,
 }: {
   give: string
   want: WantForm
+  fixed: boolean
   onChange: (changes: Partial<WantForm>) => void
 }) {
   const { t, tn, locale } = useI18n()
@@ -458,6 +473,28 @@ function RateRow({
     if (suggested && !want.typed && !want.rate) onChange({ rate: suggested })
   }, [suggested, want.typed, want.rate, onChange])
   const label = (code: string): ReactNode => (code ? <Asset code={code} /> : '…')
+  if (!fixed)
+    return (
+      <div>
+        <div className="flex min-h-12 items-center gap-2 px-4 py-2">
+          <span className="shrink-0">{t('order.rate')}</span>
+          <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 whitespace-nowrap">
+            {suggested ? (
+              <>
+                1 {label(base)} = {suggested} {label(quote)}
+              </>
+            ) : (
+              '…'
+            )}
+          </span>
+        </div>
+        {market && (
+          <p className="px-4 pb-2 text-sm text-hint">
+            {t('wizard.market_source', { time: formatTime(locale, market.fetched_at) })}
+          </p>
+        )}
+      </div>
+    )
   // One child of the section, so no line parts the rate from where it came from.
   return (
     <div>
@@ -523,12 +560,14 @@ function Preview({ form, want }: { form: OrderForm; want: WantForm }) {
   const { tn, locale } = useI18n()
   const total = parseAmount(form.total)
   const request: QuoteRequest | null =
-    total && parseRate(want.rate) && want.currency && form.giveCurrency
+    total && (!form.fixed || parseRate(want.rate)) && want.currency && form.giveCurrency
       ? {
           amount: total,
           give_currency: form.giveCurrency,
           want_currency: want.currency,
-          rate_spec: { v: 1, type: 'fixed', quotes: [quoteOf(form.giveCurrency, want)] },
+          rate_spec: form.fixed
+            ? { v: 1, type: 'fixed', quotes: [quoteOf(form.giveCurrency, want)] }
+            : { v: 1, type: 'reference', source: 'coinbase' },
           whole: false,
         }
       : null

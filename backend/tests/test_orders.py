@@ -439,7 +439,7 @@ async def test_the_feeds(client: AsyncClient, sessionmaker: Sessions) -> None:
         give_currency="GEL",
         give_country="GE",
         wants=[{"currency": "RUB", "country": "RU"}],
-        rate_spec={"quotes": [{"base": "GEL", "quote": "RUB", "value": "29.00"}]},
+        rate_spec={"type": "fixed", "quotes": [{"base": "GEL", "quote": "RUB", "value": "29.00"}]},
     )
 
     visible = (await client.get("/api/v1/orders", headers=nino)).json()
@@ -574,9 +574,19 @@ async def test_a_quote_previews_the_counter_amount(client: AsyncClient) -> None:
         "rate_spec": draft()["rate_spec"],
     }
     response = await client.post("/api/v1/quote", json=body, headers=alex)
-    assert response.json() == {"amount": "1712.33"}
+    # The amount, and the rate it came from, the author's own (ADR-0004).
+    assert response.json() == {
+        "amount": "1712.33",
+        "rate": {
+            "base": "GEL",
+            "quote": "RUB",
+            "value": "29.20",
+            "source": None,
+            "fetched_at": None,
+        },
+    }
     whole = await client.post("/api/v1/quote", json={**body, "whole": True}, headers=alex)
-    assert whole.json() == {"amount": "1712.00"}
+    assert whole.json()["amount"] == "1712.00"
 
     missing = await client.post(
         "/api/v1/quote", json={**body, "want_currency": "EUR"}, headers=alex
@@ -585,6 +595,63 @@ async def test_a_quote_previews_the_counter_amount(client: AsyncClient) -> None:
     assert missing.json()["code"] == "rate.missing"
     number = await client.post("/api/v1/quote", json={**body, "amount": 50000}, headers=alex)
     assert number.status_code == 422
+
+
+async def test_an_order_follows_the_market_unless_its_rate_is_fixed(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    await linked(client, sessionmaker, alex, NINO)
+    # What the wizard sends when the author doesn't fix the rate (QUESTIONS G2).
+    market = {"v": 1, "type": "reference", "source": "coinbase"}
+    order = await publish(client, alex, rate_spec=market)
+    assert order["rate_spec"] == market
+    assert await sees(client, nino, order["id"])
+    # Whoever looks gets the rate of the moment: Coinbase's recorded table in the tests.
+    body = {
+        "amount": "50000.00",
+        "give_currency": "RUB",
+        "want_currency": "GEL",
+        "rate_spec": market,
+    }
+    response = await client.post("/api/v1/quote", json=body, headers=nino)
+    result = response.json()
+    assert result["amount"] == "1592.86"
+    assert {k: result["rate"][k] for k in ("base", "quote", "value", "source")} == {
+        "base": "GEL",
+        "quote": "RUB",
+        "value": "31.39",
+        "source": "coinbase",
+    }
+    assert result["rate"]["fetched_at"] is not None
+    # Read «1 strong = so many weak», whichever side is given.
+    other_way = await client.post(
+        "/api/v1/quote",
+        json={**body, "amount": "100.00", "give_currency": "GEL", "want_currency": "RUB"},
+        headers=nino,
+    )
+    assert other_way.json()["amount"] == "3139.00"
+    assert other_way.json()["rate"]["base"] == "GEL"
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        {"v": 1, "type": "reference", "source": "cbr"},
+        {"v": 1, "type": "reference", "source": "coinbase", "markup_pct": "1"},
+        {"v": 2, "type": "reference", "source": "coinbase"},
+        {"type": "floating"},
+        {"quotes": [{"base": "GEL", "quote": "RUB", "value": "29.20"}]},
+    ],
+)
+async def test_a_rate_spec_of_no_known_kind_is_refused(
+    client: AsyncClient, spec: dict[str, Any]
+) -> None:
+    alex = await person(client, ALEX)
+    response = await client.post("/api/v1/orders", json=draft(rate_spec=spec), headers=alex)
+    assert response.status_code == 422
+    assert response.json()["code"] == "validation_error"
 
 
 def test_today_is_in_the_authors_time_zone() -> None:

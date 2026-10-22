@@ -494,7 +494,7 @@ export interface paths {
         put?: never;
         /**
          * Propose Deal
-         * @description Propose a deal on an order open to you (FR-4.1).
+         * @description Propose a deal on an order open to you (FR-4.1), at its rate of this moment.
          */
         post: operations["propose_deal"];
         delete?: never;
@@ -569,7 +569,8 @@ export interface paths {
         put?: never;
         /**
          * Quote
-         * @description What `amount` of the give currency comes to in the want currency.
+         * @description What `amount` of the give currency comes to in the want currency, at the order's
+         *     rate: the author's, or the market's of the moment (QUESTIONS G2).
          */
         post: operations["quote"];
         delete?: never;
@@ -716,9 +717,8 @@ export interface components {
             /** Quotes */
             quotes: components["schemas"]["Quote"][];
             /**
-             * Type
-             * @default fixed
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             type: "fixed";
             /**
@@ -980,7 +980,8 @@ export interface components {
             note: string | null;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
-            rate_spec: components["schemas"]["FixedRate"];
+            /** Rate Spec */
+            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
             status: components["schemas"]["OrderStatus"];
@@ -1024,7 +1025,8 @@ export interface components {
             note?: string | null;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
-            rate_spec: components["schemas"]["FixedRate"];
+            /** Rate Spec */
+            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
             /** Visible To */
@@ -1156,6 +1158,22 @@ export interface components {
              */
             value: string;
         };
+        /**
+         * QuoteRate
+         * @description «1 base = value quote»: the rate the amount came from, to show beside it.
+         */
+        QuoteRate: {
+            /** Base */
+            base: string;
+            /** Fetched At */
+            fetched_at?: string | null;
+            /** Quote */
+            quote: string;
+            /** Source */
+            source?: "coinbase" | null;
+            /** Value */
+            value: string;
+        };
         /** QuoteRequest */
         QuoteRequest: {
             /**
@@ -1168,7 +1186,8 @@ export interface components {
              * @example GEL
              */
             give_currency: string;
-            rate_spec: components["schemas"]["FixedRate"];
+            /** Rate Spec */
+            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /**
              * Want Currency
              * @example GEL
@@ -1184,18 +1203,49 @@ export interface components {
         QuoteResult: {
             /** Amount */
             amount: string;
+            rate: components["schemas"]["QuoteRate"];
         };
         /**
          * Rate
-         * @description «1 base = value quote», as the order's author typed it, locked at the proposal.
+         * @description «1 base = value quote», as the order's author typed it or the market had it, locked
+         *     at the proposal.
          */
         Rate: {
             /** Base */
             base: string;
+            /** Fetched At */
+            fetched_at?: string | null;
             /** Quote */
             quote: string;
+            /** Source */
+            source?: "coinbase" | null;
             /** Value */
             value: string;
+        };
+        /**
+         * ReferenceRate
+         * @description `rate_spec` v1 of type reference: the market's rate whenever someone looks, and the
+         *     rate of the moment once a proposal locks it (QUESTIONS G2, ADR-0022). Coinbase is the
+         *     one source so far (ADR-0020). A markup can join it later with a default.
+         */
+        ReferenceRate: {
+            /**
+             * Source
+             * @default coinbase
+             * @constant
+             */
+            source: "coinbase";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "reference";
+            /**
+             * V
+             * @default 1
+             * @constant
+             */
+            v: 1;
         };
         /** Resolution */
         Resolution: {
@@ -3211,6 +3261,15 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

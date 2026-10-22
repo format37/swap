@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from swap.errors import DomainError
-from swap.rates import FixedRate, convert
+from swap.rates import FixedRate, ReferenceRate, convert, parse_spec
 
 GEL_RUB = FixedRate.model_validate_json(
     '{"v": 1, "type": "fixed", "quotes": [{"base": "GEL", "quote": "RUB", "value": "29.20"},'
@@ -75,3 +75,11 @@ def test_a_currency_without_a_rate_is_refused() -> None:
 def test_a_malformed_rate_is_refused(spec: str) -> None:
     with pytest.raises(ValidationError):
         FixedRate.model_validate_json(spec)
+
+
+def test_a_stored_spec_reads_back_as_its_kind() -> None:
+    assert isinstance(parse_spec(GEL_RUB.model_dump(mode="json")), FixedRate)
+    market = parse_spec({"v": 1, "type": "reference", "source": "coinbase"})
+    assert market == ReferenceRate()
+    with pytest.raises(ValidationError):
+        parse_spec({"v": 1, "type": "reference", "source": "nbg"})

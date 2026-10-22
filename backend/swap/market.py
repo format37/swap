@@ -16,6 +16,9 @@ from decimal import ROUND_HALF_UP, Context, Decimal, InvalidOperation, localcont
 import httpx
 import structlog
 
+from swap.errors import DomainError
+from swap.rates import FixedRate, Quote, ReferenceRate
+
 SOURCE = "coinbase"
 URL = "https://api.coinbase.com/v2/exchange-rates"
 FRESH = timedelta(minutes=10)
@@ -113,3 +116,23 @@ class Market:
         with localcontext(Context(prec=28)):
             value = self._table[quote] / self._table[base]
         return MarketRate(base, quote, suggested(value), fetched_at)
+
+
+async def lock(
+    spec: FixedRate | ReferenceRate, give: str, want: str, market: Market
+) -> tuple[FixedRate, MarketRate | None]:
+    """The rate a spec stands for now, as a fixed spec `convert` can use.
+
+    A fixed spec is itself. A reference one is the market's rate of the moment, read
+    «1 strong = so many weak», with where and when it came from (ADR-0022). When the
+    market has nothing, the deal has no rate: 503 `rate.unavailable`.
+    """
+    if isinstance(spec, FixedRate):
+        return spec, None
+    found = await market.rate(want, give)
+    if found is not None and found.value < 1:
+        found = await market.rate(give, want)
+    if found is None:
+        raise DomainError(503, "rate.unavailable")
+    quote = Quote(base=found.base, quote=found.quote, value=found.value)
+    return FixedRate(quotes=[quote]), found

@@ -27,6 +27,7 @@ from swap import orders
 from swap.deeplinks import target
 from swap.errors import DomainError
 from swap.journal import TERMINAL, record, start
+from swap.market import Market, lock
 from swap.models import (
     Deal,
     DealLeg,
@@ -40,7 +41,7 @@ from swap.models import (
 from swap.money import Asset, Money
 from swap.notifications import NotificationType, notify
 from swap.proposals import cancel_on_order, give_amount
-from swap.rates import FixedRate, convert
+from swap.rates import convert, parse_spec
 from swap.users import person_label
 
 PROPOSAL_TTL = timedelta(hours=48)
@@ -146,7 +147,7 @@ async def _restore(db: AsyncSession, deal: Deal) -> None:
 
 
 async def propose(
-    db: AsyncSession, proposer: User, order_id: uuid.UUID, proposal: Proposal
+    db: AsyncSession, proposer: User, order_id: uuid.UUID, proposal: Proposal, market: Market
 ) -> Deal:
     """A deal proposed on an order the proposer can see (FR-4.1)."""
     order, author = await orders.get(db, proposer.id, order_id)
@@ -168,7 +169,10 @@ async def propose(
     if min(proposal.my_due, proposal.their_due) < today:
         raise _refuse("deal.due_past", 422)
 
-    spec = FixedRate.model_validate(order.rate_spec)
+    # The author's rate, or the market's of this moment, locked here (Q-B3, QUESTIONS G2).
+    spec, found = await lock(
+        parse_spec(order.rate_spec), order.give_currency, want.currency, market
+    )
     quote = spec.quote_for(order.give_currency, want.currency)
     counter = convert(
         proposal.amount, spec, order.give_currency, want.currency, whole=proposal.whole
@@ -183,11 +187,13 @@ async def propose(
         proposer_id=proposer.id,
         acceptor_id=author.id,
         status=DealStatus.PROPOSED,
-        rate_spec=order.rate_spec,
+        rate_spec=spec.model_dump(mode="json"),
         rate_base=quote.base,
         rate_quote=quote.quote,
         rate_value=quote.value,
         rate_locked_at=now,
+        rate_source="coinbase" if found else None,
+        rate_fetched_at=found.fetched_at if found else None,
         whole=proposal.whole,
         expires_at=now + PROPOSAL_TTL,
         note=(proposal.note or "").strip() or None,

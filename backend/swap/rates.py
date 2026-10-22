@@ -5,9 +5,9 @@ amounts it agreed on.
 """
 
 from decimal import ROUND_HALF_UP, Context, Decimal, localcontext
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from swap.errors import DomainError
 from swap.money import Asset, RateValue
@@ -40,6 +40,28 @@ class FixedRate(BaseModel):
             if {quote.base, quote.quote} == {give, want}:
                 return quote
         raise DomainError(422, "rate.missing", f"no rate between {give} and {want}")
+
+
+class ReferenceRate(BaseModel):
+    """`rate_spec` v1 of type reference: the market's rate whenever someone looks, and the
+    rate of the moment once a proposal locks it (QUESTIONS G2, ADR-0022). Coinbase is the
+    one source so far (ADR-0020). A markup can join it later with a default."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    v: Literal[1] = 1
+    type: Literal["reference"] = "reference"
+    source: Literal["coinbase"] = "coinbase"
+
+
+# What an order's rate_spec is: the author's own numbers, or the market's (ADR-0004).
+RateSpec = Annotated[FixedRate | ReferenceRate, Field(discriminator="type")]
+_SPEC: TypeAdapter[FixedRate | ReferenceRate] = TypeAdapter(RateSpec)
+
+
+def parse_spec(data: Any) -> FixedRate | ReferenceRate:
+    """A stored rate_spec, read back as its type."""
+    return _SPEC.validate_python(data)
 
 
 def convert(
