@@ -254,9 +254,9 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] The bot sends the file to their chat.
 
 **PR 1.30 — Recurring orders** (K7)
-- [ ] «Повторять каждый месяц, N-го числа» in the wizard.
-- [ ] A worker job publishes each copy on its day, once, and announces it.
-- [ ] «Больше не повторять» on any copy.
+- [x] «Повторять каждый месяц, N-го числа» in the wizard.
+- [x] A worker job publishes each copy on its day, once, and announces it.
+- [x] «Больше не повторять» on any copy.
 
 ### Потенциальные планы: not now
 

@@ -96,6 +96,10 @@ export const en: Messages = {
     'Settled deals with different people: {count}. Repeat deals with the same person add nothing.',
   'order.close': 'Close offer',
   'order.close_confirm': 'Close the offer? Nobody will see it anymore. Accepted deals carry on.',
+  'order.repeats': 'Repeats every month, on day {day}',
+  'order.stop_repeating': 'Stop repeating',
+  'order.stop_repeating_confirm':
+    'Stop repeating? No more copies will go out, and this offer stays.',
   'order.reopen': 'Reopen offer',
   'order.delete': 'Delete offer',
   'order.delete_confirm':
@@ -120,6 +124,9 @@ export const en: Messages = {
   'wizard.receive_methods': 'How to receive it',
   'wizard.dates': 'When',
   'wizard.limited': 'Set a last day',
+  'wizard.repeats': 'Repeat every month',
+  'wizard.repeat_day': 'On day',
+  'wizard.digest.repeats': ' · monthly, on day {day}',
   'wizard.last_day': 'Last day',
   'wizard.next': 'Next',
   'wizard.add_want': 'Another currency',

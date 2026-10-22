@@ -633,6 +633,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{order_id}/stop-repeating": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop Repeating
+         * @description «Больше не повторять»: no more monthly copies of this series (QUESTIONS K7).
+         */
+        post: operations["stop_repeating"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quote": {
         parameters: {
             query?: never;
@@ -1086,6 +1106,8 @@ export interface components {
             payout_methods: components["schemas"]["PaymentKind"][];
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
+            /** Repeat Day */
+            repeat_day: number | null;
             status: components["schemas"]["OrderStatus"];
             visibility?: components["schemas"]["Visibility"] | null;
             /** Wants */
@@ -1134,6 +1156,8 @@ export interface components {
             reach: number | null;
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
+            /** Repeat Day */
+            repeat_day?: number | null;
             /** Visible To */
             visible_to?: string[] | null;
             /** Wants */
@@ -3450,6 +3474,64 @@ export interface operations {
         };
     };
     reopen_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_repeating: {
         parameters: {
             query?: never;
             header?: never;

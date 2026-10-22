@@ -44,6 +44,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0033](0033-agreement-and-privacy-page.md) | The agreement at first launch, and a public privacy page | Accepted |
 | [0034](0034-order-numbers.md) | Every order has a number, «№ 17», from one sequence | Accepted |
 | [0035](0035-csv-export-through-the-bot.md) | The CSV export arrives as a file from the bot | Accepted |
+| [0036](0036-recurring-orders.md) | Recurring orders: a monthly copy on day N, published once | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the

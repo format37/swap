@@ -369,6 +369,32 @@ function GiveGroup({ form, today, change }: StepProps & { today: string }) {
           />
         </Field>
       )}
+      {/* A copy every month on day N, told like any new order (QUESTIONS K7). */}
+      <Switch
+        label={t('wizard.repeats')}
+        checked={form.repeats}
+        onChange={(repeats) => {
+          change({ repeats })
+        }}
+      />
+      {form.repeats && (
+        <Field label={t('wizard.repeat_day')}>
+          <select
+            className={CONTROL}
+            value={form.repeatDay}
+            onChange={(event) => {
+              hapticSelect()
+              change({ repeatDay: event.target.value })
+            }}
+          >
+            {Array.from({ length: 31 }, (_, index) => String(index + 1)).map((day) => (
+              <option key={day} value={day}>
+                {day}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
     </Section>
   )
 }
@@ -636,6 +662,7 @@ function Digest({ form }: { form: OrderForm }) {
         country: countryName(locale, form.giveCountry),
         wants,
       })}
+      {form.repeats && t('wizard.digest.repeats', { day: form.repeatDay })}
     </p>
   )
 }

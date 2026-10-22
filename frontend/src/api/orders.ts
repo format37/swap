@@ -63,6 +63,15 @@ export function useReopenOrder() {
   )
 }
 
+/** «Больше не повторять»: no more monthly copies of its series (QUESTIONS K7). */
+export function useStopRepeating() {
+  return useOrdersMutation((id: string) =>
+    unwrap(
+      api.POST('/api/v1/orders/{order_id}/stop-repeating', { params: { path: { order_id: id } } }),
+    ),
+  )
+}
+
 /** Gone for everyone, its author included; its deals carry on (QUESTIONS F6). */
 export function useDeleteOrder() {
   return useOrdersMutation((id: string) =>

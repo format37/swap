@@ -96,6 +96,10 @@ export const ru = {
     'Успешные сделки с разными людьми: {count}. Повторные сделки с тем же человеком не прибавляют.',
   'order.close': 'Закрыть заявку',
   'order.close_confirm': 'Закрыть заявку? Её больше никто не увидит. Принятые сделки продолжатся.',
+  'order.repeats': 'Повторяется каждый месяц, {day}-го числа',
+  'order.stop_repeating': 'Больше не повторять',
+  'order.stop_repeating_confirm':
+    'Больше не повторять? Новых копий не будет, а эта заявка останется.',
   'order.reopen': 'Открыть снова',
   'order.delete': 'Удалить заявку',
   'order.delete_confirm':
@@ -120,6 +124,9 @@ export const ru = {
   'wizard.receive_methods': 'Как получать',
   'wizard.dates': 'Когда',
   'wizard.limited': 'Ограничить срок',
+  'wizard.repeats': 'Повторять каждый месяц',
+  'wizard.repeat_day': 'Какого числа',
+  'wizard.digest.repeats': ' · каждый месяц, {day}-го',
   'wizard.last_day': 'Последний день',
   'wizard.next': 'Далее',
   'wizard.add_want': 'Ещё валюта',
