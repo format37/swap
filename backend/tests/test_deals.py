@@ -31,9 +31,7 @@ class World:
         self.nino = await person(self.client, NINO)
         self.gio = await person(self.client, GIO)
         self.link = await linked(self.client, self.sessions, self.alex, NINO)
-        self.order = await publish(
-            self.client, self.alex, payout_methods=["bank", "cash"], **order
-        )
+        self.order = await publish(self.client, self.alex, payout_methods=["bank", "cash"], **order)
         return self
 
     def proposal(self, **changes: Any) -> dict[str, Any]:
