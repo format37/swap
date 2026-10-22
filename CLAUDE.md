@@ -114,7 +114,9 @@ directly.
   business, and a proposal's comment can carry it.
 - **No analytics and no third-party scripts in the frontend.** The one exception is
   Sentry's SDK, bundled, which reports errors to the owner's `swap` project when the
-  build has `SENTRY_DSN` (ADR-0025). Nothing personal goes into a report.
+  build has `SENTRY_DSN` (ADR-0025). Nothing personal goes into a report. Images come
+  from Swap itself and from Telegram, whose `t.me` and CDN serve people's photos
+  (ADR-0027).
 - **Every user-facing string lives in a dictionary, in Russian, English and Georgian**
   (ADR-0009), UI and bot alike. A PR that adds a string adds all three.
 - **§2 is product policy, as the owner amended it** (QUESTIONS J2, J5). No public order
