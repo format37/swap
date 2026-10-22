@@ -878,6 +878,8 @@ export interface components {
             locale_chosen: boolean;
             /** Photo Url */
             photo_url: string | null;
+            /** Score */
+            score: number;
             /** Tz */
             tz: string | null;
             /** Username */
@@ -1038,6 +1040,8 @@ export interface components {
             last_name: string | null;
             /** Photo Url */
             photo_url: string | null;
+            /** Score */
+            score: number;
             /** Username */
             username: string | null;
         };

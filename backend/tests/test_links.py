@@ -384,6 +384,7 @@ async def test_an_invite_becomes_a_request_and_then_a_link(
         "last_name": None,
         "username": "format37",
         "photo_url": None,
+        "score": 0,
     }
     assert shown["mutual_links"] == 0
     assert shown["accepted_at"] is None

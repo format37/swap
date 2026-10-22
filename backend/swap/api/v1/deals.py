@@ -171,7 +171,9 @@ def _event(event: Event) -> DealEvent:
 
 async def _shown(db: Db, rows: list[DealRow], viewer: uuid.UUID) -> list[Deal]:
     ids = {user for row in rows for user in (row.proposer_id, row.acceptor_id)}
-    people = {user.id: user for user in await db.scalars(select(User).where(User.id.in_(ids)))}
+    # Read afresh: a deal that just settled has changed both scores (ADR-0029).
+    fresh = select(User).where(User.id.in_(ids)).execution_options(populate_existing=True)
+    people = {user.id: user for user in await db.scalars(fresh)}
     return [Deal.of(row, people, await deals.journal(db, row), viewer) for row in rows]
 
 

@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     CHAR,
@@ -22,12 +22,15 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    case,
     false,
     func,
+    or_,
+    select,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, column_property, mapped_column, relationship
 
 # One naming convention, so autogenerate and hand-written downgrades agree on the
 # name of every constraint.
@@ -87,6 +90,10 @@ class User(Base):
     # Their Telegram photo, as a link Telegram serves: taken from initData at every
     # sign-in, never copied (QUESTIONS J4, ADR-0027).
     photo_url: Mapped[str | None] = mapped_column(Text)
+    if TYPE_CHECKING:
+        # How many different people they settled a deal with: counted, and mapped below,
+        # once deals are (ADR-0029).
+        score: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
@@ -480,3 +487,21 @@ class Event(Base):
     # At least {"from": status, "to": status}, which the deals trigger checks.
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+# A person's score: how many different people they have a settled deal with (QUESTIONS J5,
+# ADR-0029). Counted by the database whenever a user is loaded, never stored, so a deal
+# erased by both sides takes its point with it.
+_counterpart = case((Deal.proposer_id == User.id, Deal.acceptor_id), else_=Deal.proposer_id)
+User.score = column_property(
+    select(func.count(func.distinct(_counterpart)))
+    .where(
+        Deal.status == DealStatus.SETTLED,
+        or_(Deal.proposer_id == User.id, Deal.acceptor_id == User.id),
+    )
+    .correlate_except(Deal)
+    .scalar_subquery(),
+    # Kept through a flush of the user's own columns: they can't change it, and reading it
+    # again would be IO where async allows none.
+    expire_on_flush=False,
+)
