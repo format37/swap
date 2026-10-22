@@ -146,7 +146,7 @@ through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
 - [x] Migration: card, SBP and «other» become bank; the CHECKs allow three.
 
 **PR 1.14 — A way on from a link's screen** (G6)
-- [ ] A made link's screen leads Home with the main button.
+- [x] A made link's screen leads Home with the main button.
 
 **PR 1.15 — The market rate by default** (G2; ADR-0022)
 - [ ] An order follows the market unless its author fixes the rate; whoever opens it
