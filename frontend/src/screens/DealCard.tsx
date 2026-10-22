@@ -106,7 +106,12 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
   return (
     <Screen>
       <header className="flex items-center px-6 pt-4">
-        <Person person={other} size="lg" heading detail={t('deal.title')} />
+        <Person
+          person={other}
+          size="lg"
+          heading
+          detail={t('deal.on_order', { n: deal.order_number })}
+        />
       </header>
 
       <p className="mx-4 rounded-xl bg-section-bg px-4 py-3 font-medium">{statusLine}</p>

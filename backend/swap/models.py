@@ -317,6 +317,8 @@ class Order(Base):
     """
 
     __tablename__ = "orders"
+    # The number comes from the database: read it back with the INSERT.
+    __mapper_args__ = {"eager_defaults": True}  # noqa: RUF012
     __table_args__ = (
         CheckConstraint(asset_check("give_currency"), name="give_currency"),
         CheckConstraint(country_check("give_country"), name="give_country"),
@@ -335,6 +337,10 @@ class Order(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # «№ 17», from one sequence for all orders, so people can name one (QUESTIONS K8).
+    number: Mapped[int] = mapped_column(
+        BigInteger, unique=True, server_default=text("nextval('order_numbers')")
+    )
     author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     give_currency: Mapped[str] = mapped_column(String(8))
     give_country: Mapped[str] = mapped_column(CHAR(2))

@@ -33,6 +33,8 @@ class Visibility(BaseModel):
 
 class Order(BaseModel):
     id: uuid.UUID
+    # «№ 17» (QUESTIONS K8).
+    number: int
     author: Person
     # Whether the signed-in user wrote it.
     mine: bool
@@ -62,6 +64,7 @@ class Order(BaseModel):
     def of(cls, order: OrderRow, author: User, viewer: uuid.UUID) -> Self:
         return cls(
             id=order.id,
+            number=order.number,
             author=Person.of(author),
             mine=order.author_id == viewer,
             give_currency=order.give_currency,

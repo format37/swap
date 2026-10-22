@@ -37,7 +37,7 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
           ))}
         </span>
         <span className="block truncate text-sm text-hint">
-          {second} · {orderDates(i18n, order)}
+          {t('order.number', { n: order.number })} · {second} · {orderDates(i18n, order)}
         </span>
       </span>
       <ChevronRight aria-hidden className="size-5 shrink-0 text-hint" />

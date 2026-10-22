@@ -51,7 +51,8 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "Связь установлена: {name}. Теперь вы видите заявки друг друга, открытые для связей."
         ),
         "order.opened": (
-            "{name} — новая заявка. Отдаёт: до {amount} {currency}. Взамен хочет: {wants}."
+            "{name} — новая заявка № {number}. Отдаёт: до {amount} {currency}. "
+            "Взамен хочет: {wants}."
         ),
         "invite.already_linked": "Связь уже есть: {name}.",
         "invite.own": (
@@ -62,9 +63,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "использовано. Попросите прислать новое."
         ),
         "deal.proposed": (
-            "{name} предлагает сделку по вашей заявке: вы отдаёте {amount} {currency}, получаете "
-            "{counter_amount} {counter_currency}. Откройте, чтобы принять или отклонить; "
-            "предложение действует 48 часов."
+            "{name} предлагает сделку по вашей заявке № {number}: вы отдаёте {amount} "
+            "{currency}, получаете {counter_amount} {counter_currency}. Откройте, чтобы "
+            "принять или отклонить; предложение действует 48 часов."
         ),
         "deal.accepted": (
             "Сделка принята — {name}. Откройте её: там видно, кто, что и когда отправляет."
@@ -118,7 +119,8 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "Linked: {name}. You now see each other's offers that are open to links."
         ),
         "order.opened": (
-            "{name} — new offer. Gives: up to {amount} {currency}. Wants in return: {wants}."
+            "{name} — new offer No. {number}. Gives: up to {amount} {currency}. "
+            "Wants in return: {wants}."
         ),
         "invite.already_linked": "You are already linked: {name}.",
         "invite.own": (
@@ -129,9 +131,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "used. Ask for a new one."
         ),
         "deal.proposed": (
-            "{name} proposes a deal on your offer: you give {amount} {currency} and get "
-            "{counter_amount} {counter_currency}. Open it to accept or decline; the proposal "
-            "stands for 48 hours."
+            "{name} proposes a deal on your offer No. {number}: you give {amount} {currency} "
+            "and get {counter_amount} {counter_currency}. Open it to accept or decline; the "
+            "proposal stands for 48 hours."
         ),
         "deal.accepted": "Deal accepted — {name}. Open it to see who sends what, and when.",
         "deal.declined": "Proposal declined — {name}.",
@@ -185,8 +187,8 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "კავშირებისთვისაა გახსნილი."
         ),
         "order.opened": (
-            "{name} — ახალი განცხადება. გასცემს: მაქსიმუმ {amount} {currency}. სანაცვლოდ "
-            "სურს: {wants}."
+            "{name} — ახალი განცხადება № {number}. გასცემს: მაქსიმუმ {amount} {currency}. "
+            "სანაცვლოდ სურს: {wants}."
         ),
         "invite.already_linked": "კავშირი უკვე არსებობს: {name}.",
         "invite.own": (
@@ -196,9 +198,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "ეს მოწვევა აღარ მოქმედებს: ვადა გაუვიდა, გაუქმდა ან უკვე გამოყენებულია. სთხოვეთ ახალი."
         ),
         "deal.proposed": (
-            "{name} გთავაზობთ გარიგებას თქვენს განცხადებაზე: გასცემთ {amount} {currency}, მიიღებთ "
-            "{counter_amount} {counter_currency}. გახსენით, რომ მიიღოთ ან უარყოთ; შეთავაზება 48 "
-            "საათი მოქმედებს."
+            "{name} გთავაზობთ გარიგებას თქვენს განცხადებაზე № {number}: გასცემთ {amount} "
+            "{currency}, მიიღებთ {counter_amount} {counter_currency}. გახსენით, რომ მიიღოთ ან "
+            "უარყოთ; შეთავაზება 48 საათი მოქმედებს."
         ),
         "deal.accepted": (
             "გარიგება მიღებულია — {name}. გახსენით, რომ ნახოთ, ვინ რას და როდის აგზავნის."

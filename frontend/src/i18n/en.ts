@@ -89,6 +89,7 @@ export const en: Messages = {
   'order.reach.2': 'Seen by your links and their links',
   'order.reach.3': 'Seen up to three handshakes from you',
   'order.reach.all': 'Seen by your whole network',
+  'order.number': 'No. {n}',
   'order.chain': 'Through {names}',
   'score.label': 'Score: {count}',
   'score.about':
@@ -173,6 +174,7 @@ export const en: Messages = {
   'error.order_invalid': 'Something in the offer is off. Check the amounts, dates and rate.',
   'profile.title': 'Profile',
   'deal.title': 'Deal',
+  'deal.on_order': 'Deal on offer No. {n}',
   'deal.status.answer': 'A new proposal: accept or decline it',
   'deal.status.both':
     'Your move: send {amount}, and mark the other transfer received when it arrives',

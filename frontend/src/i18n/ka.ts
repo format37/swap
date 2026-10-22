@@ -91,6 +91,7 @@ export const ka: Messages = {
   'order.reach.2': 'ჩანს თქვენი კავშირებისა და მათი კავშირებისთვის',
   'order.reach.3': 'ჩანს თქვენგან სამ ხელის ჩამორთმევამდე',
   'order.reach.all': 'ჩანს თქვენი მთელი ქსელისთვის',
+  'order.number': '№ {n}',
   'order.chain': 'გავლით: {names}',
   'score.label': 'ქულა: {count}',
   'score.about':
@@ -177,6 +178,7 @@ export const ka: Messages = {
   'error.order_invalid': 'განცხადებაში რაღაც არასწორია. შეამოწმეთ თანხები, თარიღები და კურსი.',
   'profile.title': 'პროფილი',
   'deal.title': 'გარიგება',
+  'deal.on_order': 'გარიგება განცხადებაზე № {n}',
   'deal.status.answer': 'ახალი შეთავაზება: მიიღეთ ან უარყავით',
   'deal.status.both':
     'თქვენი სვლა: გაგზავნეთ {amount}, ხოლო როცა საპასუხო გადარიცხვა მოვა, მონიშნეთ მიღება',

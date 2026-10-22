@@ -133,7 +133,13 @@ async def test_the_outbox_skips_what_its_recipient_switched_off(
 
 
 PARAMS = {
-    "order.opened": {"name": "Alex", "amount": "1000.00", "currency": "RUB", "wants": "GEL"},
+    "order.opened": {
+        "name": "Alex",
+        "number": "17",
+        "amount": "1000.00",
+        "currency": "RUB",
+        "wants": "GEL",
+    },
     "deal.settled": {"name": "Alex", "amount": "1000.00", "currency": "RUB"},
 }
 

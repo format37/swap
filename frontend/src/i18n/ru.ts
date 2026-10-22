@@ -89,6 +89,7 @@ export const ru = {
   'order.reach.2': 'Видно вашим связям и их связям',
   'order.reach.3': 'Видно на три рукопожатия от вас',
   'order.reach.all': 'Видно всей вашей сети',
+  'order.number': '№ {n}',
   'order.chain': 'Через {names}',
   'score.label': 'Скор: {count}',
   'score.about':
@@ -174,6 +175,7 @@ export const ru = {
   'error.order_invalid': 'Что-то в заявке не так. Проверьте суммы, даты и курс.',
   'profile.title': 'Профиль',
   'deal.title': 'Сделка',
+  'deal.on_order': 'Сделка по заявке № {n}',
   'deal.status.answer': 'Новое предложение: примите его или отклоните',
   'deal.status.both':
     'Ваш ход: отправьте {amount}, а когда придёт ответный перевод, отметьте получение',

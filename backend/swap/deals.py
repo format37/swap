@@ -235,6 +235,7 @@ async def propose(
         author.id,
         "deal.proposed",
         proposer,
+        number=str(order.number),
         amount=str(give.amount),
         currency=give.currency,
         counter_amount=str(take.amount),

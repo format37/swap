@@ -66,6 +66,7 @@ const NINO = {
 function order(changes: Partial<Order> = {}): Order {
   return {
     id: ORDER_ID,
+    number: 17,
     author: ALEX,
     mine: false,
     give_currency: 'RUB',
@@ -189,7 +190,7 @@ describe('Home', () => {
     expect(requests).toHaveTextContent('Nino B')
     const open = (await screen.findByRole('heading', { name: 'Открытые мне' })).parentElement
     // jest-dom reads a no-break space as a plain one.
-    expect(open).toHaveTextContent('150 000₽RUB₾GEL$USDAlex · 25 окт. – 8 нояб.')
+    expect(open).toHaveTextContent('150 000₽RUB₾GEL$USD№ 17 · Alex · 25 окт. – 8 нояб.')
     const mine = screen.getByRole('heading', { name: 'Мои заявки' }).parentElement
     expect(mine).toHaveTextContent('Открыта')
     // Finished orders wait folded under one line, mine and those I dealt on (H4).
@@ -197,9 +198,9 @@ describe('Home', () => {
     expect(past).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText(/Закрыта/)).toBeNull()
     fireEvent.click(past)
-    expect(screen.getByText('Закрыта · с 25 окт., без срока')).toBeInTheDocument()
+    expect(screen.getByText('№ 17 · Закрыта · с 25 окт., без срока')).toBeInTheDocument()
     expect(
-      screen.getByText('Alex · Исполнена · 25 окт. – 8 нояб.').parentElement,
+      screen.getByText('№ 17 · Alex · Исполнена · 25 окт. – 8 нояб.').parentElement,
     ).toHaveTextContent('150 000₽RUB')
   })
 

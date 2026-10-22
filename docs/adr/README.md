@@ -42,6 +42,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0031](0031-notification-settings.md) | Notification settings: switches on the person, mutes per pair, the outbox obeys | Accepted |
 | [0032](0032-deleting-history-and-the-account.md) | Deleting all history at once, and the account | Accepted |
 | [0033](0033-agreement-and-privacy-page.md) | The agreement at first launch, and a public privacy page | Accepted |
+| [0034](0034-order-numbers.md) | Every order has a number, «№ 17», from one sequence | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the
