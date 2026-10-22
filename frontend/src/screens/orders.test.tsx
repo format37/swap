@@ -759,6 +759,64 @@ describe('the order card', () => {
     expect(screen.queryByRole('button', { name: 'Закрыть заявку' })).toBeNull()
   })
 
+  describe('what someone else would give (M3)', () => {
+    // The api's answers at 1 GEL = 29,20 RUB: no arithmetic here.
+    const answers: Record<string, string> = {
+      '150000.00 GEL': '5136.99',
+      '10000.00 GEL': '342.47',
+    }
+    const quotes = async (request: Request) => {
+      const body = (await request.json()) as QuoteRequest
+      return json(200, {
+        amount: answers[`${body.amount} ${body.want_currency}`] ?? '0.00',
+        rate: { base: 'GEL', quote: 'RUB', value: '29.20', source: null, fetched_at: null },
+      })
+    }
+    const gel = { currency: 'GEL', country: 'GE', receive_methods: ['cash' as const] }
+
+    it.each<[string, Partial<Order>, string]>([
+      ['from the smallest deal to all that remains', {}, 'Вы отдадите от 342,47 до 5 136,99₾GEL'],
+      [
+        'up to all that remains, when any amount goes',
+        { amount_min: '0.00' },
+        'Вы отдадите до 5 136,99₾GEL',
+      ],
+      [
+        'one amount, when it goes all at once',
+        { amount_min: '150000.00', amount_max: '150000.00' },
+        'Вы отдадите 5 136,99₾GEL',
+      ],
+      [
+        '≈ at the market’s rate',
+        { wants: [{ ...gel, rate_spec: MARKET }] },
+        'Вы отдадите ≈ от 342,47 до 5 136,99₾GEL',
+      ],
+    ])('%s', async (_, changes, line) => {
+      fakeApi({
+        [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+          json(
+            200,
+            order({ wants: [{ ...gel, rate_spec: fixed('GEL', 'RUB', '29.20') }], ...changes }),
+          ),
+        'POST /api/v1/quote': quotes,
+        'GET /api/v1/rates/market': () => problem(503, 'rate.unavailable'),
+      })
+      renderScreen(<OrderCard me={me} />, { route, path })
+      expect(await screen.findByText(/^Вы отдадите/)).toHaveTextContent(line)
+    })
+
+    it('isn’t told to the author, who gives the other side', async () => {
+      const { served } = fakeApi({
+        [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true })),
+        'POST /api/v1/quote': quotes,
+      })
+      renderScreen(<OrderCard me={me} />, { route, path })
+      await screen.findByText(/Осталось/)
+      expect(screen.queryByText(/^Вы отдадите/)).toBeNull()
+      expect(served).not.toContain('POST /api/v1/quote')
+    })
+  })
+
   it('says nothing of a minimum of 0, and that there is no last day', async () => {
     fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>

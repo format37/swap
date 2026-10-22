@@ -313,7 +313,7 @@ card and the tab bar.
 - [x] Deleting an order or a deal leaves for Home, without refreshing the card it leaves.
 
 **PR 1.38 — What the other side gives, on the order's card** (M3)
-- [ ] Someone else's open order shows, per wanted currency, «Вы отдадите от … до …».
+- [x] Someone else's open order shows, per wanted currency, «Вы отдадите от … до …».
 
 ### Потенциальные планы: not now
 

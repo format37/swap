@@ -20,10 +20,12 @@ import {
   useDeleteOrder,
   useMarketRate,
   useOrder,
+  useQuote,
   useReopenOrder,
   useStopRepeating,
   type Order,
   type PaymentKind,
+  type QuoteRequest,
 } from '../api/orders'
 import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
@@ -32,7 +34,7 @@ import { formatTime } from '../i18n/format'
 import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
-import { formatRate, isZero } from '../money/format'
+import { formatAmount, formatRate, isZero } from '../money/format'
 import { KINDS } from '../money/kinds'
 import { readsAs } from '../orders/form'
 import { orderDates } from '../orders/words'
@@ -88,6 +90,40 @@ function MarketRate({ give, want }: { give: string; want: string }) {
       {market && (
         <span>· {t('order.market_source', { time: formatTime(locale, market.fetched_at) })}</span>
       )}
+    </p>
+  )
+}
+
+/**
+ * «Вы отдадите от 342,47 до 5 136,99 ₾ GEL» on someone else's open order (QUESTIONS M3): what
+ * a proposal would ask of them in this currency, from the smallest deal to all that remains.
+ * The api works it out at the order's rate, or the market's of the moment.
+ */
+function Counter({ order, want }: { order: Order; want: Order['wants'][number] }) {
+  const { tn, locale } = useI18n()
+  const ask = (amount: string): QuoteRequest => ({
+    amount,
+    give_currency: order.give_currency,
+    want_currency: want.currency,
+    rate_spec: want.rate_spec,
+    whole: false,
+    side: 'give',
+  })
+  // A minimum of 0 is any amount (F4); one equal to what remains, all of it at once.
+  const least = isZero(order.amount_min) ? null : order.amount_min
+  const whole = least === order.amount_remaining
+  const most = useQuote(ask(order.amount_remaining)).data
+  const fewest = useQuote(least && !whole ? ask(least) : null).data
+  if (!most || (least && !whole && !fewest)) return null
+  const approx = want.rate_spec.type === 'reference' ? '≈ ' : ''
+  const to = <Money locale={locale} amount={most.amount} code={want.currency} />
+  return (
+    <p className="flex flex-wrap items-center gap-1 pt-1">
+      {whole
+        ? tn('order.counter', { approx, amount: to })
+        : fewest
+          ? tn('order.counter_range', { approx, from: formatAmount(locale, fewest.amount), to })
+          : tn('order.counter_upto', { approx, to })}
     </p>
   )
 }
@@ -200,6 +236,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
               {want.rate_spec.type === 'reference' && (
                 <MarketRate give={order.give_currency} want={want.currency} />
               )}
+              {!order.mine && order.status === 'open' && <Counter order={order} want={want} />}
               {/* How the author takes this currency (QUESTIONS L1). */}
               <Methods kinds={want.receive_methods} inset={false} />
             </div>
