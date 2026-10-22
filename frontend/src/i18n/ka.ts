@@ -108,6 +108,9 @@ export const ka: Messages = {
   'order.delete': 'განცხადების წაშლა',
   'order.delete_confirm':
     'წაიშალოს განცხადება და მისი ყველა გარიგება მხოლოდ თქვენთან? სხვა მონაწილეებს დარჩებათ. აღდგენა შეუძლებელია.',
+  'order.delete_mine': 'წაშლა ჩემთან',
+  'order.delete_mine_confirm':
+    'წაიშალოს თქვენი გარიგებები ამ განცხადებაზე მხოლოდ თქვენთან? ავტორს დარჩება. აღდგენა შეუძლებელია.',
   'order.status.open': 'ღიაა',
   'order.status.fulfilled': 'შესრულებულია',
   'order.status.closed': 'დახურულია',

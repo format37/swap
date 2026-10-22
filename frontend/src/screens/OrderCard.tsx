@@ -288,34 +288,40 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           </Button>
         </div>
       )}
-      {/* Only once nothing on it runs: deleting takes all its deals, for the author (J3). */}
-      {order.mine && order.status !== 'open' && deals.data && !deals.data.some(running) && (
-        <div className="mx-4">
-          <Button
-            tone="destructive"
-            icon={<Trash2 aria-hidden className="size-5" />}
-            disabled={remove.isPending}
-            onClick={() => {
-              void confirmAction(t('order.delete_confirm'), t('order.delete'), {
-                destructive: true,
-              }).then((confirmed) => {
-                if (!confirmed) return
-                remove.mutate(order.id, {
-                  onSuccess: () => {
-                    hapticNotify('success')
-                    void navigate(-1)
-                  },
-                  onError: () => {
-                    hapticNotify('error')
-                  },
+      {/* Only once nothing on it runs. The author deletes it with all its deals (J3), and
+          whoever dealt on it deletes all their own deals on it (L4). */}
+      {deals.data &&
+        !deals.data.some(running) &&
+        (order.mine ? order.status !== 'open' : deals.data.length > 0) && (
+          <div className="mx-4">
+            <Button
+              tone="destructive"
+              icon={<Trash2 aria-hidden className="size-5" />}
+              disabled={remove.isPending}
+              onClick={() => {
+                const [question, action] = order.mine
+                  ? (['order.delete_confirm', 'order.delete'] as const)
+                  : (['order.delete_mine_confirm', 'order.delete_mine'] as const)
+                void confirmAction(t(question), t(action), {
+                  destructive: true,
+                }).then((confirmed) => {
+                  if (!confirmed) return
+                  remove.mutate(order.id, {
+                    onSuccess: () => {
+                      hapticNotify('success')
+                      void navigate(-1)
+                    },
+                    onError: () => {
+                      hapticNotify('error')
+                    },
+                  })
                 })
-              })
-            }}
-          >
-            {t('order.delete')}
-          </Button>
-        </div>
-      )}
+              }}
+            >
+              {t(order.mine ? 'order.delete' : 'order.delete_mine')}
+            </Button>
+          </div>
+        )}
       {order.mine && order.repeat_day && (
         <div className="mx-4">
           <Button

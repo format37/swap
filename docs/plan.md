@@ -280,7 +280,7 @@ veto on parts J and K.
 - [x] The language screen offers «Как в Telegram», and the api lets a chosen language go.
 
 **PR 1.32 — Deleting a finished order one only dealt on** (L4; ADR-0030)
-- [ ] `DELETE /orders/{id}` deletes, for someone who dealt on it, all their finished deals
+- [x] `DELETE /orders/{id}` deletes, for someone who dealt on it, all their finished deals
       on it; the order's card offers «Удалить у себя».
 
 **PR 1.33 — How to be paid, per currency** (L1; ADR-0037)
