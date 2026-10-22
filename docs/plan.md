@@ -149,7 +149,7 @@ through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
 - [x] A made link's screen leads Home with the main button.
 
 **PR 1.15 — The market rate by default** (G2; ADR-0022)
-- [ ] An order follows the market unless its author fixes the rate; whoever opens it
+- [x] An order follows the market unless its author fixes the rate; whoever opens it
       sees the rate of the moment, and a proposal locks it.
 
 **Demo, again.** Deploy, then ask the owner to run the deal.
