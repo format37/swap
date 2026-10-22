@@ -21,6 +21,7 @@ const NINO = {
   username: 'nino',
   photo_url: PHOTO,
   score: 0,
+  deleted: false,
 }
 
 it('shows the Telegram photo, straight from Telegram (J4)', () => {

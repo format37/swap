@@ -267,6 +267,22 @@ export const en: Messages = {
   'notify.hint':
     'The Swap bot sends these in Telegram. What you switch off simply doesn’t come, and the app still shows everything.',
   'link.notify_orders': 'Tell me about new offers',
+  'person.deleted': 'Former member',
+  'settings.data': 'Your data',
+  'settings.delete_history': 'Delete all history',
+  'settings.delete_history_confirm':
+    'Delete all your finished deals and offers, for you alone? Running ones stay. Deleted ones can’t come back.',
+  'settings.history_deleted':
+    'Deleted deals: {deals}, offers: {orders}. Still running, and kept: {running}.',
+  'settings.delete_account': 'Delete account',
+  'settings.delete_account_confirm':
+    'Delete your account? Your links, offers and history go, and in deals others keep you become “Former member”. This can’t be undone.',
+  'error.account_deals_running':
+    'Finish your running deals first: while they run, the account can’t be deleted.',
+  'gone.title': 'Account deleted',
+  'gone.text':
+    'Swap keeps nothing more about you, except the deals others keep, where you are “Former member”. To start again, open Swap once more.',
+  'gone.close': 'Close',
   'settings.language': 'Language',
   'language.title': 'Language',
   'outside.title': 'Open Swap in Telegram',

@@ -36,6 +36,7 @@ const ALEX = {
   username: 'format37',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
@@ -44,6 +45,7 @@ const NINO = {
   username: 'nino',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 const GIO = {
   id: 'a0000000-0000-4000-8000-000000000003',
@@ -52,6 +54,7 @@ const GIO = {
   username: null,
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 const LINK_ID = 'b0000000-0000-4000-8000-000000000001'
 
