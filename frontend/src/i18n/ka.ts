@@ -38,6 +38,7 @@ export const ka: Messages = {
   'link.none': 'კავშირი არ არის',
   'link.mutual': 'საერთო კავშირები: {count}',
   'link.accept': 'დაკავშირება',
+  'link.home': 'მთავარზე გადასვლა',
   'link.decline': 'უარყოფა',
   'link.decline_confirm': 'უარვყოთ მოთხოვნა?',
   'link.withdraw': 'მოთხოვნის გაუქმება',

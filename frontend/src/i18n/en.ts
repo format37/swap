@@ -36,6 +36,7 @@ export const en: Messages = {
   'link.none': 'Not linked',
   'link.mutual': 'Mutual links: {count}',
   'link.accept': 'Link up',
+  'link.home': 'Go to Home',
   'link.decline': 'Decline',
   'link.decline_confirm': 'Decline the request?',
   'link.withdraw': 'Withdraw request',
