@@ -403,6 +403,47 @@ async def test_without_a_market_rate_there_is_no_proposal(
     assert response.json()["code"] == "rate.unavailable"
 
 
+async def test_an_order_stays_in_the_history_of_both_sides_once_it_is_over(
+    world: World,
+) -> None:
+    deal = await world.propose(amount="145000.00")
+    await world.ok(world.alex, deal, "accept")
+    assert await world.remaining() == "5000.00:fulfilled"
+    order_id = world.order["id"]
+    # Nino can still open the order she dealt on, though it is no longer open to anyone
+    # (QUESTIONS H4); Gio, who had no part in it, can't.
+    seen = await world.client.get(f"/api/v1/orders/{order_id}", headers=world.nino)
+    assert (seen.status_code, seen.json()["status"]) == (200, "fulfilled")
+    hidden = await world.client.get(f"/api/v1/orders/{order_id}", headers=world.gio)
+    assert hidden.status_code == 404
+    for headers in (world.alex, world.nino):
+        past = await world.client.get(
+            "/api/v1/orders", params={"scope": "history"}, headers=headers
+        )
+        assert [order["id"] for order in past.json()] == [order_id]
+    # «Мои» holds the open ones only; the finished one went to the history.
+    mine = await world.client.get("/api/v1/orders", params={"scope": "mine"}, headers=world.alex)
+    assert mine.json() == []
+    # Its card lists the deals on it, the finished ones as well.
+    await world.ok(world.nino, deal, "cancel")
+    listed = await world.client.get(
+        "/api/v1/deals", params={"scope": "all", "order_id": order_id}, headers=world.alex
+    )
+    assert [(d["id"], d["status"]) for d in listed.json()] == [(deal["id"], "cancelled")]
+
+
+async def test_a_proposal_alone_keeps_a_closed_order_in_sight_for_its_proposer(
+    world: World,
+) -> None:
+    deal = await world.propose()
+    await world.client.post(f"/api/v1/orders/{world.order['id']}/close", headers=world.alex)
+    # Back from the cancelled proposal lands on the order, not on «не найдена».
+    seen = await world.client.get(f"/api/v1/orders/{world.order['id']}", headers=world.nino)
+    assert seen.json()["status"] == "closed"
+    shown = await world.client.get(f"/api/v1/deals/{deal['id']}", headers=world.nino)
+    assert shown.json()["status"] == "cancelled"
+
+
 async def test_closing_an_order_cancels_its_proposals_but_not_its_deals(world: World) -> None:
     proposed = await world.propose()
     accepted = await world.propose(amount="20000.00")

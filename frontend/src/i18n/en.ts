@@ -60,6 +60,7 @@ export const en: Messages = {
   'home.link_requests': 'Link requests',
   'home.open_to_me': 'Open to me',
   'home.mine': 'My offers',
+  'home.past': 'Finished offers ({count})',
   'home.new_order': 'New offer',
   'home.nothing_open': 'Your links offer nothing yet.',
   'home.empty.title': 'How it works',

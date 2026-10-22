@@ -199,10 +199,10 @@ async def propose_deal(
 async def list_deals(
     user: CurrentUser,
     db: Db,
-    scope: Literal["active", "history"] = "active",
+    scope: Literal["active", "history", "all"] = "active",
     order_id: uuid.UUID | None = None,
 ) -> list[Deal]:
-    """Your deals: open ones, or closed ones; on one order, if you name it."""
+    """Your deals: open ones, closed ones, or all; on one order, if you name it."""
     rows = await deals.mine(db, user.id, scope, order_id)
     return await _shown(db, rows, user.id)
 

@@ -150,7 +150,7 @@ async def propose(
     db: AsyncSession, proposer: User, order_id: uuid.UUID, proposal: Proposal, market: Market
 ) -> Deal:
     """A deal proposed on an order the proposer can see (FR-4.1)."""
-    order, author = await orders.get(db, proposer.id, order_id)
+    order, author = await orders.get(db, proposer.id, order_id, to_propose=True)
     if author.id == proposer.id:
         raise _refuse("deal.own_order")
     if order.status != OrderStatus.OPEN:
@@ -429,15 +429,17 @@ async def get(db: AsyncSession, viewer: uuid.UUID, deal_id: uuid.UUID) -> Deal:
 async def mine(
     db: AsyncSession,
     viewer: uuid.UUID,
-    scope: Literal["active", "history"],
+    scope: Literal["active", "history", "all"],
     order_id: uuid.UUID | None = None,
 ) -> list[Deal]:
-    """The viewer's deals: open ones, newest first, or closed ones (FR-6.3 without CSV)."""
+    """The viewer's deals, newest first: open ones, closed ones (FR-6.3 without CSV), or
+    both, as an order's card lists them."""
     query = select(Deal).where(or_(Deal.proposer_id == viewer, Deal.acceptor_id == viewer))
     if order_id is not None:
         query = query.where(Deal.order_id == order_id)
-    states = OPEN_STATES if scope == "active" else TERMINAL
-    query = query.where(Deal.status.in_([state.value for state in states]))
+    if scope != "all":
+        states = OPEN_STATES if scope == "active" else TERMINAL
+        query = query.where(Deal.status.in_([state.value for state in states]))
     return list(await db.scalars(query.order_by(Deal.created_at.desc())))
 
 

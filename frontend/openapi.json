@@ -1756,7 +1756,7 @@
     },
     "/api/v1/deals": {
       "get": {
-        "description": "Your deals: open ones, or closed ones; on one order, if you name it.",
+        "description": "Your deals: open ones, closed ones, or all; on one order, if you name it.",
         "operationId": "list_deals",
         "parameters": [
           {
@@ -1767,7 +1767,8 @@
               "default": "active",
               "enum": [
                 "active",
-                "history"
+                "history",
+                "all"
               ],
               "title": "Scope",
               "type": "string"
@@ -3547,7 +3548,7 @@
     },
     "/api/v1/orders": {
       "get": {
-        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`) or \u00ab\u041c\u043e\u0438\u00bb (`mine`).",
+        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones) or the finished ones that\nare mine or that I had a deal on (`history`).",
         "operationId": "list_orders",
         "parameters": [
           {
@@ -3558,7 +3559,8 @@
               "default": "visible",
               "enum": [
                 "visible",
-                "mine"
+                "mine",
+                "history"
               ],
               "title": "Scope",
               "type": "string"

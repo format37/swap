@@ -50,7 +50,7 @@ export interface paths {
         };
         /**
          * List Deals
-         * @description Your deals: open ones, or closed ones; on one order, if you name it.
+         * @description Your deals: open ones, closed ones, or all; on one order, if you name it.
          */
         get: operations["list_deals"];
         put?: never;
@@ -433,7 +433,8 @@ export interface paths {
         };
         /**
          * List Orders
-         * @description «Открытые мне» (`visible`) or «Мои» (`mine`).
+         * @description «Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
+         *     are mine or that I had a deal on (`history`).
          */
         get: operations["list_orders"];
         put?: never;
@@ -1319,7 +1320,7 @@ export interface operations {
     list_deals: {
         parameters: {
             query?: {
-                scope?: "active" | "history";
+                scope?: "active" | "history" | "all";
                 order_id?: string | null;
             };
             header?: never;
@@ -2640,7 +2641,7 @@ export interface operations {
     list_orders: {
         parameters: {
             query?: {
-                scope?: "visible" | "mine";
+                scope?: "visible" | "mine" | "history";
             };
             header?: never;
             path?: never;

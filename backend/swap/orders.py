@@ -1,9 +1,11 @@
 """Orders: intents to give one currency and take another, seen only through links (ADR-0016).
 
-Who sees an order is one predicate, `seen_by`, used by every query here: nobody once it
-is deleted; the author always until then; anyone else only while it is open and its last
-day, if it has one, hasn't passed, through an active link with the author, and when they
-are on its list, if it has one (§3).
+Who may take up an order is one predicate, `open_to`, used by the feed and by proposals:
+nobody once it is deleted; the author always until then; anyone else only while it is
+open and its last day, if it has one, hasn't passed, through an active link with the
+author, and when they are on its list, if it has one (§3). `seen_by` adds the order's
+history: whoever had a deal on it may still open it, but not take it up again
+(QUESTIONS H4).
 """
 
 import uuid
@@ -21,7 +23,7 @@ from sqlalchemy.orm import aliased
 from swap.deeplinks import target
 from swap.errors import DomainError
 from swap.links import linked_ids
-from swap.models import Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
+from swap.models import Deal, Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
 from swap.money import Asset, Country, Money, MoneyOrZero
 from swap.notifications import notify
 from swap.proposals import cancel_on_order
@@ -78,8 +80,8 @@ def _authors_today() -> ColumnElement[date]:
     return cast(func.timezone(tz.scalar_subquery(), func.now()), Date)
 
 
-def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
-    """Whether `viewer` may see an order: the trust boundary of §3, in one place."""
+def open_to(viewer: uuid.UUID) -> ColumnElement[bool]:
+    """Whether `viewer` may see an order and propose on it: the trust boundary of §3."""
     unlisted = ~exists().where(OrderVisibility.order_id == Order.id)
     listed = exists().where(OrderVisibility.order_id == Order.id, OrderVisibility.user_id == viewer)
     return and_(
@@ -96,6 +98,13 @@ def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
             ),
         ),
     )
+
+
+def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
+    """Whether `viewer` may open an order: as `open_to`, and also as history once they had a
+    deal on it, of any outcome, so going back from the deal never ends in «не найдена»."""
+    dealt = exists().where(Deal.order_id == Order.id, Deal.proposer_id == viewer)
+    return or_(open_to(viewer), and_(Order.deleted_at.is_(None), dealt))
 
 
 def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
@@ -178,27 +187,38 @@ async def create(
 
 
 async def feed(
-    db: AsyncSession, viewer: uuid.UUID, scope: Literal["visible", "mine"]
+    db: AsyncSession, viewer: uuid.UUID, scope: Literal["visible", "mine", "history"]
 ) -> list[tuple[Order, User]]:
-    """«Открытые мне», earliest available first (FR-2.4); or «Мои», open ones first."""
+    """«Открытые мне», earliest available first (FR-2.4); «Мои», the open ones, newest
+    first; or the history: orders no longer open that are mine or that I had a deal on,
+    latest change first (QUESTIONS H4)."""
     query = select(Order, User).join(User, User.id == Order.author_id)
     if scope == "mine":
-        query = query.where(Order.author_id == viewer, seen_by(viewer)).order_by(
-            (Order.status != OrderStatus.OPEN), Order.created_at.desc()
+        query = query.where(
+            Order.author_id == viewer, Order.status == OrderStatus.OPEN, seen_by(viewer)
+        ).order_by(Order.created_at.desc())
+    elif scope == "history":
+        query = query.where(Order.status != OrderStatus.OPEN, seen_by(viewer)).order_by(
+            Order.updated_at.desc()
         )
     else:
-        query = query.where(Order.author_id != viewer, seen_by(viewer)).order_by(
+        query = query.where(Order.author_id != viewer, open_to(viewer)).order_by(
             Order.available_from, Order.created_at
         )
     return [(order, author) for order, author in await db.execute(query)]
 
 
-async def get(db: AsyncSession, viewer: uuid.UUID, order_id: uuid.UUID) -> tuple[Order, User]:
+async def get(
+    db: AsyncSession, viewer: uuid.UUID, order_id: uuid.UUID, *, to_propose: bool = False
+) -> tuple[Order, User]:
+    """The order as `viewer` may see it; `to_propose` asks for it open to them (§3), not
+    merely in their history."""
+    allowed = open_to(viewer) if to_propose else seen_by(viewer)
     row = (
         await db.execute(
             select(Order, User)
             .join(User, User.id == Order.author_id)
-            .where(Order.id == order_id, seen_by(viewer))
+            .where(Order.id == order_id, allowed)
         )
     ).first()
     if row is None:
