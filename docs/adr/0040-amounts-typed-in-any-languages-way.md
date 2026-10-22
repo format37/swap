@@ -20,9 +20,10 @@ An amount field takes digits with spaces (plain, no-break or narrow), commas and
 
 - Money has at most two decimals. So the last comma or point is the decimal point when
   one or two digits follow it.
-- Every other comma or point groups thousands, and exactly three digits must follow each.
-- «150 000», «150,000» and «150.000» are 150000. «1 712,33», «1,712.33» and «1.712,33»
-  are 1712.33. «1712,5» is 1712.5. «1,2345» is no amount.
+- Any other comma groups thousands, with exactly three digits after it. A point never
+  groups: none of Swap's languages writes one so.
+- «150 000» and «150,000» are 150000. «1 712,33» and «1,712.33» are 1712.33. «1712,5» is
+  1712.5. «12.345» and «1,2345» are no amount.
 - Rates keep their own reading. A rate can have ten decimals, so «0,034» stays 0.034
   (ADR-0004).
 
@@ -30,12 +31,14 @@ An amount field takes digits with spaces (plain, no-break or narrow), commas and
 
 - Whatever the app writes into a field, in any of its languages, reads back as the same
   amount.
-- «1.500» is 1500, as a German or a Russian habit has it. Nobody writes money with three
-  decimals.
+- «1,500» is 1500 in every language: nobody writes money with three decimals. «1.500»
+  is refused, as before, because some would mean 1.5 by it and others 1500.
 
 ## Alternatives considered
 
 - **A reader per language.** People don't always type in the app's language, and the
   app's own numbers would still have to round-trip.
+- **A point that groups too**, as German writes «1.500». None of Swap's languages does,
+  and the same «1.500» would mean 1.5 to some people.
 - **Filling fields without grouping** («81900»). Long numbers are hard to read in the
   wizard, and an English «1,500» typed by hand would still be refused.
