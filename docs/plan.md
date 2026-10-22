@@ -220,12 +220,12 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] In `Person`, beside the name, with a tap that explains it.
 
 **PR 1.24 — Deleting for oneself** (J3; ADR-0030)
-- [ ] Migration: `deals.proposer_deleted_at`. The journal lets a deal's lines go with the
+- [x] Migration: `deals.proposer_deleted_at`. The journal lets a deal's lines go with the
       whole deal, and in no other way.
-- [ ] api: a participant deletes a finished deal; the author deletes a finished order
+- [x] api: a participant deletes a finished deal; the author deletes a finished order
       with all its deals; the server erases what both sides have deleted.
       Authorization tests first.
-- [ ] The deal card and the order card offer it.
+- [x] The deal card and the order card offer it.
 
 **PR 1.25 — The settings: notifications and the language** (K1, K6)
 - [ ] Migration: what each person switched off, and whose new orders they muted.

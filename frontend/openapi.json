@@ -1917,6 +1917,86 @@
       }
     },
     "/api/v1/deals/{deal_id}": {
+      "delete": {
+        "description": "Delete your own finished deal, for yourself alone (QUESTIONS J3). The other side keeps\nit, and it is erased once its order's author has deleted the order too.",
+        "operationId": "delete_deal",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deal_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Deal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Deal",
+        "tags": [
+          "deals"
+        ]
+      },
       "get": {
         "operationId": "get_deal",
         "parameters": [
@@ -3801,7 +3881,7 @@
     },
     "/api/v1/orders/{order_id}": {
       "delete": {
-        "description": "Gone for everyone, its author included; its deals carry on (QUESTIONS F6).",
+        "description": "Delete a finished order with all its deals, for yourself alone (QUESTIONS J3). Whoever\ndealt on it keeps their deals and the order with them.",
         "operationId": "delete_order",
         "parameters": [
           {

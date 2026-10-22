@@ -18,10 +18,12 @@ There is no restore. The server erases a row once everyone it belongs to has del
 **Who deletes what.**
 - **A participant**, someone who proposed on an order, deletes their own deal once it is
   over: settled, cancelled, declined, withdrawn or expired. It works even while the
-  order is still open. A deal still running answers 409 `deal.running`.
+  order is still open. A deal still running answers 409 `deal.running`, and the author
+  asking to delete one deal answers 409 `deal.delete_with_order`. The app offers it on a
+  finished deal's card as «Удалить у себя».
 - **The author** deletes the whole order with all its deals, once the order is no longer
   open and none of its deals runs. Otherwise the answer is 409 `order.open` or
-  `order.deals_running`.
+  `order.deals_running`. The order card offers it only then.
 
 **What is recorded.** The author's deletion is per order: `orders.deleted_at`, now
 "deleted by its author, for its author". A participant's is per deal:

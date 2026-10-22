@@ -21,11 +21,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import or_, select
+from sqlalchemy import ColumnElement, and_, exists, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap import orders
 from swap.deeplinks import target
+from swap.erasure import erase_deal, erase_order_if_bare
 from swap.errors import DomainError
 from swap.journal import TERMINAL, record, start
 from swap.market import Market, lock
@@ -84,6 +85,17 @@ class Dispute(BaseModel):
         return value.strip()
 
 
+def kept_by(viewer: uuid.UUID) -> ColumnElement[bool]:
+    """The deals `viewer` has and hasn't deleted (QUESTIONS J3, ADR-0030): a proposer's
+    unless they deleted it; an author's unless they deleted its order and it is over."""
+    author_deleted = exists().where(Order.id == Deal.order_id, Order.deleted_at.is_not(None))
+    over = Deal.status.in_([state.value for state in TERMINAL])
+    return or_(
+        and_(Deal.proposer_id == viewer, Deal.proposer_deleted_at.is_(None)),
+        and_(Deal.acceptor_id == viewer, not_(and_(author_deleted, over))),
+    )
+
+
 def _refuse(code: str, status: int = 409) -> DomainError:
     return DomainError(status, code)
 
@@ -123,7 +135,7 @@ def _tell(
 async def _lock(db: AsyncSession, me: uuid.UUID, deal_id: uuid.UUID) -> Deal:
     deal = await db.scalar(
         select(Deal)
-        .where(Deal.id == deal_id, or_(Deal.proposer_id == me, Deal.acceptor_id == me))
+        .where(Deal.id == deal_id, kept_by(me))
         .with_for_update()
         .execution_options(populate_existing=True)
     )
@@ -426,11 +438,7 @@ async def expire_due(db: AsyncSession, now: datetime | None = None) -> int:
 
 
 async def get(db: AsyncSession, viewer: uuid.UUID, deal_id: uuid.UUID) -> Deal:
-    deal = await db.scalar(
-        select(Deal).where(
-            Deal.id == deal_id, or_(Deal.proposer_id == viewer, Deal.acceptor_id == viewer)
-        )
-    )
+    deal = await db.scalar(select(Deal).where(Deal.id == deal_id, kept_by(viewer)))
     if deal is None:
         raise _refuse("deal.not_found", 404)
     return deal
@@ -444,13 +452,31 @@ async def mine(
 ) -> list[Deal]:
     """The viewer's deals, newest first: open ones, closed ones (FR-6.3 without CSV), or
     both, as an order's card lists them."""
-    query = select(Deal).where(or_(Deal.proposer_id == viewer, Deal.acceptor_id == viewer))
+    query = select(Deal).where(kept_by(viewer))
     if order_id is not None:
         query = query.where(Deal.order_id == order_id)
     if scope != "all":
         states = OPEN_STATES if scope == "active" else TERMINAL
         query = query.where(Deal.status.in_([state.value for state in states]))
     return list(await db.scalars(query.order_by(Deal.created_at.desc())))
+
+
+async def delete(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> None:
+    """A participant deletes their own finished deal, for themselves alone (QUESTIONS J3).
+
+    The author deletes whole orders instead. Once the author has deleted this one's order,
+    nobody keeps the deal, and it is erased (ADR-0030).
+    """
+    deal = await _lock(db, actor.id, deal_id)
+    if actor.id != deal.proposer_id:
+        raise _refuse("deal.delete_with_order")
+    if deal.status not in TERMINAL:
+        raise _refuse("deal.running")
+    deal.proposer_deleted_at = datetime.now(UTC)
+    order = await db.scalar(select(Order).where(Order.id == deal.order_id).with_for_update())
+    if order is not None and order.deleted_at is not None:
+        await erase_deal(db, deal)
+        await erase_order_if_bare(db, order)
 
 
 async def journal(db: AsyncSession, deal: Deal) -> list[Event]:

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { api, unwrap } from './client'
+import { api, done, unwrap } from './client'
 import type { components } from './schema'
 
 export type Deal = components['schemas']['Deal']
@@ -61,6 +61,20 @@ export function usePropose(orderId: string) {
       }),
     ),
   )
+}
+
+/** A finished deal, deleted for its proposer alone (QUESTIONS J3). */
+export function useDeleteDeal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      done(api.DELETE('/api/v1/deals/{deal_id}', { params: { path: { deal_id: id } } })),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: DEALS }),
+        queryClient.invalidateQueries({ queryKey: ['orders'] }),
+      ]),
+  })
 }
 
 /** One tap: accepting asks for no payment details (QUESTIONS G1). */

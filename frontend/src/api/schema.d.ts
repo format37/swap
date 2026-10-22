@@ -72,7 +72,12 @@ export interface paths {
         get: operations["get_deal"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Deal
+         * @description Delete your own finished deal, for yourself alone (QUESTIONS J3). The other side keeps
+         *     it, and it is erased once its order's author has deleted the order too.
+         */
+        delete: operations["delete_deal"];
         options?: never;
         head?: never;
         patch?: never;
@@ -477,7 +482,8 @@ export interface paths {
         post?: never;
         /**
          * Delete Order
-         * @description Gone for everyone, its author included; its deals carry on (QUESTIONS F6).
+         * @description Delete a finished order with all its deals, for yourself alone (QUESTIONS J3). Whoever
+         *     dealt on it keeps their deals and the order with them.
          */
         delete: operations["delete_order"];
         options?: never;
@@ -1420,6 +1426,71 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_deal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

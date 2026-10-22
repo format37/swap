@@ -12,7 +12,7 @@ import { useNavigate, useParams } from 'react-router'
 
 import { fullName } from '../api/links'
 import type { Me } from '../api/client'
-import { useDeals } from '../api/deals'
+import { useDeals, type Deal } from '../api/deals'
 import {
   useCloseOrder,
   useDeleteOrder,
@@ -105,6 +105,10 @@ function Methods({ kinds }: { kinds: PaymentKind[] }) {
       ))}
     </div>
   )
+}
+
+function running(deal: Deal): boolean {
+  return ['proposed', 'accepted', 'disputed'].includes(deal.status)
 }
 
 function Shown({ order, me }: { order: Order; me: Me }) {
@@ -274,7 +278,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           </Button>
         </div>
       )}
-      {order.mine && order.status !== 'open' && (
+      {/* Only once nothing on it runs: deleting takes all its deals, for the author (J3). */}
+      {order.mine && order.status !== 'open' && deals.data && !deals.data.some(running) && (
         <div className="mx-4">
           <Button
             tone="destructive"

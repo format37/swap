@@ -1,9 +1,17 @@
-import { Ban, History, MessageSquareText, Undo2, X } from 'lucide-react'
+import { Ban, History, MessageSquareText, Trash2, Undo2, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 
 import type { Me } from '../api/client'
-import { useAccept, useDeal, useStep, type Deal, type DealEvent, type Leg } from '../api/deals'
+import {
+  useAccept,
+  useDeal,
+  useDeleteDeal,
+  useStep,
+  type Deal,
+  type DealEvent,
+  type Leg,
+} from '../api/deals'
 import { fullName } from '../api/links'
 import { nextFor } from '../deals/next'
 import { LegCard } from '../deals/LegCard'
@@ -43,11 +51,15 @@ export function DealCard({ me }: { me: Me }) {
 
 function Shown({ deal, me }: { deal: Deal; me: Me }) {
   const { t, tn, locale } = useI18n()
+  const navigate = useNavigate()
   const step = useStep(deal.id)
   const accept = useAccept(deal.id)
+  const remove = useDeleteDeal()
   const next = nextFor(deal, me.id)
   const other = deal.role === 'proposer' ? deal.acceptor : deal.proposer
-  const failure = step.error ?? accept.error
+  const failure = step.error ?? accept.error ?? remove.error
+  // Its proposer deletes a finished deal for themselves; its author, the whole order (J3).
+  const deletable = deal.role === 'proposer' && FINISHED.includes(deal.status)
 
   const amountText = (leg: Leg) => `${formatAmount(locale, leg.amount)} ${leg.currency}`
   const run = async (question: string, ok: string, action: () => Promise<unknown>) => {
@@ -154,10 +166,30 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
         </div>
       ))}
 
+      {deletable && (
+        <div className="mx-4">
+          <Button
+            tone="destructive"
+            icon={<Trash2 aria-hidden className="size-5" />}
+            disabled={remove.isPending}
+            onClick={() =>
+              void run(t('deal.delete_confirm'), t('deal.delete'), async () => {
+                await remove.mutateAsync(deal.id)
+                void navigate(-1)
+              })
+            }
+          >
+            {t('deal.delete')}
+          </Button>
+        </div>
+      )}
+
       <Journal deal={deal} />
     </Screen>
   )
 }
+
+const FINISHED: Deal['status'][] = ['settled', 'cancelled', 'expired']
 
 const OTHER_ICONS: Record<'decline' | 'withdraw' | 'cancel', ReactNode> = {
   decline: <X aria-hidden className="size-5" />,
