@@ -189,13 +189,13 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 планы» below.
 
 **PR 1.20 — The wizard in two steps, a rate per wanted currency** (J1; ADR-0026)
-- [ ] Migration: `order_wants.rate_spec`, copied from each order's spec; `orders.rate_spec`
+- [x] Migration: `order_wants.rate_spec`, copied from each order's spec; `orders.rate_spec`
       goes.
-- [ ] api: a spec per wanted currency in the draft and the order; the quote and the
+- [x] api: a spec per wanted currency in the draft and the order; the quote and the
       proposal use the chosen currency's. A currency appears once.
-- [ ] Step 1: «Отдаёте» and «Получаете» as two groups without section titles, and
+- [x] Step 1: «Отдаёте» and «Получаете» as two groups without section titles, and
       «Зафиксировать курс» per currency, off by default.
-- [ ] Step 2: the digest of step 1, «Кому видно» and the comment.
+- [x] Step 2: the digest of step 1, «Кому видно» and the comment.
 
 **PR 1.21 — People with photo, name and @username** (J4; ADR-0027)
 - [ ] Migration: `users.photo_url`, taken from `initData` at every sign-in. The CSP's
