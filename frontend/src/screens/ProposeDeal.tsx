@@ -78,15 +78,17 @@ function Form({ order }: { order: Order }) {
     },
   })
 
-  // What the proposer gives back, from the api, which does the arithmetic (ADR-0004).
+  // What the proposer gives back, from the api, which does the arithmetic (ADR-0004), at
+  // the rate of the currency chosen (QUESTIONS J1).
   const amount = parseAmount(form.amount)
+  const spec = order.wants.find((want) => want.currency === form.want)?.rate_spec
   const request =
-    amount && form.want
+    amount && spec
       ? JSON.stringify({
           amount,
           give_currency: give,
           want_currency: form.want,
-          rate_spec: order.rate_spec,
+          rate_spec: spec,
           whole: form.whole,
         })
       : null

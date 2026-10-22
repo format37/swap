@@ -7,6 +7,8 @@ export type Order = components['schemas']['Order']
 export type OrderDraft = components['schemas']['OrderDraft']
 export type PaymentKind = components['schemas']['PaymentKind']
 export type FixedRate = components['schemas']['FixedRate']
+export type RateSpec = components['schemas']['Want']['rate_spec']
+export type Want = components['schemas']['Want']
 export type QuoteRequest = components['schemas']['QuoteRequest']
 export type MarketQuote = components['schemas']['MarketQuote']
 

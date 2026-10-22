@@ -152,12 +152,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
 
       <Section title={order.mine ? t('order.i_want') : t('order.wants')}>
         {order.wants.map((want) => {
-          const quote =
-            order.rate_spec.type === 'fixed'
-              ? order.rate_spec.quotes.find(
-                  (q) => q.base === want.currency || q.quote === want.currency,
-                )
-              : undefined
+          // Each currency has its own rate: the author's, or the market's (QUESTIONS J1).
+          const quote = want.rate_spec.type === 'fixed' ? want.rate_spec.quotes[0] : undefined
           return (
             <div
               key={`${want.currency}-${want.country}`}
@@ -173,7 +169,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
                   {formatRate(locale, quote.value)} <Asset code={quote.quote} />
                 </p>
               )}
-              {order.rate_spec.type === 'reference' && (
+              {want.rate_spec.type === 'reference' && (
                 <MarketRate give={order.give_currency} want={want.currency} />
               )}
             </div>
