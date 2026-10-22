@@ -45,6 +45,9 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0034](0034-order-numbers.md) | Every order has a number, «№ 17», from one sequence | Accepted |
 | [0035](0035-csv-export-through-the-bot.md) | The CSV export arrives as a file from the bot | Accepted |
 | [0036](0036-recurring-orders.md) | Recurring orders: a monthly copy on day N, published once | Accepted |
+| [0037](0037-ways-to-be-paid-per-currency.md) | Each wanted currency has its own ways to be paid | Accepted |
+| [0038](0038-the-amount-one-gets-typed.md) | Each wanted currency shows what one gets, and it can be typed | Accepted |
+| [0039](0039-a-settings-tab-and-the-language-telegram-has.md) | A settings tab, and the language Telegram has | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the
@@ -53,8 +56,8 @@ owner's answers of the same day.
 
 0012 onwards are decisions made while building phase 1, under the owner's
 delegation ("feel free to decide"). The owner reviews them after the fact. 0026–0030
-record the owner's notes of QUESTIONS part J: the decisions are the owner's, and the
-details and defaults are mine.
+record the owner's notes of QUESTIONS part J, and 0037–0039 those of part L: the
+decisions are the owner's, and the details and defaults are mine.
 
 ## Template
 

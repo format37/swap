@@ -37,16 +37,17 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
       and the key be deleted? Yes, on 2026-10-22.
 - [ ] A phone check of PRs 1.17 and 1.18, and of each visible change after them. I ask
       for each one as it ships.
-- [ ] Your veto, if any, on part J's defaults: mainly reach 2 for new orders, rings
-      instead of a web of lines, and proposals across handshakes.
-- [ ] K6: what did you find missing in switching the language?
-- [ ] Set the privacy page's URL in BotFather: https://swap.latentstate.dev/privacy
-      (live since PR 1.27).
+- [x] Your veto, if any, on part J's defaults: mainly reach 2 for new orders, rings
+      instead of a web of lines, and proposals across handshakes. None (part L).
+- [x] K6: what did you find missing in switching the language? A visible way to the
+      settings, and back to Telegram's language (L5, L6).
+- [x] Set the privacy page's URL in BotFather: https://swap.latentstate.dev/privacy
+      (live since PR 1.27). Done on 2026-10-22.
 - [ ] A phone check of PRs 1.20–1.30: the two-step wizard and its reach slider, photos
       and scores, «Удалить у себя», the settings (notifications, deleting, CSV,
       «О Swap»), the agreement at launch, order numbers, a recurring order.
-- [ ] Turn on «Prevent Storing of IP Addresses» in the Sentry project's Security &
-      Privacy settings (ADR-0025); the privacy page says Sentry may receive an IP.
+- [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
+      2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
       list (Q-A6), and the agreement text (Q-B15).
 
@@ -209,7 +210,8 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
       `img-src` gains `https://t.me` and its CDN, `*.telesco.pe`.
 - [x] One `Person` component everywhere a person is shown, with initials when there is
       no photo.
-- [ ] `dev_launch --photo`. After the deploy, count who has a photo.
+- [x] `dev_launch --photo`. After the deploy, count who has a photo: two of three
+      had a link by the evening, Ira's photo and the owner's letter picture (L3).
 
 **PR 1.22 — Reach by handshakes** (J2; ADR-0028)
 - [x] Migration: `orders.reach`; 1 for orders without a list, 0 for those with one.
@@ -270,6 +272,32 @@ wrapped its long rows and set the deletions apart (#41). Two checks wait on peop
 signing in again: how many users get a `photo_url` (ADR-0027), and that the agreement
 shows once.
 
+**The owner's notes after testing parts J and K (2026-10-22).** QUESTIONS part L. No
+veto on parts J and K.
+
+**PR 1.31 — A settings tab, and the language Telegram has** (L5, L6; ADR-0039)
+- [ ] «Настройки» becomes a tab beside «Главная» and «Связи».
+- [ ] The language screen offers «Как в Telegram», and the api lets a chosen language go.
+
+**PR 1.32 — Deleting a finished order one only dealt on** (L4; ADR-0030)
+- [ ] `DELETE /orders/{id}` deletes, for someone who dealt on it, all their finished deals
+      on it; the order's card offers «Удалить у себя».
+
+**PR 1.33 — How to be paid, per currency** (L1; ADR-0037)
+- [ ] Migration: `order_wants.receive_methods`, copied from the order's; the order's set
+      goes.
+- [ ] The wizard's and the order's cards show each currency's ways; a proposal pays in one
+      of the chosen currency's.
+
+**PR 1.34 — Write what one gets, and let it be typed** (L2; ADR-0038)
+- [ ] `POST /quote` works the other way too: what to give for an amount wanted.
+- [ ] Each wanted currency's card holds «Получите», a field that sets what is given, and
+      the other currencies follow.
+
+**PR 1.35 — Keep a photo's link when a launch brings none** (L3; ADR-0027)
+- [ ] The sign-in keeps the stored link when a launch has none, and still takes a new
+      one, Telegram's letter picture included.
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -311,7 +339,7 @@ lost server.
 | Phase | Sessions | Calendar |
 |---|---|---|
 | 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
-| 1 — MVP | ≈ 22 | ≈ 2 more weeks, then the owner's confirmation |
+| 1 — MVP | ≈ 25 | ≈ 2 more weeks, then the owner's confirmation |
 
 Phase 1, PR by PR:
 
@@ -330,12 +358,18 @@ Phase 1, PR by PR:
 | 1.28 | K8 · order numbers | 0.25 |
 | 1.29 | K4 · CSV export | 0.5 |
 | 1.30 | K7 · recurring orders | 0.75 |
+| 1.31 | L5, L6 · a settings tab, and Telegram's language | 0.5 |
+| 1.32 | L4 · deleting a finished order one only dealt on | 0.5 |
+| 1.33 | L1 · how to be paid, per currency | 1 |
+| 1.34 | L2 · the amount one gets, typed | 1 |
+| 1.35 | L3 · keeping a photo's link | 0.25 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 21.75** |
+| | **Total** | **≈ 25** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
-K9 into the privacy page's, because each touches the same screens.
+K9 into the privacy page's, because each touches the same screens. The owner's notes
+after testing them (part L) add about 3.25.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
