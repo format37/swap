@@ -50,13 +50,17 @@ describe('the deal card', () => {
     expect(await screen.findByText(/Ваш ход: отправьте/)).toHaveTextContent(
       'Ваш ход: отправьте 1 712,33₾GEL',
     )
-    expect(screen.getByText(/Шаг 1 · Nino B → Alex/)).toBeInTheDocument()
-    expect(screen.getByText(/Шаг 2 · Alex → Nino B/)).toBeInTheDocument()
+    expect(screen.getByText('Nino B → Alex')).toBeInTheDocument()
+    expect(screen.getByText('Alex → Nino B')).toBeInTheDocument()
     expect(screen.getByText('Наличными при встрече')).toBeInTheDocument()
     expect(screen.getByText(/Курс зафиксирован при предложении/)).toHaveTextContent(
       '1 ₾GEL = 29,20 ₽RUB',
     )
-    expect(mainButton()?.text).toBe('Деньги отправлены')
+    // Both marks at once, each on its own transfer (QUESTIONS H2); no dates (H1).
+    expect(screen.getByRole('button', { name: 'Деньги отправлены' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Деньги получены' })).toBeInTheDocument()
+    expect(mainButton()).toBeNull()
+    expect(screen.queryByText(/^до /)).toBeNull()
     expect(screen.getByRole('button', { name: 'Отменить сделку' })).toBeInTheDocument()
   })
 
@@ -80,12 +84,12 @@ describe('the deal card', () => {
   it('marks a transfer sent only once that is confirmed', async () => {
     const { served } = fakeApi({
       [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal({ status: 'accepted' })),
-      [`POST /api/v1/deals/${DEAL_ID}/legs/1/sent`]: () => json(200, deal({ status: 'leg1_sent' })),
+      [`POST /api/v1/deals/${DEAL_ID}/legs/1/sent`]: () => json(200, deal({ status: 'accepted' })),
     })
     renderScreen(<DealCard me={meOf(NINO)} />, { route, path })
     await screen.findByText(/Ваш ход/)
     vi.mocked(confirmAction).mockResolvedValueOnce(false)
-    press()
+    fireEvent.click(screen.getByRole('button', { name: 'Деньги отправлены' }))
     await waitFor(() => {
       expect(confirmAction).toHaveBeenCalledTimes(1)
     })
@@ -93,10 +97,43 @@ describe('the deal card', () => {
     expect(vi.mocked(confirmAction).mock.calls[0]?.[0]).toBe(
       'Отметить, что вы отправили 1\u00a0712,33 GEL? Отменить отметку нельзя.',
     )
-    press()
+    fireEvent.click(screen.getByRole('button', { name: 'Деньги отправлены' }))
     await waitFor(() => {
       expect(served).toContain(`POST /api/v1/deals/${DEAL_ID}/legs/1/sent`)
     })
+  })
+
+  it('confirms a receipt before anything was marked sent, and says so in the journal', async () => {
+    const received = deal({
+      status: 'accepted',
+      legs: deal().legs.map((leg) =>
+        leg.seq === 2
+          ? { ...leg, sent_at: '2026-10-22T11:00:00Z', received_at: '2026-10-22T11:00:00Z' }
+          : leg,
+      ),
+      events: [
+        ...deal().events,
+        { type: 'accepted', actor_id: ALEX.id, at: '2026-10-22T10:30:00Z', to: 'accepted' },
+        { type: 'received', actor_id: NINO.id, at: '2026-10-22T11:00:00Z', to: 'accepted', seq: 2 },
+      ],
+    })
+    let current = deal({ status: 'accepted' })
+    const { served } = fakeApi({
+      [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, current),
+      [`POST /api/v1/deals/${DEAL_ID}/legs/2/received`]: () => {
+        current = received
+        return json(200, received)
+      },
+    })
+    renderScreen(<DealCard me={meOf(NINO)} />, { route, path })
+    fireEvent.click(await screen.findByRole('button', { name: 'Деньги получены' }))
+    await waitFor(() => {
+      expect(served).toContain(`POST /api/v1/deals/${DEAL_ID}/legs/2/received`)
+    })
+    // What moved, in what and where, from the deal itself (QUESTIONS H3).
+    expect(await screen.findByText(/Получено: 50/)).toHaveTextContent(
+      'Получено: 50 000 RUB · Россия · Nino B',
+    )
   })
 
   it('lets the author accept in one tap, with no payment details', async () => {
@@ -206,7 +243,6 @@ describe('the proposal', () => {
       amount: '50000',
       want_currency: 'GEL',
       whole: false,
-      first: 'proposer',
       give_method: 'bank',
       counter_method: 'cash',
       note: 'Переведу с Т-Банка',

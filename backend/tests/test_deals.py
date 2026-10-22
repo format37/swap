@@ -40,8 +40,6 @@ class World:
             "want_currency": "GEL",
             "give_method": "bank",
             "counter_method": "cash",
-            "my_due": str(TODAY + timedelta(days=3)),
-            "their_due": str(TODAY + timedelta(days=2)),
             **changes,
         }
 
@@ -190,11 +188,11 @@ async def test_a_closed_order_takes_no_proposals(world: World) -> None:
         ({"counter_method": "crypto"}, "deal.method_not_accepted"),
         # A card is a bank account now (QUESTIONS G3).
         ({"counter_method": "card"}, "validation_error"),
-        ({"my_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),
-        ({"their_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),
         ({"amount": 50000}, "validation_error"),
         ({"amount": "50000.001"}, "validation_error"),
-        ({"first": "nobody"}, "validation_error"),
+        # No order between the transfers and no dates any more (QUESTIONS H1).
+        ({"first": "proposer"}, "validation_error"),
+        ({"my_due": str(TODAY)}, "validation_error"),
         ({"note": "x" * 501}, "validation_error"),
         # Payment details are no part of a deal any more (QUESTIONS G1).
         ({"receive_with": str(uuid.uuid4())}, "validation_error"),
@@ -230,7 +228,8 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
         "fetched_at": None,
     }
     first, second = deal["legs"]
-    # The proposer sends first by default (Q-B16): GEL cash to Alex, then RUB to the card.
+    # Leg 1 is the proposer's own transfer, GEL cash to Alex; leg 2 the author's RUB. They
+    # have no order and no dates (QUESTIONS H1).
     assert (first["payer"]["first_name"], first["currency"], first["amount"]) == (
         "Nino",
         "GEL",
@@ -242,6 +241,7 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
         "RUB",
         "50000.00",
     )
+    assert [leg["due_date"] for leg in deal["legs"]] == [None, None]
     assert await world.told("deal.proposed") == [
         (
             "Alex",
@@ -263,10 +263,11 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
     assert await world.remaining() == "100000.00:open"  # FR-2.3
     assert [name for name, _, _ in await world.told("deal.accepted")] == ["Nino"]
 
-    assert (await world.ok(world.nino, deal, "legs/1/sent"))["status"] == "leg1_sent"
+    # The deal runs as accepted while the legs move (QUESTIONS H2).
+    assert (await world.ok(world.nino, deal, "legs/1/sent"))["status"] == "accepted"
     assert [name for name, _, _ in await world.told("deal.sent")] == ["Alex"]
-    assert (await world.ok(world.alex, deal, "legs/1/received"))["status"] == "leg1_received"
-    assert (await world.ok(world.alex, deal, "legs/2/sent"))["status"] == "leg2_sent"
+    assert (await world.ok(world.alex, deal, "legs/1/received"))["status"] == "accepted"
+    assert (await world.ok(world.alex, deal, "legs/2/sent"))["status"] == "accepted"
     settled = await world.ok(world.nino, deal, "legs/2/received")
     assert settled["status"] == "settled"
     assert settled["closed_at"] is not None
@@ -283,11 +284,15 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
     assert await world.remaining() == "100000.00:open"
 
 
-async def test_the_author_may_go_first_and_round_to_whole_units(world: World) -> None:
-    deal = await world.propose(first="author", whole=True)
+async def test_the_counter_amount_may_be_rounded_to_whole_units(world: World) -> None:
+    deal = await world.propose(whole=True)
     first, second = deal["legs"]
-    assert (first["payer"]["first_name"], first["currency"]) == ("Alex", "RUB")
-    assert (second["currency"], second["amount"]) == ("GEL", "1712.00")
+    assert (first["payer"]["first_name"], first["currency"], first["amount"]) == (
+        "Nino",
+        "GEL",
+        "1712.00",
+    )
+    assert (second["currency"], second["amount"]) == ("RUB", "50000.00")
     assert deal["whole"] is True
 
 
@@ -526,7 +531,4 @@ async def test_legs_are_stored_as_the_proposal_said(world: World) -> None:
         (1, "GEL", "1712.33", "cash"),
         (2, "RUB", "50000.00", "bank"),
     ]
-    assert [str(leg.due_date) for leg in legs] == [
-        str(TODAY + timedelta(days=3)),
-        str(TODAY + timedelta(days=2)),
-    ]
+    assert [leg.due_date for leg in legs] == [None, None]

@@ -7,6 +7,7 @@ import { useAccept, useDeal, useStep, type Deal, type DealEvent, type Leg } from
 import { fullName } from '../api/links'
 import { nextFor } from '../deals/next'
 import { LegCard } from '../deals/LegCard'
+import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
 import { formatTime } from '../i18n/format'
 import { INTL_LOCALES } from '../i18n/locale'
@@ -69,30 +70,21 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
           onClick: () =>
             void run(t('deal.accept_confirm'), t('deal.accept'), () => accept.mutateAsync()),
         }
-      : next.main === 'sent' && leg
-        ? {
-            text: t('deal.mark_sent'),
-            busy: step.isPending,
-            onClick: () =>
-              void run(
-                t('deal.mark_sent_confirm', { amount: amountText(leg) }),
-                t('deal.mark_sent'),
-                () => step.mutateAsync({ kind: 'sent', seq: leg.seq }),
-              ),
-          }
-        : next.main === 'received' && leg
-          ? {
-              text: t('deal.mark_received'),
-              busy: step.isPending,
-              onClick: () =>
-                void run(
-                  t('deal.mark_received_confirm', { amount: amountText(leg) }),
-                  t('deal.mark_received'),
-                  () => step.mutateAsync({ kind: 'received', seq: leg.seq }),
-                ),
-            }
-          : null,
+      : null,
   )
+  // Both transfers run at once, so their marks sit on their own cards (QUESTIONS H2).
+  const markOn = (one: Leg) => {
+    const mark = next.marks[one.seq]
+    if (!mark) return undefined
+    return () =>
+      void run(
+        t(mark === 'sent' ? 'deal.mark_sent_confirm' : 'deal.mark_received_confirm', {
+          amount: amountText(one),
+        }),
+        t(mark === 'sent' ? 'deal.mark_sent' : 'deal.mark_received'),
+        () => step.mutateAsync({ kind: mark, seq: one.seq }),
+      )
+  }
 
   const statusLine = tn(next.line, {
     amount: leg ? <Money locale={locale} amount={leg.amount} code={leg.currency} /> : '',
@@ -115,7 +107,13 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
       )}
 
       {deal.legs.map((one) => (
-        <LegCard key={one.seq} leg={one} />
+        <LegCard
+          key={one.seq}
+          leg={one}
+          mark={next.marks[one.seq]}
+          busy={step.isPending}
+          onMark={markOn(one)}
+        />
       ))}
 
       <p className="flex flex-wrap items-center gap-1 px-6 text-sm text-hint">
@@ -191,6 +189,16 @@ const EVENT_WORDS: Partial<Record<string, MessageKey>> = {
 /** The deal's journal, oldest first (FR-4.7). */
 function Journal({ deal }: { deal: Deal }) {
   const { t, locale } = useI18n()
+  // A transfer's line says what moved and where, from its leg (QUESTIONS H3).
+  const moved = (seq: number | null | undefined) => {
+    const leg = deal.legs.find((one) => one.seq === seq)
+    return leg
+      ? {
+          amount: `${formatAmount(locale, leg.amount)} ${leg.currency}`,
+          country: countryName(locale, leg.country),
+        }
+      : { amount: '', country: '' }
+  }
   const who = (event: DealEvent) =>
     event.actor_id === deal.proposer.id
       ? fullName(deal.proposer)
@@ -211,7 +219,7 @@ function Journal({ deal }: { deal: Deal }) {
           <p key={index} className="flex items-start gap-3 px-4 py-2 text-sm">
             <History aria-hidden className="mt-0.5 size-4 shrink-0 text-hint" />
             <span className="min-w-0 flex-1">
-              {key ? t(key, { seq: event.seq ?? '' }) : event.type}
+              {key ? t(key, moved(event.seq)) : event.type}
               <span className="text-hint"> · {who(event)}</span>
             </span>
             <span className="shrink-0 text-hint">{when.format(new Date(event.at))}</span>

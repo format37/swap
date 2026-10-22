@@ -1,22 +1,23 @@
-"""Deals: the state machine of Q-B1, the only code that changes a deal (ADR-0002, ADR-0018).
+"""Deals: the state machine, the only code that changes a deal (ADR-0002, ADR-0018, ADR-0024).
 
 Every action locks the deal, checks that the actor may take it from the deal's state,
 applies it, and journals it through swap/journal.py in the same transaction. A
 stranger to a deal gets 404 for everything, as for a deal that doesn't exist. A wrong
 state is 409 `deal.invalid_transition`; the other side's move is 403 `deal.not_your_move`.
 
-    proposed ─accept→ accepted ─sent 1→ leg1_sent ─received 1→ leg1_received
-        │                │                                        │
-        │ decline,       │ cancel                                 sent 2
-        │ withdraw,      ↓                                        ↓
-        │ expire     cancelled ←─ cancel request, approved ─── leg2_sent ─received 2→ settled
-        ↓                ↑                                        │
-     cancelled/      disputed ←───── «Проблема» from any of accepted … leg2_sent
-     expired             └── resolved as settled or cancelled, by one side, confirmed by the other
+    proposed ─accept→ accepted ── each leg on its own, in any order (QUESTIONS H2):
+        │                │          «Отправлено» by its payer, «Получено» by its payee;
+        │ decline,       │          the second «Получено» settles ─────────────→ settled
+        │ withdraw,      │ cancel, while nothing has moved
+        │ expire         ↓
+        ↓            cancelled ←─ cancel request, approved, once something has moved
+     cancelled/          ↑
+     expired         disputed ←── «Проблема» from accepted
+                         └── resolved as settled or cancelled, by one side, confirmed by the other
 """
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -45,12 +46,9 @@ from swap.rates import convert, parse_spec
 from swap.users import person_label
 
 PROPOSAL_TTL = timedelta(hours=48)
-# Where «Проблема» may be pressed (FR-4.6), and where a cancel needs the other side (FR-4.5).
-ACTIVE = frozenset(
-    {DealStatus.ACCEPTED, DealStatus.LEG1_SENT, DealStatus.LEG1_RECEIVED, DealStatus.LEG2_SENT}
-)
-AFTER_FIRST_SENT = ACTIVE - {DealStatus.ACCEPTED}
-OPEN_STATES = ACTIVE | {DealStatus.PROPOSED, DealStatus.DISPUTED}
+OPEN_STATES = frozenset({DealStatus.PROPOSED, DealStatus.ACCEPTED, DealStatus.DISPUTED})
+# The proposer's own transfer is leg 1, the author's leg 2: an order of them no longer.
+PROPOSERS, AUTHORS = 1, 2
 
 
 class Proposal(BaseModel):
@@ -62,16 +60,11 @@ class Proposal(BaseModel):
     want_currency: Asset
     # Round the counter-amount to whole units, for cash (Q-B4).
     whole: bool = False
-    # Who sends first; the proposer by default (Q-B16).
-    first: Literal["proposer", "author"] = "proposer"
     # How the author pays out: one of the order's own ways.
     give_method: PaymentKind
     # How the proposer pays the other currency, «в ответ GEL наличными»: one of the ways
     # the order's author can be paid (QUESTIONS F2).
     counter_method: PaymentKind
-    # The due date of the proposer's own transfer, and of the author's.
-    my_due: date
-    their_due: date
     # Anything else, such as which bank: the parties settle the details themselves
     # (QUESTIONS G3).
     note: str | None = Field(default=None, max_length=500)
@@ -107,6 +100,11 @@ def _mine(allowed: bool) -> None:
 
 def _other(deal: Deal, me: uuid.UUID) -> uuid.UUID:
     return deal.acceptor_id if me == deal.proposer_id else deal.proposer_id
+
+
+def _moved(deal: Deal) -> bool:
+    """Whether any money has been marked as moving: from then a cancel needs both (FR-4.5)."""
+    return any(leg.sent_at is not None or leg.received_at is not None for leg in deal.legs)
 
 
 def _leg(deal: Deal, seq: int) -> DealLeg:
@@ -165,9 +163,6 @@ async def propose(
         raise _refuse("deal.method_not_offered", 422)
     if proposal.counter_method not in order.receive_methods:
         raise _refuse("deal.method_not_accepted", 422)
-    today = orders.today(proposer)
-    if min(proposal.my_due, proposal.their_due) < today:
-        raise _refuse("deal.due_past", 422)
 
     # The author's rate, or the market's of this moment, locked here (Q-B3, QUESTIONS G2).
     spec, found = await lock(
@@ -198,28 +193,28 @@ async def propose(
         expires_at=now + PROPOSAL_TTL,
         note=(proposal.note or "").strip() or None,
     )
-    give = DealLeg(
-        id=uuid.uuid4(),
-        payer_id=author.id,
-        payee_id=proposer.id,
-        currency=order.give_currency,
-        country=order.give_country,
-        amount=proposal.amount,
-        method=proposal.give_method,
-        due_date=proposal.their_due,
-    )
+    # No order between the transfers, and no dates: the parties settle both (H1).
     take = DealLeg(
         id=uuid.uuid4(),
+        seq=PROPOSERS,
         payer_id=proposer.id,
         payee_id=author.id,
         currency=want.currency,
         country=want.country,
         amount=counter,
         method=proposal.counter_method,
-        due_date=proposal.my_due,
     )
-    take.seq, give.seq = (1, 2) if proposal.first == "proposer" else (2, 1)
-    deal.legs = sorted([give, take], key=lambda leg: leg.seq)
+    give = DealLeg(
+        id=uuid.uuid4(),
+        seq=AUTHORS,
+        payer_id=author.id,
+        payee_id=proposer.id,
+        currency=order.give_currency,
+        country=order.give_country,
+        amount=proposal.amount,
+        method=proposal.give_method,
+    )
+    deal.legs = [take, give]
     db.add(deal)
     await db.flush()
     await start(db, deal, proposer.id, amount=str(give.amount), counter=str(take.amount))
@@ -285,38 +280,50 @@ async def withdraw(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
 
 
 async def mark_sent(db: AsyncSession, actor: User, deal_id: uuid.UUID, seq: int) -> Deal:
-    """«Отправлено» on a leg, by its payer. Leg 2 waits for leg 1 to be received (Q-B1)."""
+    """«Отправлено» on a leg, by its payer, whenever they pay while the deal runs (H2).
+
+    The deal stays accepted; the journal says which transfer moved (H3).
+    """
     deal = await _lock(db, actor.id, deal_id)
     leg = _leg(deal, seq)
-    _require(deal, DealStatus.ACCEPTED if seq == 1 else DealStatus.LEG1_RECEIVED)
+    _require(deal, DealStatus.ACCEPTED)
     _mine(actor.id == leg.payer_id)
+    if leg.sent_at is not None or leg.received_at is not None:
+        raise _refuse("deal.invalid_transition")
     leg.sent_at = datetime.now(UTC)
-    to = DealStatus.LEG1_SENT if seq == 1 else DealStatus.LEG2_SENT
-    await record(db, deal, actor.id, "sent", to, seq=seq)
+    await record(db, deal, actor.id, "sent", seq=seq)
     _tell(db, deal, leg.payee_id, "deal.sent", actor, amount=str(leg.amount), currency=leg.currency)
     return deal
 
 
 async def mark_received(db: AsyncSession, actor: User, deal_id: uuid.UUID, seq: int) -> Deal:
-    """«Получено» on a leg, by its payee. The second one settles the deal."""
+    """«Получено» on a leg, by its payee, as the money arrives, marked as sent or not (H2).
+    The receipt that leaves nothing outstanding settles the deal."""
     deal = await _lock(db, actor.id, deal_id)
     leg = _leg(deal, seq)
-    _require(deal, DealStatus.LEG1_SENT if seq == 1 else DealStatus.LEG2_SENT)
+    _require(deal, DealStatus.ACCEPTED)
     _mine(actor.id == leg.payee_id)
-    leg.received_at = datetime.now(UTC)
-    to = DealStatus.LEG1_RECEIVED if seq == 1 else DealStatus.SETTLED
-    if to in TERMINAL:
+    if leg.received_at is not None:
+        raise _refuse("deal.invalid_transition")
+    now = datetime.now(UTC)
+    # Money that arrived was sent, whether or not its payer said so (ck_deal_legs_sent_first).
+    leg.sent_at = leg.sent_at or now
+    leg.received_at = now
+    settled = all(each.received_at is not None for each in deal.legs)
+    if settled:
         deal.cancel_requested_by = None
-    await record(db, deal, actor.id, "received", to, seq=seq)
-    kind: NotificationType = "deal.received" if seq == 1 else "deal.settled"
+    await record(db, deal, actor.id, "received", DealStatus.SETTLED if settled else None, seq=seq)
+    kind: NotificationType = "deal.settled" if settled else "deal.received"
     _tell(db, deal, leg.payer_id, kind, actor, amount=str(leg.amount), currency=leg.currency)
     return deal
 
 
 async def cancel(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
-    """Before the first «Отправлено», either side cancels alone (FR-4.5)."""
+    """While nothing has moved, either side cancels alone (FR-4.5)."""
     deal = await _lock(db, actor.id, deal_id)
     _require(deal, DealStatus.ACCEPTED)
+    if _moved(deal):
+        raise _refuse("deal.invalid_transition")
     await record(db, deal, actor.id, "cancelled", DealStatus.CANCELLED)
     await _restore(db, deal)
     _tell(db, deal, _other(deal, actor.id), "deal.cancelled", actor)
@@ -324,10 +331,12 @@ async def cancel(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
 
 
 async def request_cancel(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
-    """After the first «Отправлено», a cancel needs the other side (FR-4.5). Its screens
-    and messages come with slice 4."""
+    """Once something has moved, a cancel needs the other side (FR-4.5). Its screens and
+    messages come with slice 4."""
     deal = await _lock(db, actor.id, deal_id)
-    _require(deal, *AFTER_FIRST_SENT)
+    _require(deal, DealStatus.ACCEPTED)
+    if not _moved(deal):
+        raise _refuse("deal.invalid_transition")
     if deal.cancel_requested_by is not None:
         raise _refuse("deal.cancel_pending")
     deal.cancel_requested_by = actor.id
@@ -339,7 +348,9 @@ async def answer_cancel(
     db: AsyncSession, actor: User, deal_id: uuid.UUID, *, approve: bool
 ) -> Deal:
     deal = await _lock(db, actor.id, deal_id)
-    _require(deal, *AFTER_FIRST_SENT)
+    _require(deal, DealStatus.ACCEPTED)
+    if not _moved(deal):
+        raise _refuse("deal.invalid_transition")
     if deal.cancel_requested_by is None:
         raise _refuse("deal.no_cancel_request")
     _mine(actor.id != deal.cancel_requested_by)
@@ -355,13 +366,13 @@ async def answer_cancel(
 
 
 async def dispute(db: AsyncSession, actor: User, deal_id: uuid.UUID, note: str) -> Deal:
-    """«Проблема»: either side, from any active state, with a word on what went wrong.
+    """«Проблема»: either side, while the deal runs, with a word on what went wrong.
 
     It freezes the deal until both agree how it ended (FR-4.6). Its screens and messages
     come with slice 4.
     """
     deal = await _lock(db, actor.id, deal_id)
-    _require(deal, *ACTIVE)
+    _require(deal, DealStatus.ACCEPTED)
     deal.disputed_by = actor.id
     deal.dispute_note = note
     deal.cancel_requested_by = None

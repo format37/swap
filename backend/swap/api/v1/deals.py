@@ -36,7 +36,8 @@ class Leg(BaseModel):
     country: str
     amount: Decimal
     method: PaymentKind
-    due_date: date
+    # None since QUESTIONS H1: the parties settle when among themselves.
+    due_date: date | None
     sent_at: datetime | None
     received_at: datetime | None
 
@@ -60,7 +61,9 @@ class DealEvent(BaseModel):
     # Null for the system, as for an expiry.
     actor_id: uuid.UUID | None
     at: datetime
-    to: DealStatus
+    # The state it left the deal in. A plain string: older lines name states that no longer
+    # exist, such as leg1_sent (ADR-0024), and the journal is never rewritten.
+    to: str
     seq: int | None = None
     note: str | None = None
     outcome: str | None = None
@@ -158,7 +161,7 @@ def _event(event: Event) -> DealEvent:
         type=event.type,
         actor_id=event.actor_id,
         at=event.created_at,
-        to=DealStatus(payload["to"]),
+        to=str(payload["to"]),
         seq=payload.get("seq"),
         note=payload.get("note"),
         outcome=payload.get("outcome"),

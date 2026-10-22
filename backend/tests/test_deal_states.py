@@ -1,8 +1,9 @@
-"""The deal state machine (Q-B1, ADR-0018): every transition, and every illegal one.
+"""The deal state machine (ADR-0018, ADR-0024): every transition, and every illegal one.
 
-Kickoff rule 6. Each of 13 actions is tried from each of 9 states. A legal one moves the
-deal and journals it; any other is refused with nothing changed. The database refuses a
-status change that skips the journal, and any edit of the journal itself.
+Kickoff rule 6. Each of 13 actions is tried from each of 8 situations: the six states,
+and an accepted deal with something marked on leg 1. A legal one moves the deal and
+journals it; any other is refused with nothing changed. The database refuses a status
+change that skips the journal, and any edit of the journal itself.
 """
 
 import uuid
@@ -22,22 +23,22 @@ from tests.test_deals import World
 
 Sessions = async_sessionmaker[AsyncSession]
 
-STATES = [
-    "proposed",
-    "accepted",
-    "leg1_sent",
-    "leg1_received",
-    "leg2_sent",
-    "disputed",
-    "settled",
-    "cancelled",
-    "expired",
-]
-ACTIVE = ["accepted", "leg1_sent", "leg1_received", "leg2_sent"]
-AFTER_FIRST_SENT = ACTIVE[1:]
+# Where a deal can be, and the status it shows there. Leg 1 is Nino's own transfer, GEL to
+# Alex; leg 2 is Alex's, RUB to Nino. They move in any order (QUESTIONS H2).
+SITUATIONS: dict[str, str] = {
+    "proposed": "proposed",
+    "accepted": "accepted",
+    "sent1": "accepted",
+    "received1": "accepted",
+    "disputed": "disputed",
+    "settled": "settled",
+    "cancelled": "cancelled",
+    "expired": "expired",
+}
+RUNNING = ["accepted", "sent1", "received1"]
+MOVED = ["sent1", "received1"]
 
-# Who does it, where, and with what. Nino proposed and sends first, so leg 1 is hers to
-# send and Alex's to receive; leg 2 the other way round.
+# Who does it, where, and with what.
 ACTIONS: dict[str, tuple[str, str, dict[str, Any]]] = {
     "accept": ("alex", "accept", {}),
     "decline": ("alex", "decline", {}),
@@ -54,52 +55,54 @@ ACTIONS: dict[str, tuple[str, str, dict[str, Any]]] = {
     "resolve": ("nino", "resolve", {"outcome": "settled"}),
 }
 
-# Q-B1, as (action, from) → to.
+# ADR-0024, as (action, situation) → status.
 LEGAL: dict[tuple[str, str], str] = {
     ("accept", "proposed"): "accepted",
     ("decline", "proposed"): "cancelled",
     ("withdraw", "proposed"): "cancelled",
+    # Alone, only while nothing has moved (FR-4.5).
     ("cancel", "accepted"): "cancelled",
-    ("sent1", "accepted"): "leg1_sent",
-    ("received1", "leg1_sent"): "leg1_received",
-    ("sent2", "leg1_received"): "leg2_sent",
-    ("received2", "leg2_sent"): "settled",
-    **{("cancel_request", state): state for state in AFTER_FIRST_SENT},
-    **{("dispute", state): "disputed" for state in ACTIVE},
+    # Each mark once, in any order; a receipt needs no «sent» before it.
+    ("sent1", "accepted"): "accepted",
+    ("received1", "accepted"): "accepted",
+    ("received1", "sent1"): "accepted",
+    **{("sent2", state): "accepted" for state in RUNNING},
+    ("received2", "accepted"): "accepted",
+    ("received2", "sent1"): "accepted",
+    # The receipt that leaves nothing outstanding settles it.
+    ("received2", "received1"): "settled",
+    **{("cancel_request", state): "accepted" for state in MOVED},
+    **{("dispute", state): "disputed" for state in RUNNING},
     # One side's word on how a dispute ended; the other's confirmation closes it.
     ("resolve", "disputed"): "disputed",
 }
-# Answering a cancel request in the right state, when nobody has asked.
-NOBODY_ASKED = {
-    (action, state)
-    for action, state in product(["cancel_approve", "cancel_reject"], AFTER_FIRST_SENT)
-}
+# Answering a cancel request once something has moved, when nobody has asked.
+NOBODY_ASKED = set(product(["cancel_approve", "cancel_reject"], MOVED))
 
 
-async def deal_in(world: World, state: str) -> dict[str, Any]:
-    """A deal of Nino's on Alex's order, walked to `state` the way people would."""
+async def deal_in(world: World, situation: str) -> dict[str, Any]:
+    """A deal of Nino's on Alex's order, walked to `situation` the way people would."""
     deal = await world.propose()
     steps = {
         "proposed": [],
         "accepted": ["accept"],
-        "leg1_sent": ["accept", "sent1"],
-        "leg1_received": ["accept", "sent1", "received1"],
-        "leg2_sent": ["accept", "sent1", "received1", "sent2"],
-        "settled": ["accept", "sent1", "received1", "sent2", "received2"],
+        "sent1": ["accept", "sent1"],
+        "received1": ["accept", "sent1", "received1"],
+        "settled": ["accept", "sent2", "received1", "received2"],
         "disputed": ["accept", "dispute"],
         "cancelled": ["decline"],
         "expired": [],
-    }[state]
+    }[situation]
     for step in steps:
         who, path, body = ACTIONS[step]
         await world.ok(getattr(world, who), deal, path, **body)
-    if state == "expired":
+    if situation == "expired":
         async with world.sessions() as db:
             await db.execute(update(Deal).values(expires_at=datetime.now(UTC) - timedelta(1)))
             assert await expire_due(db) == 1
             await db.commit()
     shown = await world.client.get(f"/api/v1/deals/{deal['id']}", headers=world.nino)
-    assert shown.json()["status"] == state
+    assert shown.json()["status"] == SITUATIONS[situation]
     return dict(shown.json())
 
 
@@ -116,7 +119,7 @@ async def world(client: AsyncClient, sessionmaker: Sessions) -> World:
     return await World(client, sessionmaker).build()
 
 
-@pytest.mark.parametrize(("action", "state"), list(product(ACTIONS, STATES)))
+@pytest.mark.parametrize(("action", "state"), list(product(ACTIONS, SITUATIONS)))
 async def test_every_action_from_every_state(world: World, action: str, state: str) -> None:
     deal = await deal_in(world, state)
     before = await journal_length(world, deal)
@@ -151,9 +154,9 @@ async def test_every_action_from_every_state(world: World, action: str, state: s
         ("decline", "proposed", "nino"),
         ("withdraw", "proposed", "alex"),
         ("sent1", "accepted", "alex"),
-        ("received1", "leg1_sent", "nino"),
-        ("sent2", "leg1_received", "nino"),
-        ("received2", "leg2_sent", "alex"),
+        ("received1", "sent1", "nino"),
+        ("sent2", "accepted", "nino"),
+        ("received2", "accepted", "alex"),
     ],
 )
 async def test_only_the_right_side_takes_each_step(
@@ -170,9 +173,9 @@ async def test_only_the_right_side_takes_each_step(
 
 
 async def test_a_cancel_after_the_first_transfer_needs_the_other_side(world: World) -> None:
-    deal = await deal_in(world, "leg1_sent")
+    deal = await deal_in(world, "sent1")
     asked = await world.ok(world.nino, deal, "cancel-request")
-    assert asked["status"] == "leg1_sent"
+    assert asked["status"] == "accepted"
     assert asked["cancel_requested_by"] == asked["proposer"]["id"]
     # One request at a time, and nobody answers their own.
     twice = await world.act(world.alex, deal, "cancel-request")
@@ -182,7 +185,7 @@ async def test_a_cancel_after_the_first_transfer_needs_the_other_side(world: Wor
 
     # Declined: nothing else changes (Q-B1), and it may be asked again.
     rejected = await world.ok(world.alex, deal, "cancel-request/reject")
-    assert (rejected["status"], rejected["cancel_requested_by"]) == ("leg1_sent", None)
+    assert (rejected["status"], rejected["cancel_requested_by"]) == ("accepted", None)
     await world.ok(world.nino, deal, "cancel-request")
     cancelled = await world.ok(world.alex, deal, "cancel-request/approve")
     assert cancelled["status"] == "cancelled"
@@ -198,7 +201,7 @@ async def test_a_cancel_after_the_first_transfer_needs_the_other_side(world: Wor
 
 
 async def test_a_dispute_needs_a_word_and_ends_when_both_agree(world: World) -> None:
-    deal = await deal_in(world, "leg2_sent")
+    deal = await deal_in(world, "received1")
     blank = await world.act(world.alex, deal, "dispute", note="   ")
     assert (blank.status_code, blank.json()["code"]) == (422, "validation_error")
     disputed = await world.ok(world.alex, deal, "dispute", note="RUB не пришли")
@@ -281,3 +284,29 @@ async def test_the_journal_is_append_only(world: World, statement: str) -> None:
             await db.execute(text(statement), {"id": deal["id"]})
         await db.rollback()
     assert await journal_length(world, deal) == 2
+
+
+async def test_either_side_moves_first_and_both_receipts_settle(world: World) -> None:
+    deal = await deal_in(world, "accepted")
+    # Alex pays before Nino, and Nino confirms it before Alex marks it sent (H2).
+    got = await world.ok(world.nino, deal, "legs/2/received")
+    assert got["status"] == "accepted"
+    leg2 = next(leg for leg in got["legs"] if leg["seq"] == 2)
+    # Money that arrived was sent: the receipt dates both.
+    assert leg2["received_at"] is not None
+    assert leg2["sent_at"] == leg2["received_at"]
+    # Too late to mark it sent: it arrived already.
+    late = await world.act(world.alex, deal, "legs/2/sent")
+    assert (late.status_code, late.json()["code"]) == (409, "deal.invalid_transition")
+    sent = await world.ok(world.nino, deal, "legs/1/sent")
+    assert sent["status"] == "accepted"
+    settled = await world.ok(world.alex, deal, "legs/1/received")
+    assert settled["status"] == "settled"
+    assert [(e["type"], e.get("seq")) for e in settled["events"]][1:] == [
+        ("accepted", None),
+        ("received", 2),
+        ("sent", 1),
+        ("received", 1),
+    ]
+    assert [name for name, _, _ in await world.told("deal.settled")] == ["Nino"]
+    assert [name for name, _, _ in await world.told("deal.received")] == ["Alex"]
