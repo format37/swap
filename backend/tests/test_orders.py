@@ -19,6 +19,17 @@ from tests.test_links import ALEX, GIO, NINO, Headers, linked, person, requested
 Sessions = async_sessionmaker[AsyncSession]
 
 TODAY = datetime.now(UTC).date()
+# What the wizard sends for a currency whose rate isn't fixed (QUESTIONS G2, J1).
+MARKET = {"v": 1, "type": "reference", "source": "coinbase"}
+
+
+def fixed(base: str, quote: str, value: str) -> dict[str, Any]:
+    """The author's own rate for one wanted currency, «1 base = value quote» (ADR-0026)."""
+    return {"v": 1, "type": "fixed", "quotes": [{"base": base, "quote": quote, "value": value}]}
+
+
+def want(currency: str, country: str, rate_spec: dict[str, Any] = MARKET) -> dict[str, Any]:
+    return {"currency": currency, "country": country, "rate_spec": rate_spec}
 
 
 def draft(**changes: Any) -> dict[str, Any]:
@@ -32,15 +43,10 @@ def draft(**changes: Any) -> dict[str, Any]:
         "available_until": str(TODAY + timedelta(days=14)),
         "payout_methods": ["bank", "crypto"],
         "receive_methods": ["cash", "bank"],
-        "wants": [{"currency": "GEL", "country": "GE"}, {"currency": "USD", "country": "GE"}],
-        "rate_spec": {
-            "v": 1,
-            "type": "fixed",
-            "quotes": [
-                {"base": "GEL", "quote": "RUB", "value": "29.20"},
-                {"base": "USD", "quote": "RUB", "value": "81.50"},
-            ],
-        },
+        "wants": [
+            want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
+            want("USD", "GE", fixed("USD", "RUB", "81.50")),
+        ],
         **changes,
     }
 
@@ -280,22 +286,33 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
     ("changes", "code"),
     [
         ({"give_currency": "XYZ"}, "order.unknown_currency"),
-        ({"wants": [{"currency": "XYZ", "country": "GE"}]}, "order.unknown_currency"),
-        ({"wants": [{"currency": "RUB", "country": "GE"}]}, "order.wants_own_currency"),
+        ({"wants": [want("XYZ", "GE")]}, "order.unknown_currency"),
+        ({"wants": [want("RUB", "GE")]}, "order.wants_own_currency"),
+        ({"wants": [want("GEL", "GE"), want("GEL", "GE")]}, "order.wants_repeated"),
+        # Once each, whatever the country: a proposal names one rate (ADR-0026).
+        ({"wants": [want("GEL", "GE"), want("GEL", "TR")]}, "order.wants_repeated"),
+        # A fixed rate is between the given currency and this one, and is one quote.
+        ({"wants": [want("EUR", "GE", fixed("GEL", "RUB", "29.20"))]}, "rate.missing"),
+        ({"wants": [want("GEL", "GE", fixed("USD", "GEL", "2.70"))]}, "rate.missing"),
         (
             {
                 "wants": [
-                    {"currency": "GEL", "country": "GE"},
-                    {"currency": "GEL", "country": "GE"},
+                    want(
+                        "GEL",
+                        "GE",
+                        {
+                            "v": 1,
+                            "type": "fixed",
+                            "quotes": [
+                                {"base": "GEL", "quote": "RUB", "value": "29.20"},
+                                {"base": "USD", "quote": "RUB", "value": "81.50"},
+                            ],
+                        },
+                    )
                 ]
             },
-            "order.wants_repeated",
+            "rate.unused",
         ),
-        (
-            {"wants": [{"currency": "EUR", "country": "GE"}]},
-            "rate.missing",
-        ),
-        ({"wants": [{"currency": "GEL", "country": "GE"}]}, "rate.unused"),
         ({"amount_min": "200000.00"}, "order.amount_range"),
         (
             {"available_from": str(TODAY + timedelta(days=3)), "available_until": str(TODAY)},
@@ -324,6 +341,9 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
         ({"receive_methods": None}, "validation_error"),
         ({"give_country": "Russia"}, "validation_error"),
         ({"wants": []}, "validation_error"),
+        # Each wanted currency says its rate; the order no longer has one of its own.
+        ({"wants": [{"currency": "GEL", "country": "GE"}]}, "validation_error"),
+        ({"rate_spec": MARKET}, "validation_error"),
         ({"note": "x" * 501}, "validation_error"),
         ({"extra": "field"}, "validation_error"),
     ],
@@ -361,10 +381,9 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
     assert order["note"] == "карта Сбер или СБП"
     assert order["payout_methods"] == ["bank", "crypto"]
     assert order["wants"] == [
-        {"currency": "GEL", "country": "GE"},
-        {"currency": "USD", "country": "GE"},
+        want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
+        want("USD", "GE", fixed("USD", "RUB", "81.50")),
     ]
-    assert order["rate_spec"]["quotes"][0] == {"base": "GEL", "quote": "RUB", "value": "29.20"}
     assert order["visibility"] == {"all_links": True, "people": []}
 
     async with sessionmaker() as db:
@@ -438,8 +457,7 @@ async def test_the_feeds(client: AsyncClient, sessionmaker: Sessions) -> None:
         nino,
         give_currency="GEL",
         give_country="GE",
-        wants=[{"currency": "RUB", "country": "RU"}],
-        rate_spec={"type": "fixed", "quotes": [{"base": "GEL", "quote": "RUB", "value": "29.00"}]},
+        wants=[want("RUB", "RU", fixed("GEL", "RUB", "29.00"))],
     )
 
     visible = (await client.get("/api/v1/orders", headers=nino)).json()
@@ -571,7 +589,7 @@ async def test_a_quote_previews_the_counter_amount(client: AsyncClient) -> None:
         "amount": "50000.00",
         "give_currency": "RUB",
         "want_currency": "GEL",
-        "rate_spec": draft()["rate_spec"],
+        "rate_spec": fixed("GEL", "RUB", "29.20"),
     }
     response = await client.post("/api/v1/quote", json=body, headers=alex)
     # The amount, and the rate it came from, the author's own (ADR-0004).
@@ -603,10 +621,10 @@ async def test_an_order_follows_the_market_unless_its_rate_is_fixed(
     alex = await person(client, ALEX)
     nino = await person(client, NINO)
     await linked(client, sessionmaker, alex, NINO)
-    # What the wizard sends when the author doesn't fix the rate (QUESTIONS G2).
-    market = {"v": 1, "type": "reference", "source": "coinbase"}
-    order = await publish(client, alex, rate_spec=market)
-    assert order["rate_spec"] == market
+    # What the wizard sends for a currency whose rate the author doesn't fix (G2, J1).
+    market = MARKET
+    order = await publish(client, alex, wants=[want("GEL", "GE")])
+    assert order["wants"][0]["rate_spec"] == market
     assert await sees(client, nino, order["id"])
     # Whoever looks gets the rate of the moment: Coinbase's recorded table in the tests.
     body = {
@@ -649,9 +667,22 @@ async def test_a_rate_spec_of_no_known_kind_is_refused(
     client: AsyncClient, spec: dict[str, Any]
 ) -> None:
     alex = await person(client, ALEX)
-    response = await client.post("/api/v1/orders", json=draft(rate_spec=spec), headers=alex)
+    response = await client.post(
+        "/api/v1/orders", json=draft(wants=[want("GEL", "GE", spec)]), headers=alex
+    )
     assert response.status_code == 422
     assert response.json()["code"] == "validation_error"
+
+
+async def test_each_wanted_currency_keeps_its_own_rate(client: AsyncClient) -> None:
+    alex = await person(client, ALEX)
+    order = await publish(
+        client,
+        alex,
+        wants=[want("GEL", "GE", fixed("GEL", "RUB", "29.20")), want("USD", "GE")],
+    )
+    card = (await client.get(f"/api/v1/orders/{order['id']}", headers=alex)).json()
+    assert [w["rate_spec"] for w in card["wants"]] == [fixed("GEL", "RUB", "29.20"), MARKET]
 
 
 def test_today_is_in_the_authors_time_zone() -> None:

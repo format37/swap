@@ -193,8 +193,17 @@ describe('the proposal', () => {
     available_until: '2099-11-05',
     payout_methods: ['bank', 'cash'],
     receive_methods: ['cash', 'crypto'],
-    wants: [{ currency: 'GEL', country: 'GE' }],
-    rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
+    wants: [
+      {
+        currency: 'GEL',
+        country: 'GE',
+        rate_spec: {
+          v: 1,
+          type: 'fixed',
+          quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }],
+        },
+      },
+    ],
     note: null,
     status: 'open',
     created_at: '2026-10-22T10:00:00Z',

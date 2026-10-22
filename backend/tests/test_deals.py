@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from swap.deals import expire_due
 from swap.models import Deal, DealLeg, Notification, Order, User
 from tests.test_links import ALEX, GIO, NINO, WRITTEN, Headers, linked, person
-from tests.test_orders import publish
+from tests.test_orders import fixed, publish, want
 
 Sessions = async_sessionmaker[AsyncSession]
 TODAY = datetime.now(UTC).date()
@@ -368,8 +368,7 @@ async def test_deleting_a_used_up_order_leaves_its_deal_running(world: World) ->
 async def test_a_proposal_locks_the_market_rate_of_its_moment(
     client: AsyncClient, sessionmaker: Sessions
 ) -> None:
-    market = {"v": 1, "type": "reference", "source": "coinbase"}
-    world = await World(client, sessionmaker).build(rate_spec=market)
+    world = await World(client, sessionmaker).build(wants=[want("GEL", "GE")])
     deal = await world.propose()
     # Coinbase's 1 GEL = 31,39 RUB, with its source and time (QUESTIONS G2, FR-3.5).
     assert {k: deal["rate"][k] for k in ("base", "quote", "value", "source")} == {
@@ -391,14 +390,30 @@ async def test_a_proposal_locks_the_market_rate_of_its_moment(
     }
 
 
+async def test_a_proposal_locks_its_own_currencys_rate(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    # GEL at the author's 29,20, USD at the market's (QUESTIONS J1).
+    world = await World(client, sessionmaker).build(
+        wants=[want("GEL", "GE", fixed("GEL", "RUB", "29.20")), want("USD", "GE")]
+    )
+    gel = await world.propose()
+    assert gel["rate"]["value"] == "29.20"
+    assert gel["rate"]["source"] is None
+    usd = await world.propose(want_currency="USD")
+    assert {k: usd["rate"][k] for k in ("base", "quote", "value", "source")} == {
+        "base": "USD",
+        "quote": "RUB",
+        "value": "81.39",
+        "source": "coinbase",
+    }
+
+
 async def test_without_a_market_rate_there_is_no_proposal(
     client: AsyncClient, sessionmaker: Sessions
 ) -> None:
-    market = {"v": 1, "type": "reference", "source": "coinbase"}
     # KZT isn't in the recorded table, as when Coinbase has been away for a day.
-    world = await World(client, sessionmaker).build(
-        rate_spec=market, wants=[{"currency": "KZT", "country": "KZ"}]
-    )
+    world = await World(client, sessionmaker).build(wants=[want("KZT", "KZ")])
     response = await world.client.post(
         f"/api/v1/orders/{world.order['id']}/deals",
         json=world.proposal(want_currency="KZT"),

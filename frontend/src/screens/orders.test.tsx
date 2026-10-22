@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Me } from '../api/client'
-import type { Order } from '../api/orders'
+import type { Order, RateSpec } from '../api/orders'
 import { backOverride } from '../back'
 import { confirmAction, useMainButton, type MainAction } from '../telegram'
 import { fakeApi, json, problem } from '../test/api'
@@ -30,6 +30,11 @@ function press() {
 }
 
 const ORDER_ID = 'd0000000-0000-4000-8000-000000000001'
+const MARKET: RateSpec = { v: 1, type: 'reference', source: 'coinbase' }
+
+function fixed(base: string, quote: string, value: string): RateSpec {
+  return { v: 1, type: 'fixed', quotes: [{ base, quote, value }] }
+}
 const ALEX = {
   id: 'a0000000-0000-4000-8000-000000000001',
   first_name: 'Alex',
@@ -58,17 +63,9 @@ function order(changes: Partial<Order> = {}): Order {
     payout_methods: ['bank'],
     receive_methods: ['cash', 'crypto'],
     wants: [
-      { currency: 'GEL', country: 'GE' },
-      { currency: 'USD', country: 'GE' },
+      { currency: 'GEL', country: 'GE', rate_spec: fixed('GEL', 'RUB', '29.20') },
+      { currency: 'USD', country: 'GE', rate_spec: fixed('USD', 'RUB', '81.50') },
     ],
-    rate_spec: {
-      v: 1,
-      type: 'fixed',
-      quotes: [
-        { base: 'GEL', quote: 'RUB', value: '29.20' },
-        { base: 'USD', quote: 'RUB', value: '81.50' },
-      ],
-    },
     note: 'наличные у метро',
     status: 'open',
     created_at: '2026-10-22T10:00:00Z',
@@ -185,7 +182,7 @@ describe('Home', () => {
 })
 
 describe('the wizard', () => {
-  it('walks three steps and publishes exactly what was typed', async () => {
+  it('walks two steps and publishes exactly what was typed', async () => {
     let published: unknown
     const { served } = fakeApi({
       'GET /api/v1/assets': () => json(200, ['RUB', 'GEL', 'USD']),
@@ -216,45 +213,35 @@ describe('the wizard', () => {
       },
     })
     renderScreen(<NewOrder />, { route: '/orders/new' })
-    expect(screen.getByText('Шаг 1 из 3')).toBeInTheDocument()
+    expect(screen.getByText('Шаг 1 из 2')).toBeInTheDocument()
 
     // Pressing on with nothing filled in says what is missing.
     press()
     expect(await screen.findByText('Выберите валюту и страну')).toBeInTheDocument()
 
-    await screen.findByRole('option', { name: '₽ RUB' })
-    // The list says which side it is for, in case its reader got distracted (F1).
-    expect(screen.getByRole('option', { name: 'Отдаёте' })).toBeDisabled()
-    fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
-      target: { value: 'RUB' },
-    })
+    // Both sides on the first step, each under its own heading, with no titles inside (J1).
+    expect(screen.getByRole('heading', { name: 'Отдаёте' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Получаете' })).toBeInTheDocument()
+    await screen.findAllByRole('option', { name: '₽ RUB' })
+    const [give, get] = screen.getAllByRole('combobox', { name: /^Валюта/ })
+    const [giveCountry, getCountry] = screen.getAllByRole('combobox', { name: /^Страна/ })
+    // Each list says which side it is for, in case its reader got distracted (F1).
+    expect(within(give as HTMLElement).getByRole('option', { name: 'Отдаёте' })).toBeDisabled()
+    expect(within(get as HTMLElement).getByRole('option', { name: 'Получаете' })).toBeDisabled()
+    fireEvent.change(give as HTMLElement, { target: { value: 'RUB' } })
     // The currency's home is the first guess of the country.
-    expect(screen.getByRole('combobox', { name: /^Страна/ })).toHaveValue('RU')
-    fireEvent.change(screen.getByRole('textbox', { name: /^Всего/ }), {
+    expect(giveCountry).toHaveValue('RU')
+    fireEvent.change(screen.getByRole('textbox', { name: /^Сумма/ }), {
       target: { value: '150 000' },
     })
     fireEvent.change(screen.getByRole('textbox', { name: /^Минимум за сделку/ }), {
       target: { value: '10000' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Банк' }))
-    press()
-    expect(await screen.findByText('Шаг 2 из 3')).toBeInTheDocument()
-
-    // BackButton steps back through the wizard, keeping what was typed.
-    act(() => {
-      backOverride()?.()
-    })
-    expect(await screen.findByText('Шаг 1 из 3')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: /^Всего/ })).toHaveValue('150 000')
-    press()
-
-    await screen.findByText('Шаг 2 из 3')
-    expect(screen.getByRole('option', { name: 'Получаете' })).toBeDisabled()
-    fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
-      target: { value: 'GEL' },
-    })
-    expect(screen.getByRole('combobox', { name: /^Страна/ })).toHaveValue('GE')
-    // The author's own rate, fixed (QUESTIONS G2).
+    const payOut = screen.getByRole('group', { name: 'Как вы можете отдать' })
+    fireEvent.click(within(payOut).getByRole('button', { name: 'Банк' }))
+    fireEvent.change(get as HTMLElement, { target: { value: 'GEL' } })
+    expect(getCountry).toHaveValue('GE')
+    // The author's own rate, fixed for this currency (QUESTIONS G2, J1).
     fireEvent.click(screen.getByRole('switch', { name: 'Зафиксировать курс' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Курс' }), { target: { value: '29,20' } })
     // The preview comes from the api, which does the arithmetic.
@@ -262,10 +249,24 @@ describe('the wizard', () => {
       expect(document.body).toHaveTextContent('Отдав 150 000₽RUB, получите ≈ 5 136,99₾GEL')
     })
     expect(served).toContain('POST /api/v1/quote')
-    fireEvent.click(screen.getByRole('button', { name: 'Наличные' }))
+    const payIn = screen.getByRole('group', { name: 'Как получать' })
+    fireEvent.click(within(payIn).getByRole('button', { name: 'Наличные' }))
     press()
 
-    await screen.findByText('Шаг 3 из 3')
+    // Step 2 opens with step 1 in a line.
+    expect(await screen.findByText('Шаг 2 из 2')).toBeInTheDocument()
+    expect(screen.getByText(/^Отдаёте/)).toHaveTextContent(
+      'Отдаёте 150 000₽RUB · Россия → ₾GEL по 1 ₾GEL = 29,20 ₽RUB',
+    )
+    // BackButton steps back to step 1, keeping what was typed.
+    act(() => {
+      backOverride()?.()
+    })
+    expect(await screen.findByText('Шаг 1 из 2')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /^Сумма/ })).toHaveValue('150 000')
+    press()
+
+    await screen.findByText('Шаг 2 из 2')
     expect(screen.getByRole('radio', { name: 'Всем моим связям' })).toHaveAttribute(
       'aria-checked',
       'true',
@@ -283,10 +284,72 @@ describe('the wizard', () => {
       available_until: null,
       payout_methods: ['bank'],
       receive_methods: ['cash'],
-      wants: [{ currency: 'GEL', country: 'GE' }],
-      rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
+      wants: [{ currency: 'GEL', country: 'GE', rate_spec: fixed('GEL', 'RUB', '29.20') }],
       visible_to: null,
       note: 'вечером',
+    })
+  })
+
+  it('fixes the rate per currency, and says so in the digest', async () => {
+    let published: unknown
+    fakeApi({
+      'GET /api/v1/assets': () => json(200, ['RUB', 'GEL', 'USD']),
+      'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
+      'GET /api/v1/rates/market': () => problem(503, 'rate.unavailable'),
+      'POST /api/v1/quote': () =>
+        json(200, {
+          amount: '1840.49',
+          rate: { base: 'USD', quote: 'RUB', value: '81.50', source: null, fetched_at: null },
+        }),
+      'POST /api/v1/orders': async (request) => {
+        published = await request.json()
+        return json(201, order({ mine: true }))
+      },
+    })
+    renderScreen(<NewOrder />, { route: '/orders/new' })
+    await screen.findAllByRole('option', { name: '₽ RUB' })
+    const [give, first] = screen.getAllByRole('combobox', { name: /^Валюта/ })
+    fireEvent.change(give as HTMLElement, { target: { value: 'RUB' } })
+    fireEvent.change(screen.getByRole('textbox', { name: /^Сумма/ }), {
+      target: { value: '150000' },
+    })
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Как вы можете отдать' })).getByRole('button', {
+        name: 'Банк',
+      }),
+    )
+    fireEvent.change(first as HTMLElement, { target: { value: 'GEL' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ещё валюта' }))
+    const second = screen.getAllByRole('combobox', { name: /^Валюта/ })[2] as HTMLElement
+    fireEvent.change(second, { target: { value: 'USD' } })
+    fireEvent.change(screen.getAllByRole('combobox', { name: /^Страна/ })[2] as HTMLElement, {
+      target: { value: 'GE' },
+    })
+    // GEL follows the market; USD is fixed, so only USD's rate asks to be typed.
+    const switches = screen.getAllByRole('switch', { name: 'Зафиксировать курс' })
+    fireEvent.click(switches[1] as HTMLElement)
+    expect(switches[0]).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Как получать' })).getByRole('button', {
+        name: 'Наличные',
+      }),
+    )
+    press()
+    expect(await screen.findByText('Введите курс, например 29,20')).toBeInTheDocument()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Курс' }), { target: { value: '81,50' } })
+    press()
+
+    await screen.findByText('Шаг 2 из 2')
+    expect(screen.getByText(/^Отдаёте/)).toHaveTextContent(
+      'Отдаёте 150 000₽RUB · Россия → ₾GEL по рынку или $USD по 1 $USD = 81,50 ₽RUB',
+    )
+    press()
+    await screen.findByTestId('elsewhere')
+    expect(published).toMatchObject({
+      wants: [
+        { currency: 'GEL', country: 'GE', rate_spec: MARKET },
+        { currency: 'USD', country: 'GE', rate_spec: fixed('USD', 'RUB', '81.50') },
+      ],
     })
   })
 })
@@ -315,19 +378,13 @@ describe('the wizard’s rate', () => {
         }),
     })
     renderScreen(<NewOrder />, { route: '/orders/new' })
-    await screen.findByRole('option', { name: '₽ RUB' })
-    fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
-      target: { value: 'RUB' },
-    })
-    fireEvent.change(screen.getByRole('textbox', { name: /^Всего/ }), {
+    await screen.findAllByRole('option', { name: '₽ RUB' })
+    const [give, get] = screen.getAllByRole('combobox', { name: /^Валюта/ })
+    fireEvent.change(give as HTMLElement, { target: { value: 'RUB' } })
+    fireEvent.change(screen.getByRole('textbox', { name: /^Сумма/ }), {
       target: { value: '150000' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Банк' }))
-    press()
-    await screen.findByText('Шаг 2 из 3')
-    fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
-      target: { value: 'GEL' },
-    })
+    fireEvent.change(get as HTMLElement, { target: { value: 'GEL' } })
     // Followed, the market's rate only shows (QUESTIONS G2).
     await waitFor(() => {
       expect(document.body).toHaveTextContent('Курс1 ₾GEL = 31,39 ₽RUB')
@@ -473,13 +530,7 @@ describe('the order card', () => {
     at.setHours(12, 0, 0, 0)
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>
-        json(
-          200,
-          order({
-            rate_spec: { v: 1, type: 'reference', source: 'coinbase' },
-            wants: [{ currency: 'GEL', country: 'GE' }],
-          }),
-        ),
+        json(200, order({ wants: [{ currency: 'GEL', country: 'GE', rate_spec: MARKET }] })),
       'GET /api/v1/rates/market': () =>
         json(200, {
           base: 'GEL',

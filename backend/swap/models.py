@@ -273,7 +273,6 @@ class Order(Base):
         CheckConstraint("available_from <= available_until", name="window"),
         CheckConstraint(_kinds_check("payout_methods"), name="payout_methods"),
         CheckConstraint(_kinds_check("receive_methods"), name="receive_methods"),
-        CheckConstraint("rate_spec->>'type' IN ('fixed', 'reference')", name="rate_spec_type"),
         CheckConstraint(one_of("status", OrderStatus), name="status"),
         # What feeds and the expiry sweep look for (ADR-0002).
         Index("ix_orders_open_until", "available_until", postgresql_where=text("status = 'open'")),
@@ -295,8 +294,6 @@ class Order(Base):
     payout_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     receive_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     note: Mapped[str | None] = mapped_column(Text)
-    # A versioned union, validated by swap/rates.py (ADR-0004).
-    rate_spec: Mapped[dict[str, Any]] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(Text, server_default=OrderStatus.OPEN.value)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
@@ -310,12 +307,14 @@ class Order(Base):
 
 
 class OrderWant(Base):
-    """One currency the author would take, and where (ADR-0002: rows, not JSON)."""
+    """One currency the author would take, where, and at what rate (ADR-0002: rows, not
+    JSON; ADR-0026: a rate for each)."""
 
     __tablename__ = "order_wants"
     __table_args__ = (
         CheckConstraint(asset_check("currency"), name="currency"),
         CheckConstraint(country_check("country"), name="country"),
+        CheckConstraint("rate_spec->>'type' IN ('fixed', 'reference')", name="rate_spec_type"),
     )
 
     order_id: Mapped[uuid.UUID] = mapped_column(
@@ -325,6 +324,9 @@ class OrderWant(Base):
     country: Mapped[str] = mapped_column(CHAR(2), primary_key=True)
     # The author's order of preference: «GEL, or else USD».
     position: Mapped[int] = mapped_column(server_default=text("0"))
+    # This currency's rate: the author's own, or the market's until a proposal locks it
+    # (QUESTIONS J1). A versioned union, validated by swap/rates.py (ADR-0004).
+    rate_spec: Mapped[dict[str, Any]] = mapped_column(JSONB)
 
 
 class OrderVisibility(Base):

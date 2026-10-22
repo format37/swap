@@ -928,8 +928,6 @@ export interface components {
             note: string | null;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
-            /** Rate Spec */
-            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
             status: components["schemas"]["OrderStatus"];
@@ -973,8 +971,6 @@ export interface components {
             note?: string | null;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
-            /** Rate Spec */
-            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
             /** Visible To */
@@ -1207,7 +1203,10 @@ export interface components {
             /** People */
             people: components["schemas"]["Person"][];
         };
-        /** Want */
+        /**
+         * Want
+         * @description A currency the author would take, where, and at what rate (ADR-0026).
+         */
         Want: {
             /**
              * Country
@@ -1219,6 +1218,8 @@ export interface components {
              * @example GEL
              */
             currency: string;
+            /** Rate Spec */
+            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
         };
     };
     responses: never;
