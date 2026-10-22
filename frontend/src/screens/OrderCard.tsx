@@ -9,11 +9,11 @@ import { useCloseOrder, useOrder, type Order } from '../api/orders'
 import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
-import { formatDates } from '../i18n/format'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
-import { formatRate } from '../money/format'
+import { formatRate, isZero } from '../money/format'
 import { KINDS } from '../money/kinds'
+import { orderDates } from '../orders/words'
 import { confirmAction, hapticNotify, useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
@@ -48,7 +48,8 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
 }
 
 function Shown({ order, me }: { order: Order; me: Me }) {
-  const { t, tn, locale } = useI18n()
+  const i18n = useI18n()
+  const { t, tn, locale } = i18n
   const navigate = useNavigate()
   const close = useCloseOrder()
   const deals = useDeals('active', order.id)
@@ -84,10 +85,11 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           </p>
           <p className="text-sm text-hint">
             {countryName(locale, order.give_country)}
-            {' · '}
-            {exact
-              ? tn('order.exactly', { amount: money(order.amount_max) })
-              : tn('order.min_deal', { amount: money(order.amount_min) })}
+            {exact && <> · {tn('order.exactly', { amount: money(order.amount_max) })}</>}
+            {/* A minimum of 0 is any amount, which goes without saying (F4). */}
+            {!exact && !isZero(order.amount_min) && (
+              <> · {tn('order.min_deal', { amount: money(order.amount_min) })}</>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 px-4 pb-3">
@@ -103,9 +105,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
             ),
           )}
         </div>
-        <Row icon={<CalendarDays className="size-5" />}>
-          {formatDates(locale, order.available_from, order.available_until)}
-        </Row>
+        <Row icon={<CalendarDays className="size-5" />}>{orderDates(i18n, order)}</Row>
       </Section>
 
       <Section title={order.mine ? t('order.i_want') : t('order.wants')}>

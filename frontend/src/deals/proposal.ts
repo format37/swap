@@ -79,7 +79,8 @@ export function toProposal(form: ProposalForm): Proposal {
  * JavaScript, so the slider never makes a float of an amount; cents are typed.
  */
 export function sliderRange(order: Order): { min: number; max: number; step: number } {
-  const min = Math.ceil(Number(order.amount_min))
+  // A minimum of 0 is any amount (F4), but a deal of nothing isn't one.
+  const min = Math.max(Math.ceil(Number(order.amount_min)), 1)
   const max = Math.floor(Number(order.amount_remaining))
   const span = Math.max(max - min, 1)
   const step = 10 ** Math.max(0, Math.floor(Math.log10(span)) - 2)

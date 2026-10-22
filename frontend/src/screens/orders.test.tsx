@@ -140,6 +140,7 @@ describe('Home', () => {
                 author: NINO,
                 give_currency: 'GEL',
                 status: 'closed',
+                available_until: null,
               }),
             ])
           : json(200, [order()]),
@@ -154,7 +155,7 @@ describe('Home', () => {
     // jest-dom reads a no-break space as a plain one.
     expect(open).toHaveTextContent('150 000₽RUB₾GEL$USDAlex · 25 окт. – 8 нояб.')
     const mine = screen.getByRole('heading', { name: 'Мои заявки' }).parentElement
-    expect(mine).toHaveTextContent('Закрыта')
+    expect(mine).toHaveTextContent('Закрыта · с 25 окт., без срока')
   })
 
   it('opens the wizard from the main button', async () => {
@@ -254,6 +255,7 @@ describe('the wizard', () => {
       give_country: 'RU',
       amount_max: '150000',
       amount_min: '10000',
+      available_until: null,
       payout_methods: ['card'],
       wants: [{ currency: 'GEL', country: 'GE' }],
       rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
@@ -282,6 +284,17 @@ describe('the order card', () => {
     // Someone else's order: no list of who sees it, and nothing to close.
     expect(screen.queryByText(/Видно/)).toBeNull()
     expect(screen.queryByRole('button', { name: 'Закрыть заявку' })).toBeNull()
+  })
+
+  it('says nothing of a minimum of 0, and that there is no last day', async () => {
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+        json(200, order({ amount_min: '0.00', available_until: null })),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    expect(await screen.findByText('с 25 окт., без срока')).toBeInTheDocument()
+    expect(screen.getByText('Россия')).toBeInTheDocument()
+    expect(screen.queryByText(/за одну сделку/)).toBeNull()
   })
 
   it('lets its author see who sees it, and close it once that is confirmed', async () => {

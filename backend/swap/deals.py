@@ -175,7 +175,8 @@ async def _restore(db: AsyncSession, deal: Deal) -> None:
     if order is None:  # pragma: no cover - the foreign key guarantees the row
         return
     order.amount_remaining = min(order.amount_max, order.amount_remaining + give_amount(deal))
-    if order.status == OrderStatus.FULFILLED and order.amount_remaining >= order.amount_min:
+    fits = order.amount_remaining >= orders.smallest_deal(order)
+    if order.status == OrderStatus.FULFILLED and fits:
         order.status = OrderStatus.OPEN
 
 
@@ -282,7 +283,8 @@ async def accept(
     if amount > order.amount_remaining:
         raise _refuse("order.insufficient_remaining")
     order.amount_remaining -= amount
-    if order.amount_remaining < order.amount_min:
+    # Used up once no deal fits: below the minimum, or nothing left at all (Q-B5, F4).
+    if order.amount_remaining < orders.smallest_deal(order):
         order.status = OrderStatus.FULFILLED
 
     deal.accepted_at = datetime.now(UTC)

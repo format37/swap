@@ -308,17 +308,27 @@ function GiveStep({ form, today, change }: StepProps & { today: string }) {
             }}
           />
         </Field>
-        <Field label={t('wizard.last_day')}>
-          <input
-            type="date"
-            className={CONTROL}
-            min={form.from || today}
-            value={form.until}
-            onChange={(event) => {
-              change({ until: event.target.value })
-            }}
-          />
-        </Field>
+        {/* Off by default: open until its author closes it (F3). */}
+        <Switch
+          label={t('wizard.limited')}
+          checked={form.limited}
+          onChange={(limited) => {
+            change({ limited })
+          }}
+        />
+        {form.limited && (
+          <Field label={t('wizard.last_day')}>
+            <input
+              type="date"
+              className={CONTROL}
+              min={form.from || today}
+              value={form.until}
+              onChange={(event) => {
+                change({ until: event.target.value })
+              }}
+            />
+          </Field>
+        )}
       </Section>
     </>
   )

@@ -268,10 +268,11 @@ class Order(Base):
     __table_args__ = (
         CheckConstraint(asset_check("give_currency"), name="give_currency"),
         CheckConstraint(country_check("give_country"), name="give_country"),
-        CheckConstraint("amount_min > 0 AND amount_min <= amount_max", name="amounts"),
+        CheckConstraint("amount_min >= 0 AND amount_min <= amount_max", name="amounts"),
         CheckConstraint(
             "amount_remaining >= 0 AND amount_remaining <= amount_max", name="remaining"
         ),
+        # Holds when there is no last day too: a comparison with NULL passes a CHECK.
         CheckConstraint("available_from <= available_until", name="window"),
         CheckConstraint(_kinds_check("payout_methods"), name="payout_methods"),
         CheckConstraint("rate_spec->>'type' IN ('fixed', 'reference')", name="rate_spec_type"),
@@ -284,13 +285,14 @@ class Order(Base):
     author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     give_currency: Mapped[str] = mapped_column(String(8))
     give_country: Mapped[str] = mapped_column(CHAR(2))
-    # The smallest single deal, and all there is (Q-B5).
+    # The smallest single deal, 0 for any amount, and all there is (Q-B5, QUESTIONS F4).
     amount_min: Mapped[Decimal] = mapped_column(MONEY)
     amount_max: Mapped[Decimal] = mapped_column(MONEY)
     # Shrinks when a deal is accepted, and grows back when one is cancelled (FR-2.3).
     amount_remaining: Mapped[Decimal] = mapped_column(MONEY)
     available_from: Mapped[date]
-    available_until: Mapped[date]
+    # None: open until its author closes it (QUESTIONS F3).
+    available_until: Mapped[date | None]
     payout_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     note: Mapped[str | None] = mapped_column(Text)
     # A versioned union, validated by swap/rates.py (ADR-0004).

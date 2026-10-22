@@ -1,13 +1,14 @@
 """Orders: intents to give one currency and take another, seen only through links (ADR-0016).
 
 Who sees an order is one predicate, `seen_by`, used by every query here: the author
-always; anyone else only while it is open and its dates haven't passed, through an active
-link with the author, and when they are on its list, if it has one (§3).
+always; anyone else only while it is open and its last day, if it has one, hasn't passed,
+through an active link with the author, and when they are on its list, if it has one (§3).
 """
 
 import uuid
 from collections.abc import Collection
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -20,10 +21,10 @@ from swap.deeplinks import target
 from swap.errors import DomainError
 from swap.links import linked_ids
 from swap.models import Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
-from swap.money import Asset, Country, Money
+from swap.money import Asset, Country, Money, MoneyOrZero
 from swap.notifications import notify
 from swap.proposals import cancel_on_order
-from swap.rates import FixedRate
+from swap.rates import CENT, FixedRate
 from swap.users import person_label
 
 
@@ -41,11 +42,13 @@ class OrderDraft(BaseModel):
 
     give_currency: Asset
     give_country: Country
-    # The smallest single deal; equal to amount_max for «exactly this much» (Q-B5).
-    amount_min: Money
+    # The smallest single deal: 0 for any amount (QUESTIONS F4), amount_max for «exactly
+    # this much» (Q-B5).
+    amount_min: MoneyOrZero
     amount_max: Money
     available_from: date
-    available_until: date
+    # None: open until its author closes it (QUESTIONS F3).
+    available_until: date | None = None
     payout_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
     wants: list[Want] = Field(min_length=1, max_length=8)
     rate_spec: FixedRate
@@ -57,6 +60,11 @@ class OrderDraft(BaseModel):
 def today(user: User) -> date:
     """The date in the user's time zone, which order dates are in (Q-B17)."""
     return datetime.now(ZoneInfo(user.tz or "UTC")).date()
+
+
+def smallest_deal(order: Order) -> Decimal:
+    """The least one deal may take: the order's minimum, and a cent when that is 0 (F4)."""
+    return max(order.amount_min, CENT)
 
 
 def _authors_today() -> ColumnElement[date]:
@@ -75,7 +83,7 @@ def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
         and_(
             Order.status == OrderStatus.OPEN,
             # Until the expiry sweep (slice 5) marks it, an order past its dates is over.
-            Order.available_until >= _authors_today(),
+            or_(Order.available_until.is_(None), Order.available_until >= _authors_today()),
             Order.author_id.in_(linked_ids(viewer)),
             or_(unlisted, listed),
         ),
@@ -99,10 +107,11 @@ def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
         raise DomainError(422, "rate.unused")
     if draft.amount_min > draft.amount_max:
         raise DomainError(422, "order.amount_range")
-    if draft.available_from > draft.available_until:
-        raise DomainError(422, "order.window")
-    if draft.available_until < today(author):
-        raise DomainError(422, "order.window_past")
+    if draft.available_until is not None:
+        if draft.available_from > draft.available_until:
+            raise DomainError(422, "order.window")
+        if draft.available_until < today(author):
+            raise DomainError(422, "order.window_past")
 
 
 async def create(
@@ -117,14 +126,16 @@ async def create(
             raise DomainError(422, "order.visible_to_nobody")
         if not chosen <= links:
             raise DomainError(422, "order.visible_to_unlinked")
+    # In cents, as numeric(18,2) keeps them: "0" reads back as "0.00".
+    least, most = draft.amount_min.quantize(CENT), draft.amount_max.quantize(CENT)
     order = Order(
         id=uuid.uuid4(),
         author_id=author.id,
         give_currency=draft.give_currency,
         give_country=draft.give_country,
-        amount_min=draft.amount_min,
-        amount_max=draft.amount_max,
-        amount_remaining=draft.amount_max,
+        amount_min=least,
+        amount_max=most,
+        amount_remaining=most,
         available_from=draft.available_from,
         available_until=draft.available_until,
         payout_methods=list(dict.fromkeys(draft.payout_methods)),

@@ -86,4 +86,5 @@ it('slides in whole units, in steps that suit the range', () => {
     max: 60,
     step: 1,
   })
+  expect(sliderRange({ ...ORDER, amount_min: '0.00' })).toEqual({ min: 1, max: 150000, step: 1000 })
 })

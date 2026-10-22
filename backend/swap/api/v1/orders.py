@@ -38,7 +38,8 @@ class Order(BaseModel):
     amount_max: Decimal
     amount_remaining: Decimal
     available_from: date
-    available_until: date
+    # None: open until its author closes it.
+    available_until: date | None
     payout_methods: list[PaymentKind]
     wants: list[Want]
     rate_spec: FixedRate

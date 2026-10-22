@@ -34,6 +34,14 @@ Money = Annotated[
     WithJsonSchema({"type": "string", "pattern": AMOUNT_PATTERN, "examples": ["1500.00"]}),
 ]
 
+# The same, with 0 allowed: an order's minimum, where 0 means any amount (QUESTIONS F4).
+MoneyOrZero = Annotated[
+    Decimal,
+    BeforeValidator(_decimal_string(AMOUNT_PATTERN, "0")),
+    Field(ge=0, max_digits=18, decimal_places=2),
+    WithJsonSchema({"type": "string", "pattern": AMOUNT_PATTERN, "examples": ["0"]}),
+]
+
 # Rates are not money: RUB→GEL ≈ 0.0339 doesn't survive two decimals. numeric(20,10).
 RateValue = Annotated[
     Decimal,
