@@ -14,6 +14,11 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part F** records the owner's notes after his first test of slice 1, on 2026-10-22.
 - **Part G** records his notes after the demo with others, the same day, and asks G7.
 - **Part H** records his notes after the first real deal, the same day.
+- **Part I** records the owner's Sentry setup, the same day.
+- **Part J** records the owner's notes of that evening: the wizard, reach by handshakes,
+  deleting, photos and the score. Its defaults are marked; I follow them until the owner
+  says otherwise.
+- **Part K** records the owner's priority list for the rest of phase 1, with its defaults.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -712,3 +717,329 @@ The owner set Sentry up in phase 1, ahead of v1, from Sentry's own onboarding: o
 project for Swap, apart from Phonyx's, and only production. On what to send he took
 errors and tracing with no personal data. → ADR-0025.
 
+
+## J. The owner's notes on slice 1, the evening of 2026-10-22
+
+The owner sent five notes in two messages. Like parts F–H, they are decisions. Where they
+differ from §2, §3, §5, Q-B10, ADR-0003, ADR-0004, ADR-0016, ADR-0019 or ADR-0022, they
+win. Where a detail was left open, the item marked **Default** stands until the owner
+says otherwise. ADRs 0026–0030 hold the details.
+
+### J1 · The wizard in two steps
+
+> Предлагаю упростить дизайн создания новой заявки:
+> * Шаг 1 включает в себя сразу и Отдаёте и Получаете. Отдаёте: Валюта, сумма, флаг
+>   только целиком, минимум за сделку, как вы моджете отдать, когда, ограничить срок.
+>   Убираем заголовки, стакаем все в группу под заголовком "Отдаёте". Получаете
+>   аналогично: Валюта, курс, еще валюта, флаг фиксировать курс для каждой (выключен
+>   по-умолчанию), как получать. Следующий шаг дайджест в заголовке, выбор кому видно,
+>   комментарий.
+
+> Насчет страны согласен - оставляем, особенно когда речь идет о наличке.
+
+- **Two steps** instead of three.
+- **Step 1** has two groups, «Отдаёте» and «Получаете», with no section titles inside
+  them. Each row keeps its own label.
+  - «Отдаёте»: currency, country, amount, «Только целиком», «Минимум за сделку», «Как вы
+    можете отдать», «Когда», «Ограничить срок».
+  - «Получаете»: each currency with its country, its rate and its own «Зафиксировать
+    курс», off by default; «Ещё валюта», up to three; «Как получать».
+- **Step 2** opens with a digest of step 1, such as «Отдаёте 150 000 RUB · Россия → GEL
+  по рынку или USD по 1 USD = 80 RUB». Then come «Кому видно» (J2's slider) and the
+  comment.
+- **The country stays.** It is prefilled from the currency, and it matters most for cash.
+
+**Default:** the live preview «Отдав …, получите ≈ …» stays under each wanted currency.
+
+A switch per currency means each wanted currency carries its own rate, fixed or the
+market's, so the rate moves from the order to its currencies. → PR 1.20, ADR-0026.
+
+### J2 · Reach by handshakes
+
+> Насчёт "Всем моим связям" - я бы сделал опцию: количество рукопожатий от 0 до
+> бесконечности слайдером на несколько позиций, с визуализацией графа с иконками и
+> именами.
+
+> На бесконечности не увидят все. Человек и последующая цепочка может быть приглашен по
+> инвайту а потом связь может быть разорвана и тогда образуется два независимых острова,
+> которые друг до друга не достучатся. Понимаю что шанс не велик, однако при потере
+> доверия это может происодить.
+> […]
+> 0 рукопожатий это только люди из списка. 1 рукопожатие это текущие связи как сейчас.
+> Когда человек смотрит на список доступных заявок - у него есть фильтр который
+> бесконечность рукопожатий по умолчанию, он может поставить от 0 до бесконечности. где 1
+> это текущие связи. Зачем ноль? Что бы отфильтровать по избранным. Пока этого нет -
+> давай сделаем фильтр видимости от 1 до бесконечности рукопожатий, бесконечность
+> по-умолчанию.
+> Я пока не вижу причин делать сущность круга друзей. Есть пользователь. у него есть
+> прямые связи одного рукопожатия. А насколько рукопожатий вдаль он виден другим - он
+> настраивает сам.
+> Жаль чтьо эта концепция не очевидна - по этому я предлагаю сделать её в некотором
+> состоянии по-умолчанию без возможности сломать механику. Если считаешь что это лишнее
+> усложнение усложняющее жизнь пользователя - скажи.
+
+- **Distance** counts handshakes over active links. 1 is the author's own links, 2 is
+  their links, and so on. ∞ is everyone the author reaches through chains of active
+  links. A broken link can split the network into islands that never see each other.
+- **The author's reach** is set per order, on the wizard's step 2. It is a slider with
+  stops 0, 1, 2, 3 and ∞, and it replaces the two radio buttons.
+  - 0 is «Только выбранным»: people the author picks from their own links.
+  - 1 is what «Всем моим связям» meant until now.
+- **The viewer's filter** on «Открытые мне» has stops 1, 2, 3 and ∞, with ∞ by default.
+  Its 0, favourites, waits until favourites exist («Потенциальные планы» in plan.md).
+- **No circles of friends and no groups.** There is a person, their direct links, and
+  the reach they set.
+- **Who sees an order:** it is open, the viewer is within its reach (or on its list, at
+  0), and the viewer is within their own filter. The author always sees it.
+- **Policy.** This overrides §3 («Связь не транзитивна», «никто не видит чужих связей»)
+  and CLAUDE.md's rule that visibility is active links only. Visibility now follows
+  chains of active links, up to the author's reach. What stays:
+  - no escrow;
+  - no money moved;
+  - nothing visible to anyone with no chain of links to the author.
+
+**The owner's question, and the answer given (2026-10-22).** Handshakes are not a
+needless complication. Under the hood it is one number per order and one filter, and
+only the word can confuse. So:
+- **Words on the slider.** Its stops read «Только выбранным», «Мои связи», 2, 3 and «Вся
+  сеть». Under it stands who will see the order: «4 ваших связи и ещё 11 человек».
+- **A folded filter.** The feed's filter stays folded, at «Вся сеть».
+- **No broken state.** «Только выбранным» needs at least one person.
+
+**Defaults:**
+- **New orders reach 2,** «мои связи и их связи», not ∞.
+  - A newcomer's name, photo and amount then reach no one five acquaintances away until
+    the newcomer moves the slider.
+  - The viewer's filter is ∞, as the owner said. It only narrows what the reach allows.
+  - Existing orders keep what they have: 1 without a list, 0 with one.
+- **The picture is rings, not a web of lines.** The author sits in the middle, with a
+  ring per handshake and avatars with names on each. A web of lines stops being readable
+  on a phone at about fifteen people. It is plain SVG, with no library (the 300 KB
+  budget).
+- **Anyone who sees an order may propose on it,** without a direct link first, because
+  the author chose the reach.
+  - The card shows the chain («через Нино → Гиорги») and the author's score (J5).
+  - This overrides §5's «Создаётся только между сторонами с активной связью».
+- **The bot announces a new order to direct links only.** People in farther rings find
+  it in the feed.
+- **A deal outlives a broken chain.** Once proposed, it stays visible to both sides, as
+  a deal does when a link breaks.
+
+→ PR 1.22, ADR-0028.
+
+### J3 · Each side deletes for themselves
+
+> Создатель может удалить заявку. Я думаю дать право удалять заявку в одностороннем
+> орядке каждому участнику сделки - ему это может быть полезно в целях безопасности. С
+> возможностью восстановить по запросу к тому кто её еще не удалил. То есть с функцией
+> поделиться сделкой но только среди участников.
+
+> 3. Насчет шейринга удаленной сделки - давай все таки не будем заморачиваться - не хочу
+> усложнять. удалил - сам виноват. попросит скрин если что. убираем этот пункт.
+> […]
+> Да, удалять можно только завершенную сделку. Сделка может быть погашена частично. В
+> таком случае приглашенный участник сделки может удалить свою часть но только у себя.
+> Владелец сделки может удалить только всю сделку целиком, только когда закроет её и
+> опять же только у себя.
+>
+> Когда все у себя удалили - можно удалять с сервера.
+>
+> Ок - сообщения в чате останутся. Пользователь может удалить сам если нужно.
+
+Here «сделка» means the whole order. Its «владелец» is the author, and a «приглашённый
+участник» is someone who took a part of it.
+
+- **Only for oneself, and only what's finished.**
+- **A participant** deletes their own deal once it's over, even while the order is still
+  open. Over means settled, cancelled, declined, withdrawn or expired.
+- **The author** deletes only the whole order with all its deals. That works only once
+  the order is no longer open and none of its deals still runs.
+- **No way back.** There is no restore and no sharing back: «удалил - сам виноват». The
+  other side can send a screenshot.
+- **The server erases what everyone has deleted.**
+  - A deal goes when both its sides have deleted it.
+  - An order goes when its author has deleted it and none of its deals remain.
+  - Legs, journal lines and notifications go with them.
+- **Chat messages stay.** The bot's messages remain in each person's chat, and people
+  delete those themselves.
+
+Until now (PR 1.11, F6) only the author deleted, and a deleted order vanished for
+everyone, including those who dealt on it. Orders deleted that way keep their author's
+deletion, and their participants see them in their history again. → PR 1.24, ADR-0030.
+
+### J4 · Photo, name and @username
+
+> Когда взаимодействуем с пользователями, например выбираем "Только выбранным" -
+> подставлять лого пользователя.
+
+> Фото не вместо инициалов. Хорошо было бы показывать и аватар и никнейм и указанное
+> имя. Я понимаю что все это будет сложно уместить вместе, но можно например ник под
+> именем оба справа от аватара. Кстати возможно фото и не придется хранить на сервере.
+> Возможно оно уже есть доступное на серверах телеграм по ссылке.
+
+- **One layout for a person.** The avatar sits on the left; to its right is the name,
+  with the @username under it.
+- **It goes everywhere a person is shown:** «Только выбранным» first, then links,
+  requests, orders, deals, the profile, and J2's rings. Inline text (the journal, «payer →
+  payee») keeps the name alone.
+- **The avatar** is the Telegram photo, or initials when there is none.
+- **Only a link is stored**, when Telegram provides one. The photo loads straight from
+  Telegram.
+
+→ PR 1.21, ADR-0027.
+
+### J5 · The score
+
+> Кстати насчет доверия, я хочу вести учет успешных сделок - назовем это скором. При чем
+> не больше одного балла на пользователя, что бы они не могли друг другу накручивать
+> скор.
+
+A person's score is the number of different people they have a settled deal with.
+Repeat deals with the same person add nothing.
+
+**Defaults:**
+- **Where it shows.** In the person's block next to the name, wherever a person is shown.
+  A tap explains it: «Успешные сделки с 7 разными людьми».
+- **How it's counted.** From the settled deals still on the server. A deal that both
+  sides deleted (J3) takes its point with it. Keeping points apart from deals would keep
+  who dealt with whom after both asked to erase it.
+- **A known limit.** It doesn't stop someone with several Telegram accounts. In a network
+  that grows only by invitation, that limit is accepted.
+- **Policy.** §2 lists reputation beyond personal links among what Swap doesn't do, and
+  CLAUDE.md said "no reputation". The owner's decision overrides both.
+
+→ PR 1.23, ADR-0029.
+
+## K. The owner's priority list (2026-10-22)
+
+> По следующим слайсам приоритет:
+> * Настройка уведомлений. Отключить все уведомления, уведомлять по типам сделок. и др.
+> * Удаление аккаунта, удаление всей истории сделок одной кнопкой в настройках
+> * соглашение, share to me the privacy policy url
+> * Экспорт всех сделок где пользователь учавствовал в CSV
+> * Sentry
+> * Переключение языков интерфейса
+> * Флаг создать авто заявку каждого N числа
+> * Идентификатор у каждой заявки
+> * contact to developer: email format37@gmail.com
+>
+> Остальное переносим в потенциальные планы и пока не реализуем.
+
+They are built in this order after part J; K8 moves before K4, whose CSV needs it.
+CSV export and Sentry come from v1, and recurring orders from v2. The owner pulled them
+forward, which overrides §12's phases for them. Everything else moves to «Потенциальные
+планы» in plan.md and isn't built for now.
+
+### K1 · Notification settings
+
+- **The settings** gather on the profile screen behind Home's avatar, with a screen of
+  their own where a list grows long. They hold K1, K2, K3's links, K4, K6 and K9.
+- **«Все уведомления»** turns everything off at once. Then comes a switch per kind of
+  event. **Default** reading of «по типам сделок»:
+  - new orders;
+  - links;
+  - proposals and answers;
+  - transfers;
+  - cancellations and disputes.
+- **«и др.» Default:** muting one person's new orders (FR-7.2), on that link's screen.
+  Quiet hours stay in «Потенциальные планы».
+- **The outbox** drops whatever the recipient switched off.
+
+→ PR 1.25.
+
+### K2 · Deleting all history, and the account
+
+- **«Удалить всю историю»** applies J3 to everything finished at once. What still runs
+  stays, and the screen says how much.
+- **«Удалить аккаунт»** follows Q-B10:
+  - refused while a deal runs;
+  - proposals cancelled;
+  - links and sessions deleted;
+  - the user becomes «Удалённый участник» within 24 h.
+
+  With J3, everything finished counts as deleted by them, so whatever the other side has
+  deleted too is erased.
+
+→ PR 1.26.
+
+### K3 · The agreement and the privacy policy
+
+- **The agreement (Q-B15).** A short agreement and privacy note in ru, en and ka, shown
+  once at first launch with «Принимаю». **Default:** it ships as drafted, and the owner
+  approves the text later.
+- **A public page** at https://swap.latentstate.dev/privacy. It opens in a plain browser,
+  without the app's «Откройте через Telegram» stub. Its URL goes to the owner in the
+  session, for BotFather.
+- **What it says:**
+  - what is stored, and for how long;
+  - who sees what: J2's reach, J4's photos and J5's score;
+  - how deletion works (J3, K2);
+  - the deploy-time dumps kept on the same server;
+  - error reports to Sentry (part I);
+  - the contact (K9).
+
+→ PR 1.27.
+
+### K4 · CSV export
+
+Every deal the user took part in (FR-6.3), one row each:
+- the dates;
+- the order's number (K8);
+- the counterpart;
+- what was given and what was received: amount, currency, country and way;
+- the rate and its source;
+- the status.
+
+**Default:** the bot sends the file to the user's chat through the VPS's Bot API server.
+A download inside Telegram's WebView is unreliable; `WebApp.downloadFile` is the
+alternative. → PR 1.29.
+
+### K5 · Sentry
+
+Done before the list arrived: PR 1.19, part I, ADR-0025. The owner's setup bundles
+Sentry's browser SDK and names the DSN's host in the CSP, so nothing goes through the
+api. Readable Mini App stack traces (source maps) stay on the plan as PR 1.19's
+follow-up.
+
+### K6 · Switching the interface language
+
+It has existed since phase 0 (Home's avatar → Профиль → Язык), and the bot follows it.
+**Default:** a «Язык» row in the settings, with K1. **Asked:** what did the owner find
+missing? An answer may add to it. → PR 1.25.
+
+### K7 · Recurring orders
+
+The wizard gains «Повторять каждый месяц, N-го числа».
+- **The copy.** On day N, or the last day of a shorter month, the worker publishes a copy
+  with a new number. It is published and announced like any new order.
+- **The rate.** A fixed rate stays fixed; the market's follows the market.
+- **Stopping.** «Больше не повторять» on any copy ends the series.
+- **The job** is idempotent and survives restarts (ADR-0005).
+
+→ PR 1.30.
+
+### K8 · An order number
+
+«№ 17», from one sequence for all orders. It shows on cards, rows and deals, in bot
+messages, and in the CSV. → PR 1.28, before K4.
+
+### K9 · Contacting the developer
+
+format37@gmail.com, as the owner wrote it.
+- A row in the settings with «Скопировать», because `mailto:` may not open inside
+  Telegram.
+- A line on the privacy page.
+
+→ PR 1.27, with K3.
+
+### K10 · When phase 1 is accepted
+
+§12's acceptance leaned on features that now wait in «Потенциальные планы»: a document
+through the bot, a balance, a backup restored into a clean container.
+
+**Default:** phase 1 is accepted when parts J and K are live and the owner confirms. The
+rest of §12's checklist moves to «Потенциальные планы» with the features it needs.
+
+**Flagged to the owner (2026-10-22):** without off-box backups, the only copies are the
+deploy-time dumps, the last five, on the same VPS. They survive a bad migration, not a
+lost server.
