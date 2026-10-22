@@ -1040,10 +1040,11 @@ export interface components {
         /**
          * PaymentKind
          * @description How money moves, one set for both sides (ADR-0016): an order's payout methods, and
-         *     the kinds of saved payment details (ADR-0010).
+         *     the kinds of saved payment details (ADR-0010). Three, as the owner put it: «нал, банк
+         *     или крипта» (QUESTIONS G3, ADR-0021). A card or a phone transfer is «bank».
          * @enum {string}
          */
-        PaymentKind: "card" | "phone" | "bank" | "crypto" | "cash" | "other";
+        PaymentKind: "cash" | "bank" | "crypto";
         /** PaymentMethod */
         PaymentMethod: {
             /** Asset */

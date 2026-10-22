@@ -232,15 +232,12 @@ class Notification(Base):
 
 class PaymentKind(StrEnum):
     """How money moves, one set for both sides (ADR-0016): an order's payout methods, and
-    the kinds of saved payment details (ADR-0010)."""
+    the kinds of saved payment details (ADR-0010). Three, as the owner put it: «нал, банк
+    или крипта» (QUESTIONS G3, ADR-0021). A card or a phone transfer is «bank»."""
 
-    CARD = "card"
-    # A transfer to a phone number, such as Russia's SBP.
-    PHONE = "phone"
+    CASH = "cash"
     BANK = "bank"
     CRYPTO = "crypto"
-    CASH = "cash"
-    OTHER = "other"
 
 
 class OrderStatus(StrEnum):

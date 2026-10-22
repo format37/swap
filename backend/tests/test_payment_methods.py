@@ -92,7 +92,8 @@ async def test_without_keys_nothing_is_saved(settings: Settings, sessionmaker: S
     ("changes", "code"),
     [
         ({"asset": "XYZ"}, "payment.unknown_asset"),
-        ({"kind": "card", "text": "  "}, "payment.text_required"),
+        ({"kind": "bank", "text": "  "}, "payment.text_required"),
+        ({"kind": "card"}, "validation_error"),
         ({"kind": "crypto", "text": ""}, "payment.text_required"),
         ({"title": "  "}, "validation_error"),
         ({"title": "x" * 61}, "validation_error"),

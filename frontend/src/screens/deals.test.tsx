@@ -137,8 +137,8 @@ describe('the proposal', () => {
     amount_remaining: '150000.00',
     available_from: '2026-10-22',
     available_until: '2099-11-05',
-    payout_methods: ['card', 'cash'],
-    receive_methods: ['cash', 'bank'],
+    payout_methods: ['bank', 'cash'],
+    receive_methods: ['cash', 'crypto'],
     wants: [{ currency: 'GEL', country: 'GE' }],
     rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
     note: null,
@@ -168,7 +168,7 @@ describe('the proposal', () => {
     await waitFor(() => {
       expect(document.body).toHaveTextContent('Взамен вы отдаёте 1 712,33₾GEL')
     })
-    fireEvent.click(screen.getAllByRole('button', { name: 'Карта' })[0] as HTMLElement)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Банк' })[0] as HTMLElement)
     // Card or not, no payment details are asked for (QUESTIONS G1).
     expect(screen.queryByRole('radio', { name: /•••/ })).toBeNull()
     fireEvent.click(screen.getAllByRole('button', { name: 'Наличные' })[1] as HTMLElement)
@@ -176,8 +176,8 @@ describe('the proposal', () => {
       target: { value: 'Переведу с Т-Банка' },
     })
     // Only the ways Alex is paid are offered for the other currency (F2).
-    expect(screen.getAllByRole('button', { name: 'Карта' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: 'Банк' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'Крипто' })).toHaveLength(1)
     expect(mainButton()?.text).toBe('Отправить предложение')
     press()
     expect(await screen.findByTestId('elsewhere')).toHaveTextContent(`/deals/${DEAL_ID}`)
@@ -186,7 +186,7 @@ describe('the proposal', () => {
       want_currency: 'GEL',
       whole: false,
       first: 'proposer',
-      give_method: 'card',
+      give_method: 'bank',
       counter_method: 'cash',
       note: 'Переведу с Т-Банка',
     })

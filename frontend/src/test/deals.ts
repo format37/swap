@@ -60,7 +60,7 @@ export function deal(changes: Partial<Deal> = {}): Deal {
         currency: 'RUB',
         country: 'RU',
         amount: '50000.00',
-        method: 'card',
+        method: 'bank',
         due_date: '2026-10-28',
       }),
     ],

@@ -55,12 +55,9 @@ export const ka: Messages = {
   'error.link_self': 'ეს თქვენი საკუთარი @username-ია.',
   'error.link_cooldown':
     'ამ ადამიანმა ახლახან უარყო თქვენი მოთხოვნა. ხელახლა თხოვნა უარიდან ერთი კვირის შემდეგ შეგიძლიათ.',
-  'kind.card': 'ბარათი',
-  'kind.phone': 'ტელეფონით',
   'kind.bank': 'ბანკი',
   'kind.crypto': 'კრიპტო',
   'kind.cash': 'ნაღდი',
-  'kind.other': 'სხვა',
   'home.link_requests': 'კავშირის მოთხოვნები',
   'home.open_to_me': 'ჩემთვის ღია',
   'home.mine': 'ჩემი განცხადებები',

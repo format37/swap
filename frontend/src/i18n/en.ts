@@ -53,12 +53,9 @@ export const en: Messages = {
   'error.link_self': 'That’s your own @username.',
   'error.link_cooldown':
     'This person declined your request recently. You can ask again a week after that.',
-  'kind.card': 'Card',
-  'kind.phone': 'Phone transfer',
   'kind.bank': 'Bank',
   'kind.crypto': 'Crypto',
   'kind.cash': 'Cash',
-  'kind.other': 'Other',
   'home.link_requests': 'Link requests',
   'home.open_to_me': 'Open to me',
   'home.mine': 'My offers',

@@ -18,7 +18,7 @@ function filled(changes: Partial<OrderForm> = {}): OrderForm {
     giveCountry: 'RU',
     total: '150 000',
     least: '10000',
-    methods: ['card', 'phone'],
+    methods: ['bank', 'crypto'],
     receiveMethods: ['cash'],
     wants: [
       { ...newWant('RUB', 'GEL', 'GE'), rate: '29,20' },
@@ -54,7 +54,7 @@ it('turns a filled wizard into exactly what the api takes', () => {
     amount_min: '10000',
     available_from: TODAY,
     available_until: null,
-    payout_methods: ['card', 'phone'],
+    payout_methods: ['bank', 'crypto'],
     receive_methods: ['cash'],
     wants: [
       { currency: 'GEL', country: 'GE' },

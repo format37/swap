@@ -1037,7 +1037,7 @@
             "items": {
               "$ref": "#/components/schemas/PaymentKind"
             },
-            "maxItems": 6,
+            "maxItems": 3,
             "minItems": 1,
             "title": "Payout Methods",
             "type": "array"
@@ -1049,7 +1049,7 @@
             "items": {
               "$ref": "#/components/schemas/PaymentKind"
             },
-            "maxItems": 6,
+            "maxItems": 3,
             "minItems": 1,
             "title": "Receive Methods",
             "type": "array"
@@ -1105,14 +1105,11 @@
         "type": "string"
       },
       "PaymentKind": {
-        "description": "How money moves, one set for both sides (ADR-0016): an order's payout methods, and\nthe kinds of saved payment details (ADR-0010).",
+        "description": "How money moves, one set for both sides (ADR-0016): an order's payout methods, and\nthe kinds of saved payment details (ADR-0010). Three, as the owner put it: \u00ab\u043d\u0430\u043b, \u0431\u0430\u043d\u043a\n\u0438\u043b\u0438 \u043a\u0440\u0438\u043f\u0442\u0430\u00bb (QUESTIONS G3, ADR-0021). A card or a phone transfer is \u00abbank\u00bb.",
         "enum": [
-          "card",
-          "phone",
-          "bank",
-          "crypto",
           "cash",
-          "other"
+          "bank",
+          "crypto"
         ],
         "title": "PaymentKind",
         "type": "string"

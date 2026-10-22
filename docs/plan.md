@@ -143,7 +143,7 @@ through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
 - [x] The profile without «Реквизиты»; what stops a form shows above the main button.
 
 **PR 1.13 — Three ways: cash, bank, crypto** (G3; ADR-0021)
-- [ ] Migration: card, SBP and «other» become bank; the CHECKs allow three.
+- [x] Migration: card, SBP and «other» become bank; the CHECKs allow three.
 
 **PR 1.14 — A way on from a link's screen** (G6)
 - [ ] A made link's screen leads Home with the main button.

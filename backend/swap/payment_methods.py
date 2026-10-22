@@ -16,10 +16,8 @@ from swap.money import Asset
 # A sanity cap: nobody pays into thirty accounts.
 MAX_SAVED = 30
 MAX_TEXT = 500
-# Whoever pays needs somewhere to send it; cash and «other» can do with a note or nothing.
-TEXT_REQUIRED = frozenset(
-    {PaymentKind.CARD, PaymentKind.PHONE, PaymentKind.BANK, PaymentKind.CRYPTO}
-)
+# Whoever pays needs somewhere to send it; cash can do with a note or nothing.
+TEXT_REQUIRED = frozenset({PaymentKind.BANK, PaymentKind.CRYPTO})
 
 
 class NewPaymentMethod(BaseModel):

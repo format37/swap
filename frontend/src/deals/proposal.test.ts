@@ -14,7 +14,7 @@ const ORDER = {
   amount_max: '150000.00',
   amount_remaining: '150000.00',
   available_from: '2026-10-25',
-  payout_methods: ['card', 'phone', 'cash'],
+  payout_methods: ['bank', 'crypto', 'cash'],
   receive_methods: ['cash', 'bank'],
   wants: [
     { currency: 'GEL', country: 'GE' },
@@ -26,7 +26,7 @@ function filled(changes: Partial<ProposalForm> = {}): ProposalForm {
   return {
     ...emptyProposal(ORDER, TODAY, 'ru'),
     amount: '50 000',
-    giveMethod: 'card',
+    giveMethod: 'bank',
     counterMethod: 'cash',
     ...changes,
   }
@@ -54,7 +54,7 @@ it('turns a filled form into exactly what the api takes', () => {
     want_currency: 'GEL',
     whole: false,
     first: 'proposer',
-    give_method: 'card',
+    give_method: 'bank',
     counter_method: 'cash',
     my_due: '2026-10-26',
     their_due: '2026-10-28',

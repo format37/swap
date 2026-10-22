@@ -30,7 +30,7 @@ def draft(**changes: Any) -> dict[str, Any]:
         "amount_max": "150000.00",
         "available_from": str(TODAY),
         "available_until": str(TODAY + timedelta(days=14)),
-        "payout_methods": ["card", "phone"],
+        "payout_methods": ["bank", "crypto"],
         "receive_methods": ["cash", "bank"],
         "wants": [{"currency": "GEL", "country": "GE"}, {"currency": "USD", "country": "GE"}],
         "rate_spec": {
@@ -316,6 +316,9 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
         ({"amount_min": "1e3"}, "validation_error"),
         ({"payout_methods": []}, "validation_error"),
         ({"payout_methods": ["pigeon"]}, "validation_error"),
+        # A card is a bank account now (QUESTIONS G3).
+        ({"payout_methods": ["card"]}, "validation_error"),
+        ({"receive_methods": ["phone"]}, "validation_error"),
         ({"receive_methods": []}, "validation_error"),
         ({"receive_methods": ["pigeon"]}, "validation_error"),
         ({"receive_methods": None}, "validation_error"),
@@ -356,7 +359,7 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
     assert order["amount_remaining"] == "150000.00"
     assert order["amount_min"] == "10000.00"
     assert order["note"] == "карта Сбер или СБП"
-    assert order["payout_methods"] == ["card", "phone"]
+    assert order["payout_methods"] == ["bank", "crypto"]
     assert order["wants"] == [
         {"currency": "GEL", "country": "GE"},
         {"currency": "USD", "country": "GE"},
@@ -462,7 +465,7 @@ async def test_an_order_says_how_its_author_pays_and_is_paid(client: AsyncClient
     alex = await person(client, ALEX)
     order = await publish(client, alex, receive_methods=["cash", "bank", "cash"])
     # In the order chosen, once each (QUESTIONS F2).
-    assert order["payout_methods"] == ["card", "phone"]
+    assert order["payout_methods"] == ["bank", "crypto"]
     assert order["receive_methods"] == ["cash", "bank"]
     card = await client.get(f"/api/v1/orders/{order['id']}", headers=alex)
     assert card.json()["receive_methods"] == ["cash", "bank"]
