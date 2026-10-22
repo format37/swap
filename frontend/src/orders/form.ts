@@ -14,6 +14,8 @@ export interface WantForm {
   /** «Зафиксировать курс» for this currency: off, it follows the market until a proposal
    * locks it (QUESTIONS G2, J1). */
   fixed: boolean
+  /** How the author takes this currency: GEL in cash or by bank, USD by bank (L1). */
+  receiveMethods: PaymentKind[]
 }
 
 /** The wizard's state: strings as typed, until «Опубликовать» (Q-B17: no server drafts). */
@@ -26,8 +28,6 @@ export interface OrderForm {
   /** Empty or 0: any amount (QUESTIONS F4). */
   least: string
   methods: PaymentKind[]
-  /** How the author can be paid, whichever currency they get (QUESTIONS F2). */
-  receiveMethods: PaymentKind[]
   from: string
   /** «Ограничить срок»: off, the order is open until its author closes it (F3). */
   limited: boolean
@@ -74,6 +74,7 @@ export function newWant(giveCurrency: string, currency = '', country = ''): Want
     flipped: strength(giveCurrency) < strength(currency),
     typed: false,
     fixed: false,
+    receiveMethods: [],
   }
 }
 
@@ -101,7 +102,6 @@ export function emptyForm(today: string): OrderForm {
     exact: false,
     least: '',
     methods: [],
-    receiveMethods: [],
     from: today,
     limited: false,
     repeats: false,
@@ -148,9 +148,10 @@ export function wantProblem(form: OrderForm): MessageKey | null {
     seen.add(want.currency)
     // The market's rate needs nothing typed (QUESTIONS G2).
     if (want.fixed && !parseRate(want.rate)) return 'wizard.error.rate'
+    // Each currency says how it is taken (QUESTIONS L1).
+    if (want.receiveMethods.length === 0) return 'wizard.error.methods'
   }
-  if (form.wants.length === 0) return 'wizard.error.choose'
-  return form.receiveMethods.length === 0 ? 'wizard.error.methods' : null
+  return form.wants.length === 0 ? 'wizard.error.choose' : null
 }
 
 /** What is wrong with step 2's «Кому видно», if anything. */
@@ -186,11 +187,11 @@ export function toDraft(form: OrderForm): OrderDraft {
     available_until: form.limited ? form.until : null,
     repeat_day: form.repeats ? Number(form.repeatDay) : null,
     payout_methods: form.methods,
-    receive_methods: form.receiveMethods,
     wants: form.wants.map((want) => ({
       currency: want.currency,
       country: want.country,
       rate_spec: specOf(form.giveCurrency, want),
+      receive_methods: want.receiveMethods,
     })),
     reach: form.reach,
     visible_to: form.reach === 0 ? form.chosen : null,

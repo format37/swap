@@ -53,6 +53,8 @@ class Want(BaseModel):
     country: Country
     # Fixed by the author, or the market's until a proposal locks it (QUESTIONS G2, J1).
     rate_spec: RateSpec
+    # How the author takes this currency (QUESTIONS L1, ADR-0037).
+    receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
 
 
 # How far an order is seen, in handshakes (ADR-0028): 0 is its list, None is ∞.
@@ -78,8 +80,6 @@ class OrderDraft(BaseModel):
     # None: open until its author closes it (QUESTIONS F3).
     available_until: date | None = None
     payout_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
-    # How the author can be paid, whichever currency they get (QUESTIONS F2).
-    receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
     wants: list[Want] = Field(min_length=1, max_length=8)
     reach: Reach = DEFAULT_REACH
     # «Повторять каждый месяц, N-го числа» (QUESTIONS K7); None: once.
@@ -209,7 +209,6 @@ async def create(
         available_from=draft.available_from,
         available_until=draft.available_until,
         payout_methods=list(dict.fromkeys(draft.payout_methods)),
-        receive_methods=list(dict.fromkeys(draft.receive_methods)),
         note=(draft.note or "").strip() or None,
         reach=draft.reach,
         repeat_day=draft.repeat_day,
@@ -220,6 +219,7 @@ async def create(
                 country=want.country,
                 position=position,
                 rate_spec=want.rate_spec.model_dump(mode="json"),
+                receive_methods=list(dict.fromkeys(want.receive_methods)),
             )
             for position, want in enumerate(draft.wants)
         ],

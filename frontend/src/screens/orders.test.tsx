@@ -78,10 +78,19 @@ function order(changes: Partial<Order> = {}): Order {
     available_from: '2026-10-25',
     available_until: '2026-11-08',
     payout_methods: ['bank'],
-    receive_methods: ['cash', 'crypto'],
     wants: [
-      { currency: 'GEL', country: 'GE', rate_spec: fixed('GEL', 'RUB', '29.20') },
-      { currency: 'USD', country: 'GE', rate_spec: fixed('USD', 'RUB', '81.50') },
+      {
+        currency: 'GEL',
+        country: 'GE',
+        rate_spec: fixed('GEL', 'RUB', '29.20'),
+        receive_methods: ['cash', 'crypto'],
+      },
+      {
+        currency: 'USD',
+        country: 'GE',
+        rate_spec: fixed('USD', 'RUB', '81.50'),
+        receive_methods: ['bank'],
+      },
     ],
     note: 'наличные у метро',
     status: 'open',
@@ -364,8 +373,14 @@ describe('the wizard', () => {
       amount_min: '10000',
       available_until: null,
       payout_methods: ['bank'],
-      receive_methods: ['cash'],
-      wants: [{ currency: 'GEL', country: 'GE', rate_spec: fixed('GEL', 'RUB', '29.20') }],
+      wants: [
+        {
+          currency: 'GEL',
+          country: 'GE',
+          rate_spec: fixed('GEL', 'RUB', '29.20'),
+          receive_methods: ['cash'],
+        },
+      ],
       reach: 2,
       visible_to: null,
       note: 'вечером',
@@ -465,21 +480,27 @@ describe('the wizard', () => {
       }),
     )
     fireEvent.change(first as HTMLElement, { target: { value: 'GEL' } })
+    // GEL in cash or by bank...
+    const gelWays = screen.getByRole('group', { name: 'Как получать' })
+    fireEvent.click(within(gelWays).getByRole('button', { name: 'Наличные' }))
+    fireEvent.click(within(gelWays).getByRole('button', { name: 'Банк' }))
     fireEvent.click(screen.getByRole('button', { name: 'Ещё валюта' }))
     const second = screen.getAllByRole('combobox', { name: /^Валюта/ })[2] as HTMLElement
     fireEvent.change(second, { target: { value: 'USD' } })
     fireEvent.change(screen.getAllByRole('combobox', { name: /^Страна/ })[2] as HTMLElement, {
       target: { value: 'GE' },
     })
+    // ...and USD, which starts with GEL's ways, by bank alone (QUESTIONS L1).
+    const usdWays = screen.getAllByRole('group', { name: 'Как получать' })[1] as HTMLElement
+    expect(within(usdWays).getByRole('button', { name: 'Наличные' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    fireEvent.click(within(usdWays).getByRole('button', { name: 'Наличные' }))
     // GEL follows the market; USD is fixed, so only USD's rate asks to be typed.
     const switches = screen.getAllByRole('switch', { name: 'Зафиксировать курс' })
     fireEvent.click(switches[1] as HTMLElement)
     expect(switches[0]).toHaveAttribute('aria-checked', 'false')
-    fireEvent.click(
-      within(screen.getByRole('group', { name: 'Как получать' })).getByRole('button', {
-        name: 'Наличные',
-      }),
-    )
     press()
     expect(await screen.findByText('Введите курс, например 29,20')).toBeInTheDocument()
     fireEvent.change(screen.getByRole('textbox', { name: 'Курс' }), { target: { value: '81,50' } })
@@ -493,8 +514,13 @@ describe('the wizard', () => {
     await screen.findByTestId('elsewhere')
     expect(published).toMatchObject({
       wants: [
-        { currency: 'GEL', country: 'GE', rate_spec: MARKET },
-        { currency: 'USD', country: 'GE', rate_spec: fixed('USD', 'RUB', '81.50') },
+        { currency: 'GEL', country: 'GE', rate_spec: MARKET, receive_methods: ['cash', 'bank'] },
+        {
+          currency: 'USD',
+          country: 'GE',
+          rate_spec: fixed('USD', 'RUB', '81.50'),
+          receive_methods: ['bank'],
+        },
       ],
     })
   })
@@ -576,10 +602,12 @@ describe('the order card', () => {
     expect(within(wants as HTMLElement).getAllByText(/Курс: 1/)[0]).toHaveTextContent(
       'Курс: 1 ₾GEL = 29,20 ₽RUB',
     )
-    expect(screen.getByText('Банк')).toBeInTheDocument()
-    // How the author is paid sits with what they want (F2).
+    // How the author takes each currency sits with it (F2, L1): GEL in cash or crypto, USD
+    // by bank; and how they pay out, by bank too, with what they give.
     expect(within(wants as HTMLElement).getByText('Наличные')).toBeInTheDocument()
     expect(within(wants as HTMLElement).getByText('Крипто')).toBeInTheDocument()
+    expect(within(wants as HTMLElement).getByText('Банк')).toBeInTheDocument()
+    expect(screen.getAllByText('Банк')).toHaveLength(2)
     expect(screen.getByText('наличные у метро')).toBeInTheDocument()
     // Someone else's order: no list of who sees it, and nothing to close.
     expect(screen.queryByText(/Видно/)).toBeNull()
@@ -731,7 +759,14 @@ describe('the order card', () => {
     at.setHours(12, 0, 0, 0)
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>
-        json(200, order({ wants: [{ currency: 'GEL', country: 'GE', rate_spec: MARKET }] })),
+        json(
+          200,
+          order({
+            wants: [
+              { currency: 'GEL', country: 'GE', rate_spec: MARKET, receive_methods: ['cash'] },
+            ],
+          }),
+        ),
       'GET /api/v1/rates/market': () =>
         json(200, {
           base: 'GEL',

@@ -1034,13 +1034,6 @@
             "title": "Payout Methods",
             "type": "array"
           },
-          "receive_methods": {
-            "items": {
-              "$ref": "#/components/schemas/PaymentKind"
-            },
-            "title": "Receive Methods",
-            "type": "array"
-          },
           "repeat_day": {
             "anyOf": [
               {
@@ -1086,7 +1079,6 @@
           "available_from",
           "available_until",
           "payout_methods",
-          "receive_methods",
           "wants",
           "note",
           "status",
@@ -1184,15 +1176,6 @@
             "default": 2,
             "title": "Reach"
           },
-          "receive_methods": {
-            "items": {
-              "$ref": "#/components/schemas/PaymentKind"
-            },
-            "maxItems": 3,
-            "minItems": 1,
-            "title": "Receive Methods",
-            "type": "array"
-          },
           "repeat_day": {
             "anyOf": [
               {
@@ -1239,7 +1222,6 @@
           "amount_max",
           "available_from",
           "payout_methods",
-          "receive_methods",
           "wants"
         ],
         "title": "OrderDraft",
@@ -1844,12 +1826,22 @@
               }
             ],
             "title": "Rate Spec"
+          },
+          "receive_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentKind"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Receive Methods",
+            "type": "array"
           }
         },
         "required": [
           "currency",
           "country",
-          "rate_spec"
+          "rate_spec",
+          "receive_methods"
         ],
         "title": "Want",
         "type": "object"

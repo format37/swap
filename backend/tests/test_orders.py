@@ -28,12 +28,24 @@ def fixed(base: str, quote: str, value: str) -> dict[str, Any]:
     return {"v": 1, "type": "fixed", "quotes": [{"base": base, "quote": quote, "value": value}]}
 
 
-def want(currency: str, country: str, rate_spec: dict[str, Any] = MARKET) -> dict[str, Any]:
-    return {"currency": currency, "country": country, "rate_spec": rate_spec}
+def want(
+    currency: str,
+    country: str,
+    rate_spec: dict[str, Any] = MARKET,
+    ways: tuple[str, ...] = ("cash", "bank"),
+) -> dict[str, Any]:
+    """A wanted currency with its rate and how the author takes it (ADR-0026, ADR-0037)."""
+    return {
+        "currency": currency,
+        "country": country,
+        "rate_spec": rate_spec,
+        "receive_methods": list(ways),
+    }
 
 
 def draft(**changes: Any) -> dict[str, Any]:
-    """The wizard's order: up to 150 000 RUB in Russia, for GEL or USD in Georgia."""
+    """The wizard's order: up to 150 000 RUB in Russia, for GEL in cash or by bank, or USD
+    by bank alone, in Georgia (QUESTIONS L1)."""
     return {
         "give_currency": "RUB",
         "give_country": "RU",
@@ -42,10 +54,9 @@ def draft(**changes: Any) -> dict[str, Any]:
         "available_from": str(TODAY),
         "available_until": str(TODAY + timedelta(days=14)),
         "payout_methods": ["bank", "crypto"],
-        "receive_methods": ["cash", "bank"],
         "wants": [
             want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
-            want("USD", "GE", fixed("USD", "RUB", "81.50")),
+            want("USD", "GE", fixed("USD", "RUB", "81.50"), ways=("bank",)),
         ],
         **changes,
     }
@@ -330,10 +341,16 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
         ({"payout_methods": ["pigeon"]}, "validation_error"),
         # A card is a bank account now (QUESTIONS G3).
         ({"payout_methods": ["card"]}, "validation_error"),
-        ({"receive_methods": ["phone"]}, "validation_error"),
-        ({"receive_methods": []}, "validation_error"),
-        ({"receive_methods": ["pigeon"]}, "validation_error"),
-        ({"receive_methods": None}, "validation_error"),
+        # How the author is paid is each currency's own now (QUESTIONS L1).
+        ({"receive_methods": ["cash"]}, "validation_error"),
+        ({"wants": [want("GEL", "GE", ways=("phone",))]}, "validation_error"),
+        ({"wants": [want("GEL", "GE", ways=())]}, "validation_error"),
+        ({"wants": [want("GEL", "GE", ways=("pigeon",))]}, "validation_error"),
+        ({"wants": [{**want("GEL", "GE"), "receive_methods": None}]}, "validation_error"),
+        (
+            {"wants": [{"currency": "GEL", "country": "GE", "rate_spec": MARKET}]},
+            "validation_error",
+        ),
         ({"give_country": "Russia"}, "validation_error"),
         ({"wants": []}, "validation_error"),
         # Each wanted currency says its rate; the order no longer has one of its own.
@@ -380,7 +397,7 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
     assert order["payout_methods"] == ["bank", "crypto"]
     assert order["wants"] == [
         want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
-        want("USD", "GE", fixed("USD", "RUB", "81.50")),
+        want("USD", "GE", fixed("USD", "RUB", "81.50"), ways=("bank",)),
     ]
     # «Мои связи и их связи» unless the author says otherwise (QUESTIONS J2).
     assert order["visibility"] == {"reach": 2, "people": []}
@@ -481,12 +498,14 @@ async def test_closing_an_order_twice_is_refused(client: AsyncClient) -> None:
 
 async def test_an_order_says_how_its_author_pays_and_is_paid(client: AsyncClient) -> None:
     alex = await person(client, ALEX)
-    order = await publish(client, alex, receive_methods=["cash", "bank", "cash"])
-    # In the order chosen, once each (QUESTIONS F2).
+    wants = [want("GEL", "GE", ways=("cash", "bank", "cash")), want("USD", "GE", ways=("bank",))]
+    order = await publish(client, alex, wants=wants)
+    # In the order chosen, once each (QUESTIONS F2), and for each currency its own (L1).
     assert order["payout_methods"] == ["bank", "crypto"]
-    assert order["receive_methods"] == ["cash", "bank"]
-    card = await client.get(f"/api/v1/orders/{order['id']}", headers=alex)
-    assert card.json()["receive_methods"] == ["cash", "bank"]
+    assert [w["receive_methods"] for w in order["wants"]] == [["cash", "bank"], ["bank"]]
+    assert "receive_methods" not in order
+    card = (await client.get(f"/api/v1/orders/{order['id']}", headers=alex)).json()
+    assert [w["receive_methods"] for w in card["wants"]] == [["cash", "bank"], ["bank"]]
 
 
 async def test_an_order_needs_no_minimum_and_no_last_day(

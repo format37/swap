@@ -173,7 +173,8 @@ async def propose(
         raise _refuse("deal.amount_range", 422)
     if proposal.give_method not in order.payout_methods:
         raise _refuse("deal.method_not_offered", 422)
-    if proposal.counter_method not in order.receive_methods:
+    # Paid in one of the ways the author takes the chosen currency (QUESTIONS L1).
+    if proposal.counter_method not in want.receive_methods:
         raise _refuse("deal.method_not_accepted", 422)
 
     # The wanted currency's own rate, the author's or the market's of this moment, locked

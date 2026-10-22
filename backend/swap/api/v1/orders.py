@@ -47,8 +47,7 @@ class Order(BaseModel):
     # None: open until its author closes it.
     available_until: date | None
     payout_methods: list[PaymentKind]
-    receive_methods: list[PaymentKind]
-    # Each with its own rate (ADR-0026).
+    # Each with its own rate (ADR-0026) and ways to be paid (ADR-0037).
     wants: list[Want]
     note: str | None
     status: OrderStatus
@@ -77,12 +76,12 @@ class Order(BaseModel):
             available_from=order.available_from,
             available_until=order.available_until,
             payout_methods=[PaymentKind(kind) for kind in order.payout_methods],
-            receive_methods=[PaymentKind(kind) for kind in order.receive_methods],
             wants=[
                 Want(
                     currency=want.currency,
                     country=want.country,
                     rate_spec=parse_spec(want.rate_spec),
+                    receive_methods=[PaymentKind(kind) for kind in want.receive_methods],
                 )
                 for want in order.wants
             ],

@@ -229,7 +229,6 @@ describe('the proposal', () => {
     available_from: '2026-10-22',
     available_until: '2099-11-05',
     payout_methods: ['bank', 'cash'],
-    receive_methods: ['cash', 'crypto'],
     wants: [
       {
         currency: 'GEL',
@@ -239,6 +238,7 @@ describe('the proposal', () => {
           type: 'fixed',
           quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }],
         },
+        receive_methods: ['cash', 'crypto'],
       },
     ],
     note: null,

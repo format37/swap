@@ -93,10 +93,10 @@ function MarketRate({ give, want }: { give: string; want: string }) {
 }
 
 /** The ways money can move, as plain pills: «Наличные», «Банк». */
-function Methods({ kinds }: { kinds: PaymentKind[] }) {
+function Methods({ kinds, inset = true }: { kinds: PaymentKind[]; inset?: boolean }) {
   const { t } = useI18n()
   return (
-    <div className="flex flex-wrap gap-2 px-4 py-3">
+    <div className={`flex flex-wrap gap-2 ${inset ? 'px-4 py-3' : 'pt-1.5'}`}>
       {KINDS.filter(({ kind }) => kinds.includes(kind)).map(({ kind, icon: Icon, label }) => (
         <span
           key={kind}
@@ -200,11 +200,11 @@ function Shown({ order, me }: { order: Order; me: Me }) {
               {want.rate_spec.type === 'reference' && (
                 <MarketRate give={order.give_currency} want={want.currency} />
               )}
+              {/* How the author takes this currency (QUESTIONS L1). */}
+              <Methods kinds={want.receive_methods} inset={false} />
             </div>
           )
         })}
-        {/* How the author can be paid, whichever currency comes (F2). */}
-        <Methods kinds={order.receive_methods} />
       </Section>
 
       {order.note && (

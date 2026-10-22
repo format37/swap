@@ -4,6 +4,7 @@ import {
   proposalProblem,
   sliderRange,
   toProposal,
+  withWant,
   type ProposalForm,
 } from './proposal'
 
@@ -13,10 +14,10 @@ const ORDER = {
   amount_remaining: '150000.00',
   available_from: '2026-10-25',
   payout_methods: ['bank', 'crypto', 'cash'],
-  receive_methods: ['cash', 'bank'],
+  // GEL in cash or by bank, USD by bank alone (QUESTIONS L1).
   wants: [
-    { currency: 'GEL', country: 'GE' },
-    { currency: 'USD', country: 'GE' },
+    { currency: 'GEL', country: 'GE', receive_methods: ['cash', 'bank'] },
+    { currency: 'USD', country: 'GE', receive_methods: ['bank'] },
   ],
 } as Order
 
@@ -39,7 +40,29 @@ it('starts with all that remains and the first wanted currency', () => {
   expect([form.giveMethod, form.counterMethod]).toEqual(['', ''])
   // One way is no choice at all.
   expect(emptyProposal({ ...ORDER, payout_methods: ['cash'] }, 'ru').giveMethod).toBe('cash')
-  expect(emptyProposal({ ...ORDER, receive_methods: ['bank'] }, 'ru').counterMethod).toBe('bank')
+  const usdFirst = { ...ORDER, wants: [...ORDER.wants].reverse() }
+  expect(emptyProposal(usdFirst, 'ru').counterMethod).toBe('bank')
+})
+
+it('offers the ways of the currency picked, keeping one that it takes too (L1)', () => {
+  // Cash for GEL; USD is taken by bank alone, so bank it is.
+  expect(withWant(filled({ counterMethod: 'cash' }), ORDER, 'USD')).toEqual({
+    want: 'USD',
+    counterMethod: 'bank',
+  })
+  // Bank for USD stays bank for GEL, which takes it too.
+  expect(withWant(filled({ want: 'USD', counterMethod: 'bank' }), ORDER, 'GEL')).toEqual({
+    want: 'GEL',
+    counterMethod: 'bank',
+  })
+  // Cash for GEL can't go to a currency taken by bank or crypto: the proposer picks.
+  const two: Order = {
+    ...ORDER,
+    wants: ORDER.wants.map((want) =>
+      want.currency === 'USD' ? { ...want, receive_methods: ['bank', 'crypto'] } : want,
+    ),
+  }
+  expect(withWant(filled({ counterMethod: 'cash' }), two, 'USD').counterMethod).toBe('')
 })
 
 it('turns a filled form into exactly what the api takes', () => {
