@@ -12,6 +12,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part D** records the owner's own decisions of 2026-10-21.
 - **Part E** was raised while planning phase 1. I follow its defaults until you answer.
 - **Part F** records the owner's notes after his first test of slice 1, on 2026-10-22.
+- **Part G** records his notes after the demo with others, the same day, and asks G7.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -565,3 +566,84 @@ The author can reopen an order they closed, as it was, and delete an order that 
 longer open. A deleted order is gone from every list and card, the author's included,
 while its deals run to the end. Of delete, archive and hide, delete is built: next to
 reopening, an archive would be a second home for the same orders. → PR 1.11.
+
+## G. The owner's notes after the demo with others (2026-10-22)
+
+The owner and two acquaintances tried slice 1 together. Links and an order worked, but
+no proposal went through. He sent six notes and then a seventh. Like part F, they are
+decisions; where they differ from Q-B3, Q-B8 or part F, they win. ADR-0021 and ADR-0022
+hold the details.
+
+### G1 · Narrower choices when taking an order, and no name and details
+
+> Когда пользователь соглашается на сделку - он выбирает валюту которую он будет
+> отдавать - выбор нужно сузить из того что предлагает сделка изначально. Список валют,
+> список способов оплаты. И не нужно требовать указать name and details.
+
+The proposal already offers only the order's currencies and ways (F2). What offered
+everything was «Add payment details», which the proposal sent people to: of four entries
+saved that day, two are in AMD and EUR, for an order in RUB. With G3, payment details
+leave deals: neither the proposal nor accepting asks for them. → PR 1.12.
+
+### G2 · The market rate by default
+
+> Когда моя заявка висит и видна другим пользователям - пусть по умолчанию она висит с
+> динамическим курсом если я не зафиксировал его при создании. то есть каждый раз когда
+> кто то видит заявку, курс подтягивается с API.
+
+An order follows the market (Coinbase, ADR-0020) unless its author fixes the rate on
+step 2. Whoever opens it sees the rate of the moment, and a proposal locks the rate it
+was made at (Q-B3). → PR 1.15, ADR-0022.
+
+### G3 · Only what the exchange needs
+
+> В целом хорошо было бы упростить интерфейс там где это разумно. Например, Add payment
+> details и вовсе не нужен. Выбрали из доступных и все. Впринципе, даже какой банк не
+> так важно. Об этом можно написать в комментарии при желании. Задача приложения
+> спланировать обмен. А детали - они уже сами разберут. Важно только какая валюта на
+> какую меняется, сумма, срок, способ обмена - нал, банк или крипта
+
+- No payment details anywhere. The profile loses «Реквизиты», and a deal shows no
+  account numbers. The proposal gets an optional comment for the rest, such as which
+  bank. → PR 1.12.
+- Three ways: cash, bank and crypto. Card, SBP and «other» become bank, in orders and
+  deals alike. → PR 1.13.
+
+### G4 · The whole amount by default
+
+> Amount пусть будет full by default (если еще не. мне показалось он 0, но я не уверен)
+
+It wasn't: the field was empty, with a grey 0 in it. A proposal now starts at all that
+remains. → PR 1.12.
+
+### G5 · «Send proposal» did nothing
+
+> И главное, принять заявку у @menshikov_av так и не получилось. Send proposal - no
+> reaction.
+
+> the issue maybe was in requirement of choosing the payment type which was buggy - not
+> chosen after each submit click
+
+No proposal reached the api that day. The form stopped itself, and said why in a line at
+the foot of a long page, out of sight. The likeliest reason was the payment details it
+required (G1). Every form now keeps what stops it in sight, just above the main button.
+→ PR 1.12.
+
+### G6 · No way on from a link's screen
+
+> После приглашения, если снова нажать по кнопке Open пользователь снова попадает на
+> страницу приглашения. Но совсем не очевидно что надо нажать на back в левом верхнем
+> углу - что сбивает пользователя с толку и он не знает что делать дальше.
+
+The bot's «Открыть» leads to the link's screen, which offers only «Разорвать» once the
+link is made. It now has a main button to Home. → PR 1.14.
+
+### G7 · The payment details already saved (asked 2026-10-22)
+
+Four entries were saved before G3. They are sealed with the key on the VPS, and since
+PR 1.12 nothing in the app reads them.
+
+**Proposed:** delete them in slice 2, with their table, their api and the key. They stay
+until you answer, because deleting them can't be undone.
+
+**Answer:**

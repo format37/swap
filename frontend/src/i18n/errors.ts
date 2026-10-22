@@ -18,10 +18,6 @@ const BY_CODE: Partial<Record<string, MessageKey>> = {
   // Someone changed it in another window: closed, reopened or deleted it.
   'order.not_closed': 'error.order_changed',
   'order.open': 'error.order_changed',
-  'payment.unavailable': 'error.payment_unavailable',
-  'payment.text_required': 'error.payment_text_required',
-  'payment.limit': 'error.payment_limit',
-  'payment.not_found': 'error.payment_not_found',
   'deal.not_found': 'error.deal_not_found',
   'deal.invalid_transition': 'error.deal_changed',
   'deal.not_your_move': 'error.deal_not_yours',

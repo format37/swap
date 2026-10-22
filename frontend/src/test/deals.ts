@@ -26,12 +26,11 @@ function leg(changes: Partial<Leg>): Leg {
     due_date: '2026-10-26',
     sent_at: null,
     received_at: null,
-    recipient: null,
     ...changes,
   }
 }
 
-/** Nino's proposal on Alex's order: GEL cash to Alex first, then RUB to Nino's card. */
+/** Nino's proposal on Alex's order: GEL cash to Alex first, then RUB to Nino by card. */
 export function deal(changes: Partial<Deal> = {}): Deal {
   return {
     id: DEAL_ID,
@@ -51,6 +50,7 @@ export function deal(changes: Partial<Deal> = {}): Deal {
     dispute_note: null,
     resolution: null,
     resolution_by: null,
+    note: null,
     legs: [
       leg({}),
       leg({
@@ -62,7 +62,6 @@ export function deal(changes: Partial<Deal> = {}): Deal {
         amount: '50000.00',
         method: 'card',
         due_date: '2026-10-28',
-        recipient: { title: 'Бабушка', masked: '•••• 5678', full: null },
       }),
     ],
     events: [{ type: 'proposed', actor_id: NINO.id, at: '2026-10-22T10:00:00Z', to: 'proposed' }],

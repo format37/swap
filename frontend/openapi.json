@@ -94,6 +94,17 @@
             "title": "Legs",
             "type": "array"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
           "order_id": {
             "format": "uuid",
             "title": "Order Id",
@@ -162,6 +173,7 @@
           "dispute_note",
           "resolution",
           "resolution_by",
+          "note",
           "legs",
           "events"
         ],
@@ -420,16 +432,6 @@
             ],
             "title": "Received At"
           },
-          "recipient": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Recipient"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "sent_at": {
             "anyOf": [
               {
@@ -457,8 +459,7 @@
           "method",
           "due_date",
           "sent_at",
-          "received_at",
-          "recipient"
+          "received_at"
         ],
         "title": "Leg",
         "type": "object"
@@ -1275,17 +1276,17 @@
             "title": "My Due",
             "type": "string"
           },
-          "receive_with": {
+          "note": {
             "anyOf": [
               {
-                "format": "uuid",
+                "maxLength": 500,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Receive With"
+            "title": "Note"
           },
           "their_due": {
             "format": "date",
@@ -1436,71 +1437,6 @@
           "value"
         ],
         "title": "Rate",
-        "type": "object"
-      },
-      "Receipt": {
-        "additionalProperties": false,
-        "description": "What accepting sends: where the author wants the other currency. None for cash.",
-        "properties": {
-          "receive_with": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Receive With"
-          }
-        },
-        "title": "Receipt",
-        "type": "object"
-      },
-      "Recipient": {
-        "description": "Where the payer sends: the payee's chosen payment details (ADR-0010).",
-        "properties": {
-          "full": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Full"
-          },
-          "masked": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Masked"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          }
-        },
-        "required": [
-          "title",
-          "masked",
-          "full"
-        ],
-        "title": "Recipient",
         "type": "object"
       },
       "Resolution": {
@@ -1934,7 +1870,7 @@
     },
     "/api/v1/deals/{deal_id}/accept": {
       "post": {
-        "description": "Accept a proposal on your order. Cash needs no payment details, so no body either.",
+        "description": "Accept a proposal on your order: one tap, no payment details (QUESTIONS G1).",
         "operationId": "accept_deal",
         "parameters": [
           {
@@ -1948,23 +1884,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/Receipt"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Body"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "content": {
@@ -2020,21 +1939,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Problem"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             },
-            "description": "Unprocessable Entity"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Service Unavailable"
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -4021,16 +3930,6 @@
               }
             },
             "description": "Unprocessable Entity"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Service Unavailable"
           }
         },
         "security": [

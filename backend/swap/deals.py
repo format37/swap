@@ -23,8 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swap import orders, payment_methods
-from swap.crypto import Keys, deal_leg_aad
+from swap import orders
 from swap.deeplinks import target
 from swap.errors import DomainError
 from swap.journal import TERMINAL, record, start
@@ -36,7 +35,6 @@ from swap.models import (
     Order,
     OrderStatus,
     PaymentKind,
-    PaymentMethod,
     User,
 )
 from swap.money import Asset, Money
@@ -67,22 +65,15 @@ class Proposal(BaseModel):
     first: Literal["proposer", "author"] = "proposer"
     # How the author pays out: one of the order's own ways.
     give_method: PaymentKind
-    # Where the proposer wants it: their saved details for that currency. None for cash.
-    receive_with: uuid.UUID | None = None
     # How the proposer pays the other currency, «в ответ GEL наличными»: one of the ways
     # the order's author can be paid (QUESTIONS F2).
     counter_method: PaymentKind
     # The due date of the proposer's own transfer, and of the author's.
     my_due: date
     their_due: date
-
-
-class Receipt(BaseModel):
-    """What accepting sends: where the author wants the other currency. None for cash."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    receive_with: uuid.UUID | None = None
+    # Anything else, such as which bank: the parties settle the details themselves
+    # (QUESTIONS G3).
+    note: str | None = Field(default=None, max_length=500)
 
 
 class Dispute(BaseModel):
@@ -142,34 +133,6 @@ async def _lock(db: AsyncSession, me: uuid.UUID, deal_id: uuid.UUID) -> Deal:
     return deal
 
 
-async def _fill_details(
-    db: AsyncSession,
-    leg: DealLeg,
-    payee: uuid.UUID,
-    method_id: uuid.UUID | None,
-    keys: Keys | None,
-) -> None:
-    """Copy the payee's chosen payment details into the leg, sealed for it (ADR-0010)."""
-    if method_id is None:
-        # Cash needs no details: they meet.
-        if leg.method != PaymentKind.CASH:
-            raise _refuse("deal.details_required", 422)
-        return
-    entry = await db.scalar(
-        select(PaymentMethod).where(PaymentMethod.id == method_id, PaymentMethod.user_id == payee)
-    )
-    if entry is None:
-        raise _refuse("deal.details_unknown", 422)
-    if entry.asset != leg.currency:
-        raise _refuse("deal.details_mismatch", 422)
-    leg.recipient_title = entry.title
-    if entry.details is not None:
-        text = payment_methods.reveal(entry, keys)
-        if keys is None or text is None:
-            raise _refuse("payment.unavailable", 503)
-        leg.recipient_details = keys.seal(text, deal_leg_aad(leg.id))
-
-
 async def _restore(db: AsyncSession, deal: Deal) -> None:
     """An accepted deal that ends cancelled gives its amount back to the order (FR-2.3)."""
     order = await db.scalar(select(Order).where(Order.id == deal.order_id).with_for_update())
@@ -183,7 +146,7 @@ async def _restore(db: AsyncSession, deal: Deal) -> None:
 
 
 async def propose(
-    db: AsyncSession, proposer: User, order_id: uuid.UUID, proposal: Proposal, keys: Keys | None
+    db: AsyncSession, proposer: User, order_id: uuid.UUID, proposal: Proposal
 ) -> Deal:
     """A deal proposed on an order the proposer can see (FR-4.1)."""
     order, author = await orders.get(db, proposer.id, order_id)
@@ -227,6 +190,7 @@ async def propose(
         rate_locked_at=now,
         whole=proposal.whole,
         expires_at=now + PROPOSAL_TTL,
+        note=(proposal.note or "").strip() or None,
     )
     give = DealLeg(
         id=uuid.uuid4(),
@@ -249,7 +213,6 @@ async def propose(
         due_date=proposal.my_due,
     )
     take.seq, give.seq = (1, 2) if proposal.first == "proposer" else (2, 1)
-    await _fill_details(db, give, proposer.id, proposal.receive_with, keys)
     deal.legs = sorted([give, take], key=lambda leg: leg.seq)
     db.add(deal)
     await db.flush()
@@ -268,17 +231,13 @@ async def propose(
     return deal
 
 
-async def accept(
-    db: AsyncSession, actor: User, deal_id: uuid.UUID, receipt: Receipt, keys: Keys | None
-) -> Deal:
+async def accept(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
     """The author takes the proposal: its amount leaves the order's remainder (FR-2.3)."""
     deal = await _lock(db, actor.id, deal_id)
     _require(deal, DealStatus.PROPOSED)
     _mine(actor.id == deal.acceptor_id)
     if datetime.now(UTC) >= deal.expires_at:
         raise _refuse("deal.expired")
-    take = next(leg for leg in deal.legs if leg.payee_id == deal.acceptor_id)
-    await _fill_details(db, take, actor.id, receipt.receive_with, keys)
 
     order = await db.scalar(select(Order).where(Order.id == deal.order_id).with_for_update())
     if order is None or order.status != OrderStatus.OPEN:

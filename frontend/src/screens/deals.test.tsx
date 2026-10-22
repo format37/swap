@@ -82,27 +82,13 @@ describe('the deal card', () => {
     })
   })
 
-  it('lets the author accept, choosing where to be paid when it isn’t cash', async () => {
-    let body: unknown
-    fakeApi({
+  it('lets the author accept in one tap, with no payment details', async () => {
+    let body: unknown = 'none'
+    const { served } = fakeApi({
       [`GET /api/v1/deals/${DEAL_ID}`]: () =>
-        json(200, {
-          ...deal({ role: 'acceptor' }),
-          legs: deal().legs.map((leg) => (leg.seq === 1 ? { ...leg, method: 'bank' } : leg)),
-        }),
-      'GET /api/v1/payment-methods': () =>
-        json(200, [
-          {
-            id: 'e0000000-0000-4000-8000-000000000009',
-            asset: 'GEL',
-            kind: 'bank',
-            title: 'TBC',
-            details: { masked: '•••• 7777', full: 'GE29TB7777777777777777' },
-            created_at: '2026-10-22T10:00:00Z',
-          },
-        ]),
+        json(200, { ...deal({ role: 'acceptor' }), note: 'Переведу с Т-Банка' }),
       [`POST /api/v1/deals/${DEAL_ID}/accept`]: async (request) => {
-        body = await request.json()
+        body = await request.text()
         return json(200, deal({ status: 'accepted', role: 'acceptor' }))
       },
     })
@@ -110,16 +96,26 @@ describe('the deal card', () => {
     expect(
       await screen.findByText('Новое предложение: примите его или отклоните'),
     ).toBeInTheDocument()
-    // The payer sees only the mask before accepting (Q-B8).
-    expect(screen.getByText(/•••• 5678/)).toHaveTextContent('Реквизиты откроются')
+    // The proposer's word on the rest, such as which bank (QUESTIONS G3).
+    expect(screen.getByText('Переведу с Т-Банка')).toBeInTheDocument()
     expect(mainButton()?.text).toBe('Принять')
     press()
-    expect(await screen.findByText('Выберите, куда вам заплатить')).toBeInTheDocument()
-    fireEvent.click(await screen.findByRole('radio', { name: /TBC/ }))
-    press()
     await waitFor(() => {
-      expect(body).toEqual({ receive_with: 'e0000000-0000-4000-8000-000000000009' })
+      expect(served).toContain(`POST /api/v1/deals/${DEAL_ID}/accept`)
     })
+    expect(body).toBe('')
+    expect(served).not.toContain('GET /api/v1/payment-methods')
+  })
+
+  it('keeps a refusal in sight above the main button', async () => {
+    fakeApi({
+      [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal({ role: 'acceptor' })),
+      [`POST /api/v1/deals/${DEAL_ID}/accept`]: () => problem(409, 'deal.expired'),
+    })
+    renderScreen(<DealCard me={meOf(ALEX)} />, { route, path })
+    await screen.findByText('Новое предложение: примите его или отклоните')
+    press()
+    expect(await screen.findByRole('alert')).toHaveTextContent(/истекло/)
   })
 
   it('tells a stranger only that there is no such deal', async () => {
@@ -151,21 +147,10 @@ describe('the proposal', () => {
     visibility: null,
   }
 
-  it('sends exactly what was chosen, with the counter-amount from the api', async () => {
+  it('starts at all that remains, and sends exactly what was chosen', async () => {
     let sent: unknown
-    fakeApi({
+    const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER.id}`]: () => json(200, ORDER),
-      'GET /api/v1/payment-methods': () =>
-        json(200, [
-          {
-            id: 'e0000000-0000-4000-8000-000000000001',
-            asset: 'RUB',
-            kind: 'card',
-            title: 'Бабушка',
-            details: { masked: '•••• 5678', full: '2202 2061 1234 5678' },
-            created_at: '2026-10-22T10:00:00Z',
-          },
-        ]),
       'POST /api/v1/quote': () => json(200, { amount: '1712.33' }),
       [`POST /api/v1/orders/${ORDER.id}/deals`]: async (request) => {
         sent = await request.json()
@@ -176,15 +161,20 @@ describe('the proposal', () => {
       route: `/orders/${ORDER.id}/propose`,
       path: '/orders/:id/propose',
     })
-    fireEvent.change(await screen.findByRole('textbox', { name: 'Сколько вы хотите получить' }), {
-      target: { value: '50 000' },
-    })
+    const amount = await screen.findByRole('textbox', { name: 'Сколько вы хотите получить' })
+    // All that remains, unless the proposer wants less (QUESTIONS G4).
+    expect(amount).toHaveValue('150\u00a0000')
+    fireEvent.change(amount, { target: { value: '50 000' } })
     await waitFor(() => {
       expect(document.body).toHaveTextContent('Взамен вы отдаёте 1 712,33₾GEL')
     })
     fireEvent.click(screen.getAllByRole('button', { name: 'Карта' })[0] as HTMLElement)
-    fireEvent.click(await screen.findByRole('radio', { name: /Бабушка/ }))
+    // Card or not, no payment details are asked for (QUESTIONS G1).
+    expect(screen.queryByRole('radio', { name: /•••/ })).toBeNull()
     fireEvent.click(screen.getAllByRole('button', { name: 'Наличные' })[1] as HTMLElement)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Комментарий, по желанию' }), {
+      target: { value: 'Переведу с Т-Банка' },
+    })
     // Only the ways Alex is paid are offered for the other currency (F2).
     expect(screen.getAllByRole('button', { name: 'Карта' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: 'Банк' })).toHaveLength(1)
@@ -197,15 +187,16 @@ describe('the proposal', () => {
       whole: false,
       first: 'proposer',
       give_method: 'card',
-      receive_with: 'e0000000-0000-4000-8000-000000000001',
       counter_method: 'cash',
+      note: 'Переведу с Т-Банка',
     })
+    expect(sent).not.toHaveProperty('receive_with')
+    expect(served).not.toContain('GET /api/v1/payment-methods')
   })
 
-  it('says what is missing instead of sending', async () => {
+  it('says what is missing in sight, instead of sending', async () => {
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER.id}`]: () => json(200, ORDER),
-      'GET /api/v1/payment-methods': () => json(200, []),
     })
     renderScreen(<ProposeDeal />, {
       route: `/orders/${ORDER.id}/propose`,
@@ -215,7 +206,8 @@ describe('the proposal', () => {
       target: { value: '5000' },
     })
     press()
-    expect(await screen.findByText(/не меньше минимума заявки/)).toBeInTheDocument()
+    // Above the main button, not below the fold where it went unseen (QUESTIONS G5).
+    expect(await screen.findByRole('alert')).toHaveTextContent(/не меньше минимума заявки/)
     expect(served).not.toContain(`POST /api/v1/orders/${ORDER.id}/deals`)
   })
 })

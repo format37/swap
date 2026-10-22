@@ -24,24 +24,28 @@ const ORDER = {
 
 function filled(changes: Partial<ProposalForm> = {}): ProposalForm {
   return {
-    ...emptyProposal(ORDER, TODAY),
+    ...emptyProposal(ORDER, TODAY, 'ru'),
     amount: '50 000',
     giveMethod: 'card',
-    receiveWith: 'e0000000-0000-4000-8000-000000000001',
     counterMethod: 'cash',
     ...changes,
   }
 }
 
-it('starts with the first wanted currency, the proposer first, from when the order starts', () => {
-  const form = emptyProposal(ORDER, TODAY)
+it('starts with all that remains, the first wanted currency, the proposer first', () => {
+  const form = emptyProposal(ORDER, TODAY, 'ru')
+  // The whole remainder, as the proposer would type it (QUESTIONS G4).
+  expect(form.amount).toBe('150\u00a0000')
+  expect(emptyProposal(ORDER, TODAY, 'en').amount).toBe('150,000')
   expect(form.want).toBe('GEL')
   expect(form.first).toBe('proposer')
   expect([form.myDue, form.theirDue]).toEqual(['2026-10-26', '2026-10-28'])
   expect([form.giveMethod, form.counterMethod]).toEqual(['', ''])
   // One way is no choice at all.
-  expect(emptyProposal({ ...ORDER, payout_methods: ['cash'] }, TODAY).giveMethod).toBe('cash')
-  expect(emptyProposal({ ...ORDER, receive_methods: ['bank'] }, TODAY).counterMethod).toBe('bank')
+  expect(emptyProposal({ ...ORDER, payout_methods: ['cash'] }, TODAY, 'ru').giveMethod).toBe('cash')
+  expect(emptyProposal({ ...ORDER, receive_methods: ['bank'] }, TODAY, 'ru').counterMethod).toBe(
+    'bank',
+  )
 })
 
 it('turns a filled form into exactly what the api takes', () => {
@@ -51,18 +55,12 @@ it('turns a filled form into exactly what the api takes', () => {
     whole: false,
     first: 'proposer',
     give_method: 'card',
-    receive_with: 'e0000000-0000-4000-8000-000000000001',
     counter_method: 'cash',
     my_due: '2026-10-26',
     their_due: '2026-10-28',
+    note: null,
   })
-})
-
-it('sends no details for cash, whatever was picked before', () => {
-  expect(toProposal(filled({ giveMethod: 'cash' })).receive_with).toBeNull()
-  expect(
-    proposalProblem(filled({ giveMethod: 'cash', receiveWith: null }), ORDER, TODAY),
-  ).toBeNull()
+  expect(toProposal(filled({ note: '  Т-Банк  ' })).note).toBe('Т-Банк')
 })
 
 it.each<[Partial<ProposalForm>, string]>([
@@ -71,7 +69,6 @@ it.each<[Partial<ProposalForm>, string]>([
   [{ amount: '150000.01' }, 'propose.error.range'],
   [{ giveMethod: '' }, 'propose.error.their_way'],
   [{ counterMethod: '' }, 'propose.error.my_way'],
-  [{ receiveWith: null }, 'propose.error.details'],
   [{ myDue: '2026-10-21' }, 'propose.error.dates'],
 ])('refuses %j', (changes, problem) => {
   expect(proposalProblem(filled(changes), ORDER, TODAY)).toBe(problem)

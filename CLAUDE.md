@@ -15,7 +15,8 @@ Read before changing anything:
   tests.
 - `docs/QUESTIONS.md` holds the questions and the owner's answers. An answer there
   overrides the spec and the kickoff. Part D lists the owner's own decisions of
-  2026-10-21, and part F his notes after his first test on 2026-10-22.
+  2026-10-21, part F his notes after his first test on 2026-10-22, and part G his notes
+  after the demo with others the same day.
 - `docs/adr/` has every decision another engineer would ask about, one page each.
   Never leave a decision only in chat.
 - `docs/plan.md` has the current phase's checklist and the estimates.

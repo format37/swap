@@ -12,23 +12,24 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0001](0001-subdomain-and-routing.md) | `swap.latentstate.dev` at the root of its own origin; one upstream behind the shared Caddy | Accepted |
 | [0002](0002-database-schema-conventions.md) | Names, keys, statuses, money, indexes; the journal guarded in the database | Accepted; journal guard amended by 0018 |
 | [0003](0003-ui-primitives.md) | Own primitives on Tailwind plus Telegram-native controls; readable without reading | Accepted |
-| [0004](0004-rate-spec-and-recipient-details.md) | `rate_spec` and encrypted `recipient_details` as versioned JSONB | Accepted |
+| [0004](0004-rate-spec-and-recipient-details.md) | `rate_spec` and encrypted `recipient_details` as versioned JSONB | Accepted; details amended by 0021 |
 | [0005](0005-background-jobs.md) | APScheduler in one worker; every job is an idempotent sweep | Accepted |
 | [0006](0006-mvp-build-order.md) | MVP build order: vertical slices, link + order + deal first | Accepted |
 | [0007](0007-openapi-client.md) | openapi-typescript + openapi-fetch; contract drift fails CI | Accepted; forms amended by 0017 |
 | [0008](0008-telegram-through-the-vps-bot-api-server.md) | Telegram through the VPS's Bot API server and relay; the worker does all of it | Accepted |
 | [0009](0009-languages.md) | Russian, English and Georgian from the start | Accepted; formats amended by 0015 |
-| [0010](0010-payment-details.md) | Payment details: saved free text per asset, copied into the deal | Accepted |
+| [0010](0010-payment-details.md) | Payment details: saved free text per asset, copied into the deal | Superseded by 0021 |
 | [0011](0011-phase-0-platform.md) | Phase-0 platform: sessions, router, tooling, logs, deploy | Accepted |
 | [0012](0012-links-and-invites.md) | Links: one pending request, whether it came by invite or by @username | Accepted |
 | [0013](0013-deep-links.md) | Deep links: the bot's buttons open `startapp=<kind>_<id>` | Accepted |
 | [0014](0014-notifications-outbox.md) | Notifications: an outbox row per recipient, worded and sent by the worker | Accepted |
 | [0015](0015-georgian-without-intl-data.md) | Georgian numbers and dates borrow Russian's rules; Georgian dates stay numeric | Accepted |
-| [0016](0016-orders.md) | Orders: four statuses, one set of payment kinds, visibility as one predicate | Accepted; amended by 0019 |
+| [0016](0016-orders.md) | Orders: four statuses, one set of payment kinds, visibility as one predicate | Accepted; amended by 0019 and 0021 |
 | [0017](0017-forms-without-a-form-library.md) | Forms keep state in React and rules in one pure module; no react-hook-form or zod | Accepted |
 | [0018](0018-deals.md) | Deals: one state machine, two legs, a journal guard that fires at once | Accepted |
 | [0019](0019-orders-after-the-first-test.md) | Orders after the first test: no minimum or last day needed, ways to be paid, reopen and delete | Accepted |
 | [0020](0020-market-rate-from-coinbase.md) | The wizard's rate starts at the market's: Coinbase's public rates | Accepted |
+| [0021](0021-deals-plan-the-exchange-only.md) | Deals plan the exchange only: no payment details, three ways to pay | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the

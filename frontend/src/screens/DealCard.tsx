@@ -1,11 +1,10 @@
-import { Ban, History, Undo2, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { Ban, History, MessageSquareText, Undo2, X } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useParams } from 'react-router'
 
 import type { Me } from '../api/client'
 import { useAccept, useDeal, useStep, type Deal, type DealEvent, type Leg } from '../api/deals'
 import { fullName } from '../api/links'
-import { usePaymentMethods } from '../api/payments'
 import { nextFor } from '../deals/next'
 import { LegCard } from '../deals/LegCard'
 import { errorMessage } from '../i18n/errors'
@@ -17,7 +16,7 @@ import { formatAmount, formatRate } from '../money/format'
 import { confirmAction, hapticNotify, useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
-import { Choice } from '../ui/Choice'
+import { FormError } from '../ui/FormError'
 import { Loading } from '../ui/Loading'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
@@ -46,11 +45,6 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
   const accept = useAccept(deal.id)
   const next = nextFor(deal, me.id)
   const other = deal.role === 'proposer' ? deal.acceptor : deal.proposer
-  // The author's own leg, which they receive: it needs their details unless it is cash.
-  const theirs = deal.legs.find((leg) => leg.payee.id === me.id && leg.payer.id === other.id)
-  const needsDetails = next.main === 'accept' && theirs !== undefined && theirs.method !== 'cash'
-  const [receiveWith, setReceiveWith] = useState<string | null>(null)
-  const [shown, setShown] = useState<MessageKey | null>(null)
   const failure = step.error ?? accept.error
 
   const amountText = (leg: Leg) => `${formatAmount(locale, leg.amount)} ${leg.currency}`
@@ -70,16 +64,9 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
       ? {
           text: t('deal.accept'),
           busy: accept.isPending,
-          onClick: () => {
-            if (needsDetails && !receiveWith) {
-              setShown('propose.error.details')
-              hapticNotify('error')
-              return
-            }
-            void run(t('deal.accept_confirm'), t('deal.accept'), () =>
-              accept.mutateAsync(needsDetails ? receiveWith : null),
-            )
-          },
+          // One confirmation and no payment details (QUESTIONS G1).
+          onClick: () =>
+            void run(t('deal.accept_confirm'), t('deal.accept'), () => accept.mutateAsync()),
         }
       : next.main === 'sent' && leg
         ? {
@@ -127,7 +114,7 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
       )}
 
       {deal.legs.map((one) => (
-        <LegCard key={one.seq} deal={deal} leg={one} />
+        <LegCard key={one.seq} leg={one} />
       ))}
 
       <p className="flex flex-wrap items-center gap-1 px-6 text-sm text-hint">
@@ -141,18 +128,15 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
         })}
       </p>
 
-      {needsDetails && (
-        <ReceivePicker
-          currency={theirs.currency}
-          chosen={receiveWith}
-          choose={(id) => {
-            setShown(null)
-            setReceiveWith(id)
-          }}
-        />
+      {deal.note && (
+        <Section title={t('deal.note')}>
+          <p className="flex items-start gap-3 px-4 py-3">
+            <MessageSquareText aria-hidden className="mt-0.5 size-5 shrink-0 text-accent" />
+            <span className="min-w-0 flex-1 whitespace-pre-line">{deal.note}</span>
+          </p>
+        </Section>
       )}
-      {shown && <p className="px-6 text-destructive">{t(shown)}</p>}
-      {failure && <p className="px-6 text-destructive">{t(errorMessage(failure))}</p>}
+      <FormError>{failure ? t(errorMessage(failure)) : null}</FormError>
 
       {next.others.map((kind) => (
         <div key={kind} className="mx-4">
@@ -180,41 +164,6 @@ const OTHER_ICONS: Record<'decline' | 'withdraw' | 'cancel', ReactNode> = {
   decline: <X aria-hidden className="size-5" />,
   withdraw: <Undo2 aria-hidden className="size-5" />,
   cancel: <Ban aria-hidden className="size-5" />,
-}
-
-/** Where the author wants their currency, from their saved details (ADR-0010). */
-function ReceivePicker({
-  currency,
-  chosen,
-  choose,
-}: {
-  currency: string
-  chosen: string | null
-  choose: (id: string) => void
-}) {
-  const { t, tn } = useI18n()
-  const methods = usePaymentMethods()
-  const usable = (methods.data ?? []).filter((method) => method.asset === currency)
-  return (
-    <Section title={t('deal.receive_where', { currency })}>
-      {usable.map((method) => (
-        <Choice
-          key={method.id}
-          kind="radio"
-          label={`${method.title} · ${method.details?.masked ?? t('details.no_text')}`}
-          checked={chosen === method.id}
-          onChange={() => {
-            choose(method.id)
-          }}
-        />
-      ))}
-      {methods.isSuccess && usable.length === 0 && (
-        <p className="flex flex-wrap items-center gap-1 px-4 py-3 text-hint">
-          {tn('propose.no_details', { currency: <Asset code={currency} /> })}
-        </p>
-      )}
-    </Section>
-  )
 }
 
 const EVENT_WORDS: Partial<Record<string, MessageKey>> = {

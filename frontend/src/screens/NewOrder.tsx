@@ -40,6 +40,7 @@ import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { Choice } from '../ui/Choice'
 import { CONTROL, Field } from '../ui/Field'
+import { FormError } from '../ui/FormError'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 import { Switch } from '../ui/Switch'
@@ -120,8 +121,9 @@ export function NewOrder() {
       {step === 1 && <GiveStep form={form} today={today} change={change} />}
       {step === 2 && <WantStep form={form} change={change} />}
       {step === 3 && <WhoStep form={form} change={change} />}
-      {shown && <p className="px-6 text-destructive">{t(shown)}</p>}
-      {publish.isError && <p className="px-6 text-destructive">{t(errorMessage(publish.error))}</p>}
+      <FormError>
+        {shown ? t(shown) : publish.isError ? t(errorMessage(publish.error)) : null}
+      </FormError>
     </Screen>
   )
 }

@@ -1,11 +1,9 @@
-import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { usePropose } from '../api/deals'
 import { fullName } from '../api/links'
 import { useOrder, useQuote, type Order, type PaymentKind, type QuoteRequest } from '../api/orders'
-import { usePaymentMethods } from '../api/payments'
 import {
   emptyProposal,
   proposalProblem,
@@ -21,10 +19,10 @@ import { isZero, parseAmount } from '../money/format'
 import { KINDS } from '../money/kinds'
 import { isoDate } from '../orders/form'
 import { hapticNotify, hapticSelect, useMainButton } from '../telegram'
-import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import { Choice } from '../ui/Choice'
 import { CONTROL, Field } from '../ui/Field'
+import { FormError } from '../ui/FormError'
 import { Loading } from '../ui/Loading'
 import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
@@ -50,10 +48,9 @@ function Form({ order }: { order: Order }) {
   const { t, tn, locale } = useI18n()
   const navigate = useNavigate()
   const today = useMemo(() => isoDate(new Date()), [])
-  const [form, setForm] = useState<ProposalForm>(() => emptyProposal(order, today))
+  const [form, setForm] = useState<ProposalForm>(() => emptyProposal(order, today, locale))
   const [shown, setShown] = useState<MessageKey | null>(null)
   const propose = usePropose(order.id)
-  const methods = usePaymentMethods()
   const give = order.give_currency
   const author = fullName(order.author)
 
@@ -102,7 +99,6 @@ function Form({ order }: { order: Order }) {
   )
 
   const slider = sliderRange(order)
-  const mine = (methods.data ?? []).filter((method) => method.asset === give)
   const chips = (
     kinds: PaymentKind[],
     chosen: PaymentKind | '',
@@ -217,34 +213,6 @@ function Form({ order }: { order: Order }) {
         {chips(order.payout_methods, form.giveMethod, (giveMethod) => {
           change({ giveMethod })
         })}
-        {form.giveMethod && form.giveMethod !== 'cash' && (
-          <>
-            {mine.map((method) => (
-              <Choice
-                key={method.id}
-                kind="radio"
-                label={`${method.title} · ${method.details?.masked ?? t('details.no_text')}`}
-                checked={form.receiveWith === method.id}
-                onChange={() => {
-                  change({ receiveWith: method.id })
-                }}
-              />
-            ))}
-            {methods.isSuccess && mine.length === 0 && (
-              <p className="flex flex-wrap items-center gap-1 px-4 py-2 text-hint">
-                {tn('propose.no_details', { currency: <Asset code={give} /> })}
-              </p>
-            )}
-            <div className="p-3">
-              <Button
-                icon={<Plus aria-hidden className="size-5" />}
-                onClick={() => void navigate('/profile/details/new')}
-              >
-                {t('profile.add_details')}
-              </Button>
-            </div>
-          </>
-        )}
       </Section>
 
       <Section title={t('propose.my_way', { currency: form.want })}>
@@ -297,9 +265,24 @@ function Form({ order }: { order: Order }) {
         </Field>
       </Section>
 
+      {/* Which bank and the like: theirs to settle, here if they like (QUESTIONS G3). */}
+      <Section title={t('propose.comment')}>
+        <textarea
+          className="block min-h-20 w-full resize-none bg-transparent px-4 py-3 outline-none placeholder:text-hint"
+          maxLength={500}
+          aria-label={t('propose.comment')}
+          placeholder={t('propose.comment_hint')}
+          value={form.note}
+          onChange={(event) => {
+            change({ note: event.target.value })
+          }}
+        />
+      </Section>
+
       <p className="px-6 text-sm text-hint">{t('propose.note')}</p>
-      {shown && <p className="px-6 text-destructive">{t(shown)}</p>}
-      {propose.isError && <p className="px-6 text-destructive">{t(errorMessage(propose.error))}</p>}
+      <FormError>
+        {shown ? t(shown) : propose.isError ? t(errorMessage(propose.error)) : null}
+      </FormError>
     </Screen>
   )
 }
