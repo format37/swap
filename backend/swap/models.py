@@ -118,6 +118,9 @@ class User(Base):
     )
     # They deleted their account (QUESTIONS K2): everything about them is scrubbed.
     deleted_at: Mapped[datetime | None]
+    # The version of the agreement they accepted, and when (Q-B15, QUESTIONS K3).
+    terms_version: Mapped[int | None] = mapped_column(SmallInteger)
+    terms_accepted_at: Mapped[datetime | None]
     if TYPE_CHECKING:
         # How many different people they settled a deal with: counted, and mapped below,
         # once deals are (ADR-0029).

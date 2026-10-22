@@ -25,6 +25,17 @@ export function useUpdateMe() {
   })
 }
 
+/** «Принимаю»: the agreement as it stands (Q-B15, QUESTIONS K3). */
+export function useAcceptTerms() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => unwrap(api.POST('/api/v1/me/terms')),
+    onSuccess: (me: Me) => {
+      queryClient.setQueryData(ME, me)
+    },
+  })
+}
+
 /** Every finished deal and order deleted for oneself at once (QUESTIONS K2). */
 export function useDeleteHistory() {
   const queryClient = useQueryClient()

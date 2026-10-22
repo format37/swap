@@ -6,6 +6,7 @@ import {
   isTMA,
   mainButton,
   miniApp,
+  openLink,
   popup,
   retrieveLaunchParams,
   retrieveRawInitData,
@@ -158,6 +159,12 @@ export async function confirmAction(
     ],
   })
   return pressed === 'ok'
+}
+
+/** Opens a web page outside the Mini App: Telegram's browser where there is one. */
+export function openPage(url: string): void {
+  if (openLink.isAvailable()) openLink(url)
+  else window.open(url, '_blank', 'noopener')
 }
 
 /** Closes the Mini App, where Telegram lets it. */

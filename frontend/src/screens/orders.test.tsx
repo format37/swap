@@ -101,6 +101,7 @@ const me: Me = {
   tz: 'Asia/Tbilisi',
   notifications_off: false,
   muted_kinds: [],
+  terms_accepted: true,
 }
 
 // One link, two people two handshakes away, none three away, and five farther.

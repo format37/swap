@@ -18,6 +18,7 @@ async def site(
     (dist / "index.html").write_text("<!doctype html><title>Swap</title>")
     (dist / "assets" / "index-abc123.js").write_text("console.log('swap')")
     (dist / "icon.svg").write_text("<svg/>")
+    (dist / "privacy.html").write_text("<!doctype html><title>Swap: privacy</title>")
     (tmp_path / "secret.txt").write_text("outside the build")
     app = create_app(
         settings.model_copy(update={"static_dir": str(dist)}), sessionmaker=sessionmaker
@@ -44,6 +45,15 @@ async def test_root_files_are_served_as_they_are(site: AsyncClient) -> None:
     response = await site.get("/icon.svg")
     assert response.status_code == 200
     assert response.text == "<svg/>"
+
+
+async def test_a_page_of_its_own_opens_outside_the_app(site: AsyncClient) -> None:
+    # The privacy page, for a plain browser and BotFather (QUESTIONS K3).
+    for path in ("/privacy", "/privacy.html"):
+        response = await site.get(path)
+        assert response.status_code == 200
+        assert "<title>Swap: privacy</title>" in response.text
+    assert "<title>Swap</title>" in (await site.get("/privacy/more")).text
 
 
 async def test_unknown_api_paths_stay_problems_not_the_shell(site: AsyncClient) -> None:

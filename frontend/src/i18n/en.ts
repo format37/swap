@@ -283,6 +283,20 @@ export const en: Messages = {
   'gone.text':
     'Swap keeps nothing more about you, except the deals others keep, where you are “Former member”. To start again, open Swap once more.',
   'gone.close': 'Close',
+  'terms.title': 'Before you start',
+  'terms.what':
+    'Swap helps people who know each other plan counter-transfers and record them. Swap is not a payment service or an exchange: it doesn’t hold, move or guarantee money, and takes no part in settlement.',
+  'terms.who':
+    'You make the transfers yourself, your own way, and you are responsible for your deals and for keeping to the law.',
+  'terms.data':
+    'Those who see your offers see your name, @username, photo and score. Swap stores no payment details or documents. You can delete deals, history or the account in the profile.',
+  'terms.privacy': 'The full agreement and privacy policy',
+  'terms.accept': 'I accept',
+  'settings.about': 'About Swap',
+  'settings.privacy': 'Agreement and privacy',
+  'settings.contact': 'Write to the developer',
+  'settings.copied': 'Copied',
+  'invite.copy_short': 'Copy',
   'settings.language': 'Language',
   'language.title': 'Language',
   'outside.title': 'Open Swap in Telegram',

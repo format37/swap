@@ -22,6 +22,7 @@ import { NewOrder } from './screens/NewOrder'
 import { Notifications } from './screens/Notifications'
 import { OrderCard } from './screens/OrderCard'
 import { ProposeDeal } from './screens/ProposeDeal'
+import { Terms } from './screens/Terms'
 import { Profile } from './screens/Profile'
 import { OutsideTelegram } from './screens/OutsideTelegram'
 import { Problem } from './screens/Problem'
@@ -131,6 +132,9 @@ function SignedIn({ launch }: { launch: Launch }) {
         </div>
       ) : me.isError ? (
         <Problem error={me.error} retry={() => void me.refetch()} />
+      ) : !me.data.terms_accepted ? (
+        // The agreement before anything else (Q-B15, QUESTIONS K3).
+        <Terms />
       ) : (
         <Screens
           me={me.data}

@@ -768,6 +768,10 @@
             "title": "Score",
             "type": "integer"
           },
+          "terms_accepted": {
+            "title": "Terms Accepted",
+            "type": "boolean"
+          },
           "tz": {
             "anyOf": [
               {
@@ -802,7 +806,8 @@
           "locale_chosen",
           "tz",
           "notifications_off",
-          "muted_kinds"
+          "muted_kinds",
+          "terms_accepted"
         ],
         "title": "Me",
         "type": "object"
@@ -3993,6 +3998,43 @@
           }
         ],
         "summary": "Delete History",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/terms": {
+      "post": {
+        "description": "\u00ab\u041f\u0440\u0438\u043d\u0438\u043c\u0430\u044e\u00bb: the agreement as it stands now (Q-B15, QUESTIONS K3).",
+        "operationId": "accept_terms",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Terms",
         "tags": [
           "me"
         ]

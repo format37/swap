@@ -5,15 +5,18 @@ import type { Me } from '../api/client'
 import { fakeApi, json } from '../test/api'
 import { renderScreen } from '../test/render'
 import { fullName } from '../api/links'
+import { copyText, openPage } from '../telegram'
 import { Person } from '../ui/Person'
 import { Notifications } from './Notifications'
 import { Profile } from './Profile'
 
 vi.mock('../telegram', () => ({
   confirmAction: vi.fn(() => Promise.resolve(true)),
+  copyText: vi.fn(() => Promise.resolve(true)),
   hapticNotify: vi.fn(),
   hapticSelect: vi.fn(),
   explain: vi.fn(() => Promise.resolve()),
+  openPage: vi.fn(),
 }))
 
 const me: Me = {
@@ -28,6 +31,7 @@ const me: Me = {
   tz: 'Asia/Tbilisi',
   notifications_off: false,
   muted_kinds: [],
+  terms_accepted: true,
 }
 
 afterEach(() => {
@@ -132,5 +136,19 @@ describe('deleting (K2)', () => {
     renderScreen(<Person person={gone} />)
     expect(fullName(gone)).toBe('Удалённый участник')
     expect(screen.getByText('Удалённый участник')).toBeInTheDocument()
+  })
+})
+
+describe('about Swap (K3, K9)', () => {
+  it('opens the privacy page and copies the developer’s address', async () => {
+    fakeApi({})
+    renderScreen(<Profile me={me} />, { route: '/profile' })
+    fireEvent.click(screen.getByRole('button', { name: 'Соглашение и конфиденциальность' }))
+    expect(openPage).toHaveBeenCalledWith('http://localhost:3000/privacy')
+    const contact = screen.getByRole('button', { name: /Написать разработчику/ })
+    expect(contact).toHaveTextContent('format37@gmail.com')
+    fireEvent.click(contact)
+    expect(await screen.findByText('Скопировано')).toBeInTheDocument()
+    expect(copyText).toHaveBeenCalledWith('format37@gmail.com')
   })
 })

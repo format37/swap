@@ -36,6 +36,11 @@ def mount_frontend(app: FastAPI, root: Path) -> None:
         candidate = (root / path).resolve()
         if path and candidate.is_file() and candidate.is_relative_to(root):
             return FileResponse(candidate)
+        # A page of its own outside the app, such as /privacy (QUESTIONS K3): it opens in
+        # any browser, with no «Откройте через Telegram».
+        page = (root / f"{path}.html").resolve()
+        if path and page.is_file() and page.is_relative_to(root):
+            return FileResponse(page, headers={"Cache-Control": "no-cache"})
         # Every client-side route gets the shell, revalidated on each launch so a
         # deploy reaches people at once.
         return FileResponse(index, headers={"Cache-Control": "no-cache"})
