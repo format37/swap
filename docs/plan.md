@@ -284,9 +284,9 @@ veto on parts J and K.
       on it; the order's card offers «Удалить у себя».
 
 **PR 1.33 — How to be paid, per currency** (L1; ADR-0037)
-- [ ] Migration: `order_wants.receive_methods`, copied from the order's; the order's set
+- [x] Migration: `order_wants.receive_methods`, copied from the order's; the order's set
       goes.
-- [ ] The wizard's and the order's cards show each currency's ways; a proposal pays in one
+- [x] The wizard's and the order's cards show each currency's ways; a proposal pays in one
       of the chosen currency's.
 
 **PR 1.34 — Write what one gets, and let it be typed** (L2; ADR-0038)

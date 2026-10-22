@@ -17,21 +17,37 @@ export interface ProposalForm {
   note: string
 }
 
+// One way is no choice at all.
+function only(kinds: PaymentKind[]): PaymentKind | '' {
+  return kinds.length === 1 && kinds[0] ? kinds[0] : ''
+}
+
+/** The ways the author takes `currency` in (QUESTIONS L1). */
+export function waysFor(order: Order, currency: string): PaymentKind[] {
+  return order.wants.find((want) => want.currency === currency)?.receive_methods ?? []
+}
+
 /**
  * A fresh proposal for all that remains (QUESTIONS G4). There is no order between the
  * transfers and no dates: the parties settle both themselves (H1).
  */
 export function emptyProposal(order: Order, locale: Locale): ProposalForm {
-  // One way is no choice at all.
-  const only = (kinds: PaymentKind[]) => (kinds.length === 1 && kinds[0] ? kinds[0] : '')
+  const want = order.wants[0]?.currency ?? ''
   return {
     amount: formatAmount(locale, order.amount_remaining),
-    want: order.wants[0]?.currency ?? '',
+    want,
     whole: false,
     giveMethod: only(order.payout_methods),
-    counterMethod: only(order.receive_methods),
+    counterMethod: only(waysFor(order, want)),
     note: '',
   }
+}
+
+/** Another currency in return: the way to pay stays if the author takes that one so too. */
+export function withWant(form: ProposalForm, order: Order, currency: string) {
+  const ways = waysFor(order, currency)
+  const kept = form.counterMethod && ways.includes(form.counterMethod)
+  return { want: currency, counterMethod: kept ? form.counterMethod : only(ways) }
 }
 
 function cents(value: string): bigint {

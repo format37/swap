@@ -20,10 +20,9 @@ function filled(changes: Partial<OrderForm> = {}): OrderForm {
     total: '150 000',
     least: '10000',
     methods: ['bank', 'crypto'],
-    receiveMethods: ['cash'],
     wants: [
-      { ...newWant('RUB', 'GEL', 'GE'), rate: '29,20', fixed: true },
-      { ...newWant('RUB', 'USD', 'GE'), rate: '81.5', fixed: true },
+      { ...newWant('RUB', 'GEL', 'GE'), receiveMethods: ['cash'], rate: '29,20', fixed: true },
+      { ...newWant('RUB', 'USD', 'GE'), receiveMethods: ['cash'], rate: '81.5', fixed: true },
     ],
     ...changes,
   }
@@ -43,7 +42,9 @@ it('leaves a new rate to the market until the author types one (F5)', () => {
 
 it('follows the market unless a currency’s rate is fixed (G2, J1)', () => {
   expect(emptyForm(TODAY).wants[0]?.fixed).toBe(false)
-  const market = filled({ wants: [{ ...newWant('RUB', 'GEL', 'GE'), rate: '' }] })
+  const market = filled({
+    wants: [{ ...newWant('RUB', 'GEL', 'GE'), receiveMethods: ['cash'], rate: '' }],
+  })
   // Nothing to type: the market has the rate.
   expect(wantProblem(market)).toBeNull()
   expect(toDraft(market).wants[0]?.rate_spec).toEqual({
@@ -54,8 +55,8 @@ it('follows the market unless a currency’s rate is fixed (G2, J1)', () => {
   // One currency fixed and one at the market's, side by side.
   const mixed = filled({
     wants: [
-      { ...newWant('RUB', 'GEL', 'GE'), rate: '' },
-      { ...newWant('RUB', 'USD', 'GE'), rate: '80', fixed: true },
+      { ...newWant('RUB', 'GEL', 'GE'), receiveMethods: ['cash'], rate: '' },
+      { ...newWant('RUB', 'USD', 'GE'), receiveMethods: ['cash'], rate: '80', fixed: true },
     ],
   })
   expect(wantProblem(mixed)).toBeNull()
@@ -82,17 +83,18 @@ it('turns a filled wizard into exactly what the api takes', () => {
     available_from: TODAY,
     available_until: null,
     payout_methods: ['bank', 'crypto'],
-    receive_methods: ['cash'],
     wants: [
       {
         currency: 'GEL',
         country: 'GE',
         rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
+        receive_methods: ['cash'],
       },
       {
         currency: 'USD',
         country: 'GE',
         rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'USD', quote: 'RUB', value: '81.5' }] },
+        receive_methods: ['cash'],
       },
     ],
     reach: 2,
@@ -149,13 +151,16 @@ it('lets an exact amount go without a least one', () => {
 })
 
 it.each<[OrderForm['wants'], string]>([
-  [[{ ...newWant('RUB', 'RUB', 'RU'), rate: '1' }], 'wizard.error.same'],
+  [[{ ...newWant('RUB', 'RUB', 'RU'), receiveMethods: ['cash'], rate: '1' }], 'wizard.error.same'],
   [[{ ...newWant('RUB', 'GEL', ''), rate: '29' }], 'wizard.error.choose'],
-  [[{ ...newWant('RUB', 'GEL', 'GE'), rate: '', fixed: true }], 'wizard.error.rate'],
+  [
+    [{ ...newWant('RUB', 'GEL', 'GE'), receiveMethods: ['cash'], rate: '', fixed: true }],
+    'wizard.error.rate',
+  ],
   [
     [
-      { ...newWant('RUB', 'GEL', 'GE'), rate: '29' },
-      { ...newWant('RUB', 'GEL', 'TR'), rate: '29' },
+      { ...newWant('RUB', 'GEL', 'GE'), receiveMethods: ['cash'], rate: '29' },
+      { ...newWant('RUB', 'GEL', 'TR'), receiveMethods: ['cash'], rate: '29' },
     ],
     'wizard.error.repeated',
   ],
@@ -164,8 +169,13 @@ it.each<[OrderForm['wants'], string]>([
   expect(wantProblem(filled({ wants }))).toBe(problem)
 })
 
-it('wants a way to be paid (F2)', () => {
-  expect(wantProblem(filled({ receiveMethods: [] }))).toBe('wizard.error.methods')
+it('wants a way to be paid for every currency (F2, L1)', () => {
+  const unpaid = filled({
+    wants: filled().wants.map((want) =>
+      want.currency === 'USD' ? { ...want, receiveMethods: [] } : want,
+    ),
+  })
+  expect(wantProblem(unpaid)).toBe('wizard.error.methods')
 })
 
 it('wants someone chosen when it isn’t for everyone', () => {

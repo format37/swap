@@ -9,6 +9,8 @@ import {
   proposalProblem,
   sliderRange,
   toProposal,
+  waysFor,
+  withWant,
   type ProposalForm,
 } from '../deals/proposal'
 import { errorMessage } from '../i18n/errors'
@@ -183,7 +185,7 @@ function Form({ order }: { order: Order }) {
                 aria-pressed={form.want === want.currency}
                 onClick={() => {
                   hapticSelect()
-                  change({ want: want.currency })
+                  change(withWant(form, order, want.currency))
                 }}
                 className={`rounded-full px-3 py-2 text-sm font-medium ${form.want === want.currency ? 'bg-button text-button-text' : 'bg-secondary-bg'}`}
               >
@@ -228,7 +230,7 @@ function Form({ order }: { order: Order }) {
       </Section>
 
       <Section title={t('propose.my_way', { currency: form.want })}>
-        {chips(order.receive_methods, form.counterMethod, (counterMethod) => {
+        {chips(waysFor(order, form.want), form.counterMethod, (counterMethod) => {
           change({ counterMethod })
         })}
       </Section>

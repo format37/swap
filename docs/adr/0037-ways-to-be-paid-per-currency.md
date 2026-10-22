@@ -34,7 +34,7 @@ With one set, an order that lists both currencies offers cash for USD too.
 - The first currency starts with none chosen, as the order's set did. «Ещё валюта»
   starts the new currency with the ways of the one above it, so an order whose
   currencies share their ways costs no extra taps.
-- The step's check names the currency that still has no way.
+- The step's check asks for at least one way on every currency.
 
 **Elsewhere.**
 - The order's card lists each currency's ways on that currency's line.

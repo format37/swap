@@ -294,7 +294,11 @@ function GiveGroup({ form, today, change }: StepProps & { today: string }) {
             wants: form.wants.map((want) =>
               want.typed
                 ? want
-                : { ...newWant(code, want.currency, want.country), fixed: want.fixed },
+                : {
+                    ...newWant(code, want.currency, want.country),
+                    fixed: want.fixed,
+                    receiveMethods: want.receiveMethods,
+                  },
             ),
           })
         }}
@@ -400,8 +404,8 @@ function GiveGroup({ form, today, change }: StepProps & { today: string }) {
 }
 
 /**
- * Step 1's «Получаете»: each wanted currency with its rate, its own «Зафиксировать курс»
- * and a live preview (J1), then how the author is paid.
+ * Step 1's «Получаете»: each wanted currency with its rate, its own «Зафиксировать курс»,
+ * a live preview (J1), and how the author takes it (L1).
  */
 function WantGroup({ form, change }: StepProps) {
   const { t } = useI18n()
@@ -424,7 +428,7 @@ function WantGroup({ form, change }: StepProps) {
                 index,
                 want.typed
                   ? { currency: code, country: fresh.country }
-                  : { ...fresh, fixed: want.fixed },
+                  : { ...fresh, fixed: want.fixed, receiveMethods: want.receiveMethods },
               )
             }}
           />
@@ -450,6 +454,19 @@ function WantGroup({ form, change }: StepProps) {
             }}
           />
           <Preview form={form} want={want} />
+          <MethodChips
+            label={t('wizard.receive_methods')}
+            chosen={want.receiveMethods}
+            onToggle={(kind) => {
+              change(({ wants }) => ({
+                wants: wants.map((other, at) =>
+                  at === index
+                    ? { ...other, receiveMethods: toggled(other.receiveMethods, kind) }
+                    : other,
+                ),
+              }))
+            }}
+          />
           {form.wants.length > 1 && (
             <button
               type="button"
@@ -472,22 +489,19 @@ function WantGroup({ form, change }: StepProps) {
           <Button
             icon={<Plus aria-hidden className="size-5" />}
             onClick={() => {
-              change(({ wants, giveCurrency }) => ({ wants: [...wants, newWant(giveCurrency)] }))
+              // Taken the way the one above is, so shared ways cost no taps (ADR-0037).
+              change(({ wants, giveCurrency }) => ({
+                wants: [
+                  ...wants,
+                  { ...newWant(giveCurrency), receiveMethods: wants.at(-1)?.receiveMethods ?? [] },
+                ],
+              }))
             }}
           >
             {t('wizard.add_want')}
           </Button>
         </div>
       )}
-      <Section>
-        <MethodChips
-          label={t('wizard.receive_methods')}
-          chosen={form.receiveMethods}
-          onToggle={(kind) => {
-            change(({ receiveMethods }) => ({ receiveMethods: toggled(receiveMethods, kind) }))
-          }}
-        />
-      </Section>
     </>
   )
 }
