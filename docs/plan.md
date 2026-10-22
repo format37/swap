@@ -240,10 +240,10 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
       becomes «Удалённый участник».
 
 **PR 1.27 — The agreement, the privacy page, the contact** (K3, K9; Q-B15)
-- [ ] The agreement at first launch, with «Принимаю», in ru, en and ka.
-- [ ] https://swap.latentstate.dev/privacy, a plain page in three languages. Its URL goes
+- [x] The agreement at first launch, with «Принимаю», in ru, en and ka.
+- [x] https://swap.latentstate.dev/privacy, a plain page in three languages. Its URL goes
       to the owner.
-- [ ] The settings link to it, and offer format37@gmail.com with «Скопировать».
+- [x] The settings link to it, and offer format37@gmail.com with «Скопировать».
 
 **PR 1.28 — Order numbers** (K8)
 - [ ] Migration: `orders.number` from one sequence; existing orders numbered by age.
