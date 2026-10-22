@@ -217,6 +217,7 @@ describe('the deal card', () => {
 describe('the proposal', () => {
   const ORDER: Order = {
     id: 'd0000000-0000-4000-8000-000000000001',
+    number: 17,
     author: ALEX,
     mine: false,
     give_currency: 'RUB',

@@ -41,6 +41,7 @@ export function deal(changes: Partial<Deal> = {}): Deal {
   return {
     id: DEAL_ID,
     order_id: 'd0000000-0000-4000-8000-000000000001',
+    order_number: 17,
     status: 'proposed',
     role: 'proposer',
     proposer: NINO,

@@ -138,7 +138,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           person={order.author}
           size="lg"
           heading
-          detail={t(`order.status.${order.status}`)}
+          detail={`${t('order.number', { n: order.number })} · ${t(`order.status.${order.status}`)}`}
         />
       </header>
 
