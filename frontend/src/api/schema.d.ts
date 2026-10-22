@@ -411,6 +411,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/links/{link_id}/mute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mute Link
+         * @description Hear nothing of this person's new orders; they still show in the feed (FR-7.2).
+         */
+        put: operations["mute_link"];
+        post?: never;
+        /** Unmute Link */
+        delete: operations["unmute_link"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -813,6 +834,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Muted */
+            muted: boolean;
             /** Mutual Links */
             mutual_links: number;
             person: components["schemas"]["Person"];
@@ -882,6 +905,10 @@ export interface components {
             locale: components["schemas"]["Locale"];
             /** Locale Chosen */
             locale_chosen: boolean;
+            /** Muted Kinds */
+            muted_kinds: components["schemas"]["NotificationKind"][];
+            /** Notifications Off */
+            notifications_off: boolean;
             /** Photo Url */
             photo_url: string | null;
             /** Score */
@@ -897,6 +924,10 @@ export interface components {
          */
         MeUpdate: {
             locale?: components["schemas"]["Locale"] | null;
+            /** Muted Kinds */
+            muted_kinds?: components["schemas"]["NotificationKind"][] | null;
+            /** Notifications Off */
+            notifications_off?: boolean | null;
             /** Tz */
             tz?: string | null;
         };
@@ -927,6 +958,12 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * NotificationKind
+         * @description The kinds of messages a person can switch off one by one (QUESTIONS K1).
+         * @enum {string}
+         */
+        NotificationKind: "orders" | "links" | "proposals" | "transfers" | "cancellations";
         /** Order */
         Order: {
             /** Amount Max */
@@ -2651,6 +2688,104 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mute_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unmute_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

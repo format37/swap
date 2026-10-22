@@ -68,10 +68,28 @@ def country_check(column: str) -> str:
 MONEY = Numeric(18, 2)
 
 
+class NotificationKind(StrEnum):
+    """The kinds of messages a person can switch off one by one (QUESTIONS K1)."""
+
+    ORDERS = "orders"
+    LINKS = "links"
+    PROPOSALS = "proposals"
+    TRANSFERS = "transfers"
+    CANCELLATIONS = "cancellations"
+
+
+def _kinds_of_notifications_check(column: str) -> str:
+    listed = ", ".join(f"'{kind}'" for kind in NotificationKind)
+    return f"{column} <@ ARRAY[{listed}]::text[]"
+
+
 class User(Base):
     """Someone who has opened the app or pressed /start (Q-B11)."""
 
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint(_kinds_of_notifications_check("muted_kinds"), name="muted_kinds"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True)
@@ -90,6 +108,12 @@ class User(Base):
     # Their Telegram photo, as a link Telegram serves: taken from initData at every
     # sign-in, never copied (QUESTIONS J4, ADR-0027).
     photo_url: Mapped[str | None] = mapped_column(Text)
+    # «Все уведомления» switched off: the bot sends them nothing (QUESTIONS K1).
+    notifications_off: Mapped[bool] = mapped_column(default=False, server_default=false())
+    # The kinds they switched off one by one (NotificationKind).
+    muted_kinds: Mapped[list[str]] = mapped_column(
+        ARRAY(Text), default=list, server_default=text("'{}'::text[]")
+    )
     if TYPE_CHECKING:
         # How many different people they settled a deal with: counted, and mapped below,
         # once deals are (ADR-0029).
@@ -168,6 +192,20 @@ class Link(Base):
     # Starts the requester's 7-day cooldown (FR-1.2, Q-E1).
     declined_at: Mapped[datetime | None]
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+
+class Mute(Base):
+    """`user_id` hears nothing of `muted_id`'s new orders (FR-7.2, QUESTIONS K1)."""
+
+    __tablename__ = "mutes"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    muted_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class Invite(Base):

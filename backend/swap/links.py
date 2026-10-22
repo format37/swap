@@ -13,13 +13,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
-from sqlalchemy import ColumnElement, Select, case, func, or_, select
+from sqlalchemy import ColumnElement, Select, case, delete, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap.deeplinks import target
 from swap.errors import DomainError
-from swap.models import Invite, Link, LinkStatus, User
+from swap.models import Invite, Link, LinkStatus, Mute, User
 from swap.notifications import notify
 from swap.proposals import cancel_between
 from swap.sessions import hash_token
@@ -257,6 +257,26 @@ async def view(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID) -> tuple[Lin
         raise DomainError(404, "link.not_found")
     link, person = row
     return LinkWith(link, person), await mutual_count(db, me, person.id)
+
+
+async def muted(db: AsyncSession, me: uuid.UUID, other: uuid.UUID) -> bool:
+    """Whether `me` hears nothing of `other`'s new orders (FR-7.2)."""
+    found = await db.scalar(select(exists().where(Mute.user_id == me, Mute.muted_id == other)))
+    return bool(found)
+
+
+async def set_muted(db: AsyncSession, me: uuid.UUID, link_id: uuid.UUID, *, on: bool) -> None:
+    """Mute or unmute the new orders of the person on a link's other side (QUESTIONS K1).
+
+    Only the pair sees a link: anyone else gets 404, as for one that doesn't exist.
+    """
+    link = await _lock_own(db, me, link_id)
+    other = other_side(link, me)
+    if on:
+        statement = insert(Mute).values(user_id=me, muted_id=other)
+        await db.execute(statement.on_conflict_do_nothing())
+    else:
+        await db.execute(delete(Mute).where(Mute.user_id == me, Mute.muted_id == other))
 
 
 def _outstanding_invites(me: uuid.UUID) -> Select[Invite]:

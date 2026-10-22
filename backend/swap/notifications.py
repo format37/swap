@@ -5,7 +5,7 @@ from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from swap.models import Notification
+from swap.models import Notification, NotificationKind
 
 # Each type is also the key of its words in swap/i18n.py.
 type NotificationType = Literal[
@@ -23,6 +23,24 @@ type NotificationType = Literal[
     "deal.received",
     "deal.settled",
 ]
+
+
+# Which switch in the settings each message answers to (QUESTIONS K1).
+KIND_OF: dict[str, NotificationKind] = {
+    "order.opened": NotificationKind.ORDERS,
+    "link.requested": NotificationKind.LINKS,
+    "link.established": NotificationKind.LINKS,
+    "deal.proposed": NotificationKind.PROPOSALS,
+    "deal.accepted": NotificationKind.PROPOSALS,
+    "deal.declined": NotificationKind.PROPOSALS,
+    "deal.withdrawn": NotificationKind.PROPOSALS,
+    "deal.expired": NotificationKind.PROPOSALS,
+    "deal.proposal_closed": NotificationKind.PROPOSALS,
+    "deal.sent": NotificationKind.TRANSFERS,
+    "deal.received": NotificationKind.TRANSFERS,
+    "deal.settled": NotificationKind.TRANSFERS,
+    "deal.cancelled": NotificationKind.CANCELLATIONS,
+}
 
 
 def notify(

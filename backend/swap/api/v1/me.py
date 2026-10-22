@@ -5,12 +5,12 @@ import zoneinfo
 from typing import Self
 
 from fastapi import APIRouter
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from swap.api.deps import CurrentUser, Db
 from swap.api.errors import Problem
 from swap.i18n import Locale, resolve_locale
-from swap.models import User
+from swap.models import NotificationKind, User
 
 router = APIRouter(tags=["me"], responses={401: {"model": Problem}})
 
@@ -29,6 +29,9 @@ class Me(BaseModel):
     locale_chosen: bool
     # Null until the app sends the device's zone at the first launch.
     tz: str | None
+    # What they switched off: everything, or kinds of messages (QUESTIONS K1).
+    notifications_off: bool
+    muted_kinds: list[NotificationKind]
 
     @classmethod
     def of(cls, user: User) -> Self:
@@ -42,6 +45,8 @@ class Me(BaseModel):
             locale=resolve_locale(user.locale, user.language_code),
             locale_chosen=user.locale is not None,
             tz=user.tz,
+            notifications_off=user.notifications_off,
+            muted_kinds=[NotificationKind(kind) for kind in user.muted_kinds],
         )
 
 
@@ -51,6 +56,11 @@ class MeUpdate(BaseModel):
     locale: Locale | None = None
     # An IANA zone, such as Asia/Tbilisi.
     tz: str | None = None
+    notifications_off: bool | None = None
+    # The whole list of kinds switched off, replacing what was there.
+    muted_kinds: list[NotificationKind] | None = Field(
+        default=None, max_length=len(NotificationKind)
+    )
 
     @field_validator("tz")
     @classmethod
@@ -72,5 +82,9 @@ async def update_me(body: MeUpdate, user: CurrentUser, db: Db) -> Me:
         user.locale = body.locale
     if body.tz is not None:
         user.tz = body.tz
+    if body.notifications_off is not None:
+        user.notifications_off = body.notifications_off
+    if body.muted_kinds is not None:
+        user.muted_kinds = list(dict.fromkeys(kind.value for kind in body.muted_kinds))
     await db.commit()
     return Me.of(user)
