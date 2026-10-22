@@ -4,9 +4,10 @@ import uuid
 import zoneinfo
 from typing import Self
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field, field_validator
 
+from swap import accounts
 from swap.api.deps import CurrentUser, Db
 from swap.api.errors import Problem
 from swap.i18n import Locale, resolve_locale
@@ -88,3 +89,27 @@ async def update_me(body: MeUpdate, user: CurrentUser, db: Db) -> Me:
         user.muted_kinds = list(dict.fromkeys(kind.value for kind in body.muted_kinds))
     await db.commit()
     return Me.of(user)
+
+
+class HistoryDeleted(BaseModel):
+    """What «Удалить всю историю» deleted, and how much still runs and so stays."""
+
+    deals: int
+    orders: int
+    running: int
+
+
+@router.delete("/me/history")
+async def delete_history(user: CurrentUser, db: Db) -> HistoryDeleted:
+    """Every finished deal and order deleted for you at once (QUESTIONS K2, J3)."""
+    found = await accounts.delete_history(db, user)
+    await db.commit()
+    return HistoryDeleted(deals=found.deals, orders=found.orders, running=found.running)
+
+
+@router.delete("/me", status_code=204, responses={409: {"model": Problem}})
+async def delete_me(user: CurrentUser, db: Db) -> Response:
+    """Delete the account, once none of its deals runs (Q-B10, QUESTIONS K2)."""
+    await accounts.delete_account(db, user)
+    await db.commit()
+    return Response(status_code=204)

@@ -7,6 +7,7 @@ export const ALEX = {
   username: 'format37',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 export const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
@@ -15,6 +16,7 @@ export const NINO = {
   username: 'nino',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 export const DEAL_ID = 'f0000000-0000-4000-8000-000000000001'
 

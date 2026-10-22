@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { resolveLocale } from '../i18n/locale'
+import { DICTIONARIES } from '../i18n/translate'
 import { api, done, unwrap } from './client'
 import type { components } from './schema'
 
@@ -88,6 +90,14 @@ export function useRemoveLink() {
   )
 }
 
-export function fullName(person: Pick<Person, 'first_name' | 'last_name'>): string {
+/**
+ * «Nino B». Someone who deleted their account has no name left: they are «Удалённый
+ * участник», in the language the app is shown in (QUESTIONS K2).
+ */
+export function fullName(
+  person: Pick<Person, 'first_name' | 'last_name'> & { deleted?: boolean },
+): string {
+  if (person.deleted)
+    return DICTIONARIES[resolveLocale(document.documentElement.lang)]['person.deleted']
   return [person.first_name, person.last_name].filter(Boolean).join(' ')
 }

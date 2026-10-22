@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { backButton } from '@tma.js/sdk-react'
 import { House, Users } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router'
 
 import { ApiError, type Me } from './api/client'
@@ -11,6 +11,7 @@ import { I18nProvider } from './i18n/I18n'
 import { resolveLocale } from './i18n/locale'
 import { useI18n } from './i18n/useI18n'
 import { startRoute } from './routes'
+import { AccountDeleted } from './screens/AccountDeleted'
 import { DealCard } from './screens/DealCard'
 import { Home } from './screens/Home'
 import { Invite } from './screens/Invite'
@@ -81,7 +82,15 @@ function Tabs() {
   )
 }
 
-function Screens({ me, startParam }: { me: Me; startParam: string | undefined }) {
+function Screens({
+  me,
+  startParam,
+  onGone,
+}: {
+  me: Me
+  startParam: string | undefined
+  onGone: () => void
+}) {
   // A deep link opens its card above Home, so BackButton leads Home (ADR-0013).
   const start = startRoute(startParam)
   return (
@@ -96,7 +105,7 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
         <Route path="/orders/:id" element={<OrderCard me={me} />} />
         <Route path="/orders/:id/propose" element={<ProposeDeal />} />
         <Route path="/deals/:id" element={<DealCard me={me} />} />
-        <Route path="/profile" element={<Profile me={me} />} />
+        <Route path="/profile" element={<Profile me={me} onGone={onGone} />} />
         <Route path="/language" element={<Language />} />
         <Route path="/settings/notifications" element={<Notifications me={me} />} />
       </Routes>
@@ -107,19 +116,30 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
 
 function SignedIn({ launch }: { launch: Launch }) {
   const me = useMe()
+  // The account was deleted: nothing more is asked of the api (QUESTIONS K2).
+  const [gone, setGone] = useState(false)
   useDeviceTimeZone(me.data)
   // Until /me answers, Telegram's language; afterwards the api's resolved one.
   const locale = resolveLocale(me.data?.locale, launch.languageCode)
   return (
     <I18nProvider locale={locale}>
-      {me.isPending ? (
+      {gone ? (
+        <AccountDeleted />
+      ) : me.isPending ? (
         <div aria-busy className="screen flex items-center justify-center">
           <img src="/icon.svg" alt="" width={56} height={56} className="animate-pulse" />
         </div>
       ) : me.isError ? (
         <Problem error={me.error} retry={() => void me.refetch()} />
       ) : (
-        <Screens me={me.data} startParam={launch.startParam} />
+        <Screens
+          me={me.data}
+          startParam={launch.startParam}
+          onGone={() => {
+            queryClient.clear()
+            setGone(true)
+          }}
+        />
       )}
     </I18nProvider>
   )

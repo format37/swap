@@ -160,6 +160,11 @@ export async function confirmAction(
   return pressed === 'ok'
 }
 
+/** Closes the Mini App, where Telegram lets it. */
+export function closeApp(): void {
+  if (miniApp.close.isAvailable()) miniApp.close()
+}
+
 /** A native popup that only explains something, with one button to close it. */
 export async function explain(message: string): Promise<void> {
   if (!popup.show.isAvailable()) {

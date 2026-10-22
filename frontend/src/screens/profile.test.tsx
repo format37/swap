@@ -4,8 +4,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Me } from '../api/client'
 import { fakeApi, json } from '../test/api'
 import { renderScreen } from '../test/render'
+import { fullName } from '../api/links'
+import { Person } from '../ui/Person'
 import { Notifications } from './Notifications'
 import { Profile } from './Profile'
+
+vi.mock('../telegram', () => ({
+  confirmAction: vi.fn(() => Promise.resolve(true)),
+  hapticNotify: vi.fn(),
+  hapticSelect: vi.fn(),
+  explain: vi.fn(() => Promise.resolve()),
+}))
 
 const me: Me = {
   id: 'a0000000-0000-4000-8000-000000000002',
@@ -68,5 +77,60 @@ describe('the notification settings (K1)', () => {
     unmount()
     renderScreen(<Notifications me={{ ...me, notifications_off: true }} />)
     expect(screen.queryByRole('switch', { name: 'Переводы' })).toBeNull()
+  })
+})
+
+describe('deleting (K2)', () => {
+  it('deletes all finished history and says what still runs', async () => {
+    const { served } = fakeApi({
+      'DELETE /api/v1/me/history': () => json(200, { deals: 3, orders: 1, running: 2 }),
+    })
+    renderScreen(<Profile me={me} />, { route: '/profile' })
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить всю историю' }))
+    expect(
+      await screen.findByText('Удалено сделок: 3, заявок: 1. Ещё идут и остались: 2.'),
+    ).toBeInTheDocument()
+    expect(served).toContain('DELETE /api/v1/me/history')
+  })
+
+  it('deletes the account, then has nothing more to ask of the api', async () => {
+    const onGone = vi.fn()
+    const { served } = fakeApi({ 'DELETE /api/v1/me': () => new Response(null, { status: 204 }) })
+    renderScreen(<Profile me={me} onGone={onGone} />, { route: '/profile' })
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить аккаунт' }))
+    await waitFor(() => {
+      expect(onGone).toHaveBeenCalled()
+    })
+    expect(served).toEqual(['DELETE /api/v1/me'])
+  })
+
+  it('says why an account with a running deal stays', async () => {
+    fakeApi({
+      'DELETE /api/v1/me': () =>
+        json(409, { type: 'about:blank', title: 'x', status: 409, code: 'account.deals_running' }),
+    })
+    renderScreen(<Profile me={me} />, { route: '/profile' })
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить аккаунт' }))
+    expect(
+      await screen.findByText(
+        'Сначала завершите идущие сделки: пока они идут, аккаунт удалить нельзя.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('names someone who left «Удалённый участник»', () => {
+    fakeApi({})
+    const gone = {
+      id: 'a0000000-0000-4000-8000-000000000009',
+      first_name: '',
+      last_name: null,
+      username: null,
+      photo_url: null,
+      score: 1,
+      deleted: true,
+    }
+    renderScreen(<Person person={gone} />)
+    expect(fullName(gone)).toBe('Удалённый участник')
+    expect(screen.getByText('Удалённый участник')).toBeInTheDocument()
   })
 })

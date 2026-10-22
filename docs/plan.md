@@ -234,8 +234,8 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] The outbox skips what the recipient switched off.
 
 **PR 1.26 — Deleting all history, and the account** (K2; Q-B10)
-- [ ] «Удалить всю историю»: J3 for everything finished, and a word on what still runs.
-- [ ] «Удалить аккаунт»: refused while a deal runs; proposals cancelled, orders closed,
+- [x] «Удалить всю историю»: J3 for everything finished, and a word on what still runs.
+- [x] «Удалить аккаунт»: refused while a deal runs; proposals cancelled, orders closed,
       links, invites and sessions deleted, history deleted as J3 has it; the row
       becomes «Удалённый участник».
 

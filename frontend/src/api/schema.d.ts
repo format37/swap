@@ -443,11 +443,35 @@ export interface paths {
         get: operations["get_me"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Me
+         * @description Delete the account, once none of its deals runs (Q-B10, QUESTIONS K2).
+         */
+        delete: operations["delete_me"];
         options?: never;
         head?: never;
         /** Update Me */
         patch: operations["update_me"];
+        trace?: never;
+    };
+    "/api/v1/me/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete History
+         * @description Every finished deal and order deleted for you at once (QUESTIONS K2, J3).
+         */
+        delete: operations["delete_history"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/network": {
@@ -756,6 +780,18 @@ export interface components {
             status: "ok";
             /** Worker Heartbeat Age S */
             worker_heartbeat_age_s: number | null;
+        };
+        /**
+         * HistoryDeleted
+         * @description What «Удалить всю историю» deleted, and how much still runs and so stays.
+         */
+        HistoryDeleted: {
+            /** Deals */
+            deals: number;
+            /** Orders */
+            orders: number;
+            /** Running */
+            running: number;
         };
         /**
          * Invite
@@ -1072,6 +1108,11 @@ export interface components {
         PaymentKind: "cash" | "bank" | "crypto";
         /** Person */
         Person: {
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted: boolean;
             /** First Name */
             first_name: string;
             /**
@@ -2833,6 +2874,42 @@ export interface operations {
             };
         };
     };
+    delete_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     update_me: {
         parameters: {
             query?: never;
@@ -2866,6 +2943,35 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryDeleted"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

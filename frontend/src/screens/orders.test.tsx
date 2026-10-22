@@ -37,6 +37,7 @@ const GIO = {
   username: 'gio',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 const MARKET: RateSpec = { v: 1, type: 'reference', source: 'coinbase' }
 
@@ -50,6 +51,7 @@ const ALEX = {
   username: 'format37',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 const NINO = {
   id: 'a0000000-0000-4000-8000-000000000002',
@@ -58,6 +60,7 @@ const NINO = {
   username: 'nino',
   photo_url: null,
   score: 0,
+  deleted: false,
 }
 
 function order(changes: Partial<Order> = {}): Order {
