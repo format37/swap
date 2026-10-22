@@ -12,7 +12,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0001](0001-subdomain-and-routing.md) | `swap.latentstate.dev` at the root of its own origin; one upstream behind the shared Caddy | Accepted |
 | [0002](0002-database-schema-conventions.md) | Names, keys, statuses, money, indexes; the journal guarded in the database | Accepted; journal guard amended by 0018 |
 | [0003](0003-ui-primitives.md) | Own primitives on Tailwind plus Telegram-native controls; readable without reading | Accepted |
-| [0004](0004-rate-spec-and-recipient-details.md) | `rate_spec` and encrypted `recipient_details` as versioned JSONB | Accepted; details amended by 0021 |
+| [0004](0004-rate-spec-and-recipient-details.md) | `rate_spec` and encrypted `recipient_details` as versioned JSONB | Accepted; details superseded by 0021 |
 | [0005](0005-background-jobs.md) | APScheduler in one worker; every job is an idempotent sweep | Accepted |
 | [0006](0006-mvp-build-order.md) | MVP build order: vertical slices, link + order + deal first | Accepted |
 | [0007](0007-openapi-client.md) | openapi-typescript + openapi-fetch; contract drift fails CI | Accepted; forms amended by 0017 |

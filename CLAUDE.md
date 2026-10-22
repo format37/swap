@@ -96,9 +96,9 @@ directly.
   `Intl.NumberFormat` from the string, and let the api do the arithmetic.
 - **Deal status changes only through the state-machine service**, with an `events`
   row in the same transaction. A database trigger enforces this (ADR-0002).
-- **Payment details are encrypted in the app before they reach the database**
-  (ADR-0004, ADR-0010). They are masked in every log line and API response, except
-  for the people Q-B8 allows.
+- **Swap stores no payment details** (ADR-0021). A deal says which currency, how
+  much, by when and how (cash, bank or crypto); where to pay is the parties' own
+  business, and a proposal's comment can carry it.
 - **No analytics and no third-party scripts in the frontend.** Sentry comes in v1,
   with the owner's DSN.
 - **Every user-facing string lives in a dictionary, in Russian, English and Georgian**

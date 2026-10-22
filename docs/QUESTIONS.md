@@ -646,4 +646,6 @@ PR 1.12 nothing in the app reads them.
 **Proposed:** delete them in slice 2, with their table, their api and the key. They stay
 until you answer, because deleting them can't be undone.
 
-**Answer:**
+**Answer:** yes (the owner, 2026-10-22: «Да, можно удалять»). Done in PR 1.16, without
+waiting for slice 2: migration 0013 drops the table, the code that sealed them goes, and
+`RECIPIENT_KEYS` leaves the server's `.env`.

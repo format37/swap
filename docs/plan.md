@@ -29,14 +29,14 @@ Swap's stack on the VPS (the kickoff's standing permission).
       until you answer.
 - [x] Phone check of links once PR 1.1 is deployed: create an invite and share it.
       Linking itself needs a second Telegram account. (Done in the demo, 2026-10-22.)
-- [ ] Keep a copy of the payment-details key off the server. PR 1.5 generates it on
-      the VPS, and without it the saved details can't be read back (ADR-0004).
+- [x] Keep a copy of the payment-details key off the server. No longer needed: the
+      details and the key went in PR 1.16 (G7).
 - [x] Phone check of PRs 1.8–1.11 once deployed: a new order without a minimum or a
       last day, with its rate filled in; then close, reopen and delete one.
 - [ ] The demo, after slice 1: invite one or two people for a real link, order and
       deal. Links and an order worked on 2026-10-22; the deal waits for PRs 1.12–1.15.
-- [ ] Answer G7 in `docs/QUESTIONS.md`: may the four saved payment details, their table
-      and the key be deleted?
+- [x] Answer G7 in `docs/QUESTIONS.md`: may the four saved payment details, their table
+      and the key be deleted? Yes, on 2026-10-22.
 - [ ] By slice 5: the backup bucket and the `age` public key (Q-A7).
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
       list (Q-A6), and the agreement text (Q-B15).
@@ -151,6 +151,11 @@ through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
 **PR 1.15 — The market rate by default** (G2; ADR-0022)
 - [x] An order follows the market unless its author fixes the rate; whoever opens it
       sees the rate of the moment, and a proposal locks it.
+
+**PR 1.16 — The saved payment details go** (G7; ADR-0021)
+- [x] Migration: `payment_methods` is dropped, with its four entries.
+- [x] The api, the sealing code, `new_key` and the `cryptography` dependency go;
+      `RECIPIENT_KEYS` leaves `.env.example`, the deploy guide and the server.
 
 **Demo, again.** Deploy, then ask the owner to run the deal.
 
