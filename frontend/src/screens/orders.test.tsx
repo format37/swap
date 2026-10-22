@@ -817,6 +817,8 @@ describe('the order card', () => {
     await waitFor(() => {
       expect(served).toContain(`DELETE /api/v1/orders/${ORDER_ID}`)
     })
+    // Deleted, it leaves for Home (QUESTIONS M1).
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent(/^\/$/)
   })
 
   it.each<[Order['status'], string[]]>([
@@ -848,17 +850,24 @@ describe('the order card', () => {
     expect(screen.queryByRole('button', { name: 'Удалить заявку' })).toBeNull()
   })
 
-  it('offers whoever dealt on it to delete their deals on it, once all are over (L4)', async () => {
+  it('offers whoever dealt on it to delete their deals on it, then goes Home (L4, M1)', async () => {
+    let deleted = false
     const { served } = fakeApi({
-      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ status: 'fulfilled' })),
-      'GET /api/v1/deals': () => json(200, [deal({ status: 'settled' })]),
-      [`DELETE /api/v1/orders/${ORDER_ID}`]: () => new Response(null, { status: 204 }),
+      // As the api does: gone once deleted.
+      [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+        deleted ? problem(404, 'order.not_found') : json(200, order({ status: 'fulfilled' })),
+      'GET /api/v1/deals': () => json(200, deleted ? [] : [deal({ status: 'settled' })]),
+      [`DELETE /api/v1/orders/${ORDER_ID}`]: () => {
+        deleted = true
+        return new Response(null, { status: 204 })
+      },
     })
     renderScreen(<OrderCard me={me} />, { route, path })
     fireEvent.click(await screen.findByRole('button', { name: 'Удалить у себя' }))
-    await waitFor(() => {
-      expect(served).toContain(`DELETE /api/v1/orders/${ORDER_ID}`)
-    })
+    // Home, and never «Заявка не найдена» on the way (QUESTIONS M1).
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent(/^\/$/)
+    expect(screen.queryByText('Заявка не найдена.')).toBeNull()
+    expect(served.filter((asked) => asked === `GET /api/v1/orders/${ORDER_ID}`)).toHaveLength(1)
     expect(confirmAction).toHaveBeenCalledWith(
       'Удалить у себя ваши сделки по этой заявке? У автора они останутся. Вернуть их нельзя.',
       'Удалить у себя',

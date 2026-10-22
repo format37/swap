@@ -309,7 +309,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
                   remove.mutate(order.id, {
                     onSuccess: () => {
                       hapticNotify('success')
-                      void navigate(-1)
+                      // Home: back could lead to a deal or a list it was in (QUESTIONS M1).
+                      void navigate('/', { replace: true })
                     },
                     onError: () => {
                       hapticNotify('error')

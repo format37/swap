@@ -189,9 +189,15 @@ describe('the deal card', () => {
     ['not its author, who deletes the order', { status: 'settled', role: 'acceptor' }, false],
   ])('offers deleting it for oneself to %s (J3)', async (_, changes, offered) => {
     const me = meOf(changes?.role === 'acceptor' ? ALEX : NINO)
+    let deleted = false
     const { served } = fakeApi({
-      [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal(changes)),
-      [`DELETE /api/v1/deals/${DEAL_ID}`]: () => new Response(null, { status: 204 }),
+      // As the api does: gone once deleted.
+      [`GET /api/v1/deals/${DEAL_ID}`]: () =>
+        deleted ? problem(404, 'deal.not_found') : json(200, deal(changes)),
+      [`DELETE /api/v1/deals/${DEAL_ID}`]: () => {
+        deleted = true
+        return new Response(null, { status: 204 })
+      },
     })
     renderScreen(<DealCard me={me} />, { route, path })
     await screen.findByText(/История/)
@@ -206,6 +212,9 @@ describe('the deal card', () => {
       'Удалить сделку у себя? У второй стороны она останется. Вернуть её нельзя.',
       'Удалить у себя',
     )
+    // Home, and never «Сделка не найдена» on the way (QUESTIONS M1).
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent(/^\/$/)
+    expect(screen.queryByText('Сделка не найдена.')).toBeNull()
   })
 
   it('tells a stranger only that there is no such deal', async () => {
