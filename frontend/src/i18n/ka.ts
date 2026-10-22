@@ -99,6 +99,10 @@ export const ka: Messages = {
   'order.close': 'განცხადების დახურვა',
   'order.close_confirm':
     'დავხუროთ განცხადება? მას ვეღარავინ დაინახავს. მიღებული გარიგებები გაგრძელდება.',
+  'order.repeats': 'მეორდება ყოველთვე, {day} რიცხვში',
+  'order.stop_repeating': 'აღარ გაიმეოროს',
+  'order.stop_repeating_confirm':
+    'აღარ გაიმეოროს? ახალი ასლები აღარ გამოქვეყნდება, ეს განცხადება კი დარჩება.',
   'order.reopen': 'ხელახლა გახსნა',
   'order.delete': 'განცხადების წაშლა',
   'order.delete_confirm':
@@ -123,6 +127,9 @@ export const ka: Messages = {
   'wizard.receive_methods': 'როგორ მიიღოთ',
   'wizard.dates': 'როდის',
   'wizard.limited': 'ვადის შეზღუდვა',
+  'wizard.repeats': 'ყოველთვიურად გამეორება',
+  'wizard.repeat_day': 'რიცხვი',
+  'wizard.digest.repeats': ' · ყოველთვიურად, {day} რიცხვში',
   'wizard.last_day': 'ბოლო დღე',
   'wizard.next': 'შემდეგი',
   'wizard.add_want': 'კიდევ ერთი ვალუტა',

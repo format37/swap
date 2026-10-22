@@ -1,9 +1,11 @@
 import {
   CalendarDays,
   Eye,
+  Repeat,
   Lock,
   MessageSquareText,
   RotateCcw,
+  Repeat2,
   Trash2,
   Waypoints,
 } from 'lucide-react'
@@ -19,6 +21,7 @@ import {
   useMarketRate,
   useOrder,
   useReopenOrder,
+  useStopRepeating,
   type Order,
   type PaymentKind,
 } from '../api/orders'
@@ -118,6 +121,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
   const close = useCloseOrder()
   const reopen = useReopenOrder()
   const remove = useDeleteOrder()
+  const stop = useStopRepeating()
   // Finished deals too: the order's card is its history (QUESTIONS H4).
   const deals = useDeals('all', order.id)
 
@@ -166,6 +170,12 @@ function Shown({ order, me }: { order: Order; me: Me }) {
         </div>
         <Methods kinds={order.payout_methods} />
         <Row icon={<CalendarDays className="size-5" />}>{orderDates(i18n, order)}</Row>
+        {/* A copy goes out every month on this day (QUESTIONS K7). */}
+        {order.repeat_day && (
+          <Row icon={<Repeat className="size-5" />}>
+            {t('order.repeats', { day: order.repeat_day })}
+          </Row>
+        )}
       </Section>
 
       <Section title={order.mine ? t('order.i_want') : t('order.wants')}>
@@ -306,7 +316,24 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           </Button>
         </div>
       )}
-      {[close, reopen, remove].map(
+      {order.mine && order.repeat_day && (
+        <div className="mx-4">
+          <Button
+            icon={<Repeat2 aria-hidden className="size-5" />}
+            disabled={stop.isPending}
+            onClick={() => {
+              void confirmAction(t('order.stop_repeating_confirm'), t('order.stop_repeating')).then(
+                (confirmed) => {
+                  if (confirmed) stop.mutate(order.id)
+                },
+              )
+            }}
+          >
+            {t('order.stop_repeating')}
+          </Button>
+        </div>
+      )}
+      {[close, reopen, remove, stop].map(
         (action, index) =>
           action.isError && (
             <p key={index} className="px-6 text-destructive">

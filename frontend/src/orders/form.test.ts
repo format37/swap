@@ -97,6 +97,7 @@ it('turns a filled wizard into exactly what the api takes', () => {
     ],
     reach: 2,
     visible_to: null,
+    repeat_day: null,
     note: 'наличные',
   })
 })
@@ -173,4 +174,10 @@ it('wants someone chosen when it isn’t for everyone', () => {
     whoProblem(filled({ reach: 0, chosen: ['a0000000-0000-4000-8000-000000000002'] })),
   ).toBeNull()
   expect(whoProblem(filled())).toBeNull()
+})
+
+it('repeats monthly only when asked, on the day chosen (K7)', () => {
+  expect(emptyForm(TODAY)).toMatchObject({ repeats: false, repeatDay: '22' })
+  expect(toDraft(filled()).repeat_day).toBeNull()
+  expect(toDraft(filled({ repeats: true, repeatDay: '5' })).repeat_day).toBe(5)
 })

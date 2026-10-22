@@ -84,6 +84,7 @@ function order(changes: Partial<Order> = {}): Order {
     ],
     note: 'наличные у метро',
     status: 'open',
+    repeat_day: null,
     created_at: '2026-10-22T10:00:00Z',
     visibility: null,
     ...changes,
@@ -726,6 +727,22 @@ describe('the order card', () => {
     })
     renderScreen(<OrderCard me={me} />, { route, path })
     expect(await screen.findByText(text)).toBeInTheDocument()
+  })
+
+  it('says it repeats, and lets its author stop it once that is confirmed (K7)', async () => {
+    const { served } = fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+        json(200, order({ mine: true, repeat_day: 5, visibility: { reach: 2, people: [] } })),
+      'GET /api/v1/deals': () => json(200, []),
+      [`POST /api/v1/orders/${ORDER_ID}/stop-repeating`]: () =>
+        json(200, order({ mine: true, repeat_day: null })),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    expect(await screen.findByText('Повторяется каждый месяц, 5-го числа')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Больше не повторять' }))
+    await waitFor(() => {
+      expect(served).toContain(`POST /api/v1/orders/${ORDER_ID}/stop-repeating`)
+    })
   })
 
   it('tells a stranger only that there is no such order', async () => {

@@ -32,6 +32,10 @@ export interface OrderForm {
   /** «Ограничить срок»: off, the order is open until its author closes it (F3). */
   limited: boolean
   until: string
+  /** «Повторять каждый месяц»: off, the order goes out once (QUESTIONS K7). */
+  repeats: boolean
+  /** N in «N-го числа», as the select holds it. */
+  repeatDay: string
   wants: WantForm[]
   /** How far it is seen, in handshakes: 0 for those chosen, null for ∞ (QUESTIONS J2). */
   reach: Reach
@@ -100,6 +104,8 @@ export function emptyForm(today: string): OrderForm {
     receiveMethods: [],
     from: today,
     limited: false,
+    repeats: false,
+    repeatDay: String(Number(today.split('-')[2] ?? '1')),
     until: addDays(today, 14),
     wants: [newWant('')],
     reach: DEFAULT_REACH,
@@ -178,6 +184,7 @@ export function toDraft(form: OrderForm): OrderDraft {
     amount_min: form.exact ? total : (parseAmountOrZero(form.least) ?? ''),
     available_from: form.from,
     available_until: form.limited ? form.until : null,
+    repeat_day: form.repeats ? Number(form.repeatDay) : null,
     payout_methods: form.methods,
     receive_methods: form.receiveMethods,
     wants: form.wants.map((want) => ({
