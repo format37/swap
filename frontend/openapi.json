@@ -1527,6 +1527,15 @@
             ],
             "title": "Rate Spec"
           },
+          "side": {
+            "default": "give",
+            "enum": [
+              "give",
+              "want"
+            ],
+            "title": "Side",
+            "type": "string"
+          },
           "want_currency": {
             "examples": [
               "GEL"
@@ -4777,7 +4786,7 @@
     },
     "/api/v1/quote": {
       "post": {
-        "description": "What `amount` of the give currency comes to in the want currency, at the order's\nrate: the author's, or the market's of the moment (QUESTIONS G2).",
+        "description": "What `amount` of the give currency comes to in the want currency, at the order's\nrate: the author's, or the market's of the moment (QUESTIONS G2). With side \"want\",\nwhat to give for `amount` of the wanted currency, at the same rate (QUESTIONS L2).",
         "operationId": "quote",
         "requestBody": {
           "content": {

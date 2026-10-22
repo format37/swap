@@ -624,6 +624,13 @@ async def test_a_quote_previews_the_counter_amount(client: AsyncClient) -> None:
     }
     whole = await client.post("/api/v1/quote", json={**body, "whole": True}, headers=alex)
     assert whole.json()["amount"] == "1712.00"
+    # The other way: what to give for 1712.33 GEL, at the same rate (QUESTIONS L2).
+    back = {**body, "amount": "1712.33", "side": "want"}
+    given = await client.post("/api/v1/quote", json=back, headers=alex)
+    assert given.json()["amount"] == "50000.04"
+    assert given.json()["rate"] == response.json()["rate"]
+    unknown = await client.post("/api/v1/quote", json={**back, "side": "up"}, headers=alex)
+    assert unknown.status_code == 422
 
     missing = await client.post(
         "/api/v1/quote", json={**body, "want_currency": "EUR"}, headers=alex
@@ -670,6 +677,11 @@ async def test_an_order_follows_the_market_unless_its_rate_is_fixed(
     )
     assert other_way.json()["amount"] == "3139.00"
     assert other_way.json()["rate"]["base"] == "GEL"
+    # What to give for 100 GEL at the market's rate of the moment (QUESTIONS L2).
+    wanted = await client.post(
+        "/api/v1/quote", json={**body, "amount": "100.00", "side": "want"}, headers=nino
+    )
+    assert wanted.json()["amount"] == "3139.00"
 
 
 @pytest.mark.parametrize(

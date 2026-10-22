@@ -666,7 +666,8 @@ export interface paths {
         /**
          * Quote
          * @description What `amount` of the give currency comes to in the want currency, at the order's
-         *     rate: the author's, or the market's of the moment (QUESTIONS G2).
+         *     rate: the author's, or the market's of the moment (QUESTIONS G2). With side "want",
+         *     what to give for `amount` of the wanted currency, at the same rate (QUESTIONS L2).
          */
         post: operations["quote"];
         delete?: never;
@@ -1289,6 +1290,12 @@ export interface components {
             give_currency: string;
             /** Rate Spec */
             rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
+            /**
+             * Side
+             * @default give
+             * @enum {string}
+             */
+            side: "give" | "want";
             /**
              * Want Currency
              * @example GEL
