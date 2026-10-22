@@ -184,8 +184,10 @@ async def test_a_closed_order_takes_no_proposals(world: World) -> None:
         ({"amount": "150000.01"}, "deal.amount_range"),
         ({"want_currency": "EUR"}, "deal.unknown_want"),
         ({"give_method": "crypto"}, "deal.method_not_offered"),
-        # Alex is paid in cash or by bank, not in crypto (QUESTIONS F2).
+        # Alex takes GEL in cash or by bank, not in crypto (QUESTIONS F2)...
         ({"counter_method": "crypto"}, "deal.method_not_accepted"),
+        # ...and USD by bank alone (QUESTIONS L1).
+        ({"want_currency": "USD", "counter_method": "cash"}, "deal.method_not_accepted"),
         # A card is a bank account now (QUESTIONS G3).
         ({"counter_method": "card"}, "validation_error"),
         ({"amount": 50000}, "validation_error"),

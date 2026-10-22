@@ -74,9 +74,13 @@ async def _copy(
         available_from=today,
         available_until=today + window if window is not None else None,
         payout_methods=template.payout_methods,
-        receive_methods=template.receive_methods,
         wants=[
-            Want(currency=w.currency, country=w.country, rate_spec=parse_spec(w.rate_spec))
+            Want(
+                currency=w.currency,
+                country=w.country,
+                rate_spec=parse_spec(w.rate_spec),
+                receive_methods=w.receive_methods,
+            )
             for w in template.wants
         ],
         reach=template.reach,

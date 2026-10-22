@@ -1106,8 +1106,6 @@ export interface components {
             number: number;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
-            /** Receive Methods */
-            receive_methods: components["schemas"]["PaymentKind"][];
             /** Repeat Day */
             repeat_day: number | null;
             status: components["schemas"]["OrderStatus"];
@@ -1156,8 +1154,6 @@ export interface components {
              * @default 2
              */
             reach: number | null;
-            /** Receive Methods */
-            receive_methods: components["schemas"]["PaymentKind"][];
             /** Repeat Day */
             repeat_day?: number | null;
             /** Visible To */
@@ -1423,6 +1419,8 @@ export interface components {
             currency: string;
             /** Rate Spec */
             rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
+            /** Receive Methods */
+            receive_methods: components["schemas"]["PaymentKind"][];
         };
     };
     responses: never;

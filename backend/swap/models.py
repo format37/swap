@@ -329,7 +329,6 @@ class Order(Base):
         # Holds when there is no last day too: a comparison with NULL passes a CHECK.
         CheckConstraint("available_from <= available_until", name="window"),
         CheckConstraint(_kinds_check("payout_methods"), name="payout_methods"),
-        CheckConstraint(_kinds_check("receive_methods"), name="receive_methods"),
         CheckConstraint(one_of("status", OrderStatus), name="status"),
         CheckConstraint("reach IS NULL OR reach BETWEEN 0 AND 3", name="reach"),
         CheckConstraint("repeat_day IS NULL OR repeat_day BETWEEN 1 AND 31", name="repeat_day"),
@@ -355,9 +354,8 @@ class Order(Base):
     available_from: Mapped[date]
     # None: open until its author closes it (QUESTIONS F3).
     available_until: Mapped[date | None]
-    # How the author pays out, and how they can be paid (QUESTIONS F2).
+    # How the author pays out (QUESTIONS F2). How they are paid is each wanted currency's.
     payout_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
-    receive_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     note: Mapped[str | None] = mapped_column(Text)
     # How many handshakes away it is seen (QUESTIONS J2, ADR-0028): 0 for its list alone,
     # 1 for the author's links, 2 and 3 further, None for anyone any chain reaches.
@@ -389,6 +387,7 @@ class OrderWant(Base):
         CheckConstraint(asset_check("currency"), name="currency"),
         CheckConstraint(country_check("country"), name="country"),
         CheckConstraint("rate_spec->>'type' IN ('fixed', 'reference')", name="rate_spec_type"),
+        CheckConstraint(_kinds_check("receive_methods"), name="receive_methods"),
     )
 
     order_id: Mapped[uuid.UUID] = mapped_column(
@@ -401,6 +400,9 @@ class OrderWant(Base):
     # This currency's rate: the author's own, or the market's until a proposal locks it
     # (QUESTIONS J1). A versioned union, validated by swap/rates.py (ADR-0004).
     rate_spec: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    # How the author takes this currency: GEL in cash or by bank, USD by bank alone
+    # (QUESTIONS L1, ADR-0037).
+    receive_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
 
 
 class OrderVisibility(Base):
