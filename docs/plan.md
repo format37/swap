@@ -10,7 +10,8 @@ roughly 2–4 hours of wall-clock work.
 ## Phase 1 — MVP (started 2026-10-22)
 
 Phase 1 is done when parts J and K of `docs/QUESTIONS.md` are live and the owner
-confirms (K10, a default). §12's own checklist leaned on a document through the bot, a
+confirms (K10, a default). All of them went live on 2026-10-22 (PRs 1.20–1.30); what
+remains is the owner's part below. §12's own checklist leaned on a document through the bot, a
 balance and a restored backup. Those wait in «Потенциальные планы» below, and the rest of
 the checklist goes with them. Its other items already hold: the first real deal settled
 on 2026-10-22 (part H), and every transition of the state machine is tested.
@@ -39,7 +40,13 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
 - [ ] Your veto, if any, on part J's defaults: mainly reach 2 for new orders, rings
       instead of a web of lines, and proposals across handshakes.
 - [ ] K6: what did you find missing in switching the language?
-- [ ] Once PR 1.27 is live: set the privacy page's URL in BotFather.
+- [ ] Set the privacy page's URL in BotFather: https://swap.latentstate.dev/privacy
+      (live since PR 1.27).
+- [ ] A phone check of PRs 1.20–1.30: the two-step wizard and its reach slider, photos
+      and scores, «Удалить у себя», the settings (notifications, deleting, CSV,
+      «О Swap»), the agreement at launch, order numbers, a recurring order.
+- [ ] Turn on «Prevent Storing of IP Addresses» in the Sentry project's Security &
+      Privacy settings (ADR-0025); the privacy page says Sentry may receive an IP.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
       list (Q-A6), and the agreement text (Q-B15).
 
@@ -257,6 +264,11 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] «Повторять каждый месяц, N-го числа» in the wizard.
 - [x] A worker job publishes each copy on its day, once, and announces it.
 - [x] «Больше не повторять» on any copy.
+
+**After the list (2026-10-22).** A pass over the profile at 390 px in headless Chrome
+wrapped its long rows and set the deletions apart (#41). Two checks wait on people
+signing in again: how many users get a `photo_url` (ADR-0027), and that the agreement
+shows once.
 
 ### Потенциальные планы: not now
 
