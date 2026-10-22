@@ -23,7 +23,6 @@ from sqlalchemy.ext.asyncio import (
 
 from swap.api.app import create_app
 from swap.config import Settings
-from swap.crypto import new_key
 from swap.market import Market
 
 TEST_DATABASE_URL = os.environ.get(
@@ -31,8 +30,6 @@ TEST_DATABASE_URL = os.environ.get(
 )
 # Built at run time, so the repository holds nothing a secret scanner reads as a token.
 TEST_BOT_TOKEN = "123456789:" + "T" * 35
-# A fresh key per run seals payment details in tests (ADR-0004).
-TEST_RECIPIENT_KEYS = f"k1:{new_key()}"
 # Coinbase's table as it was on 2026-10-22, cut short: tests never call out (ADR-0020).
 COINBASE = {
     "data": {
@@ -109,7 +106,6 @@ def settings() -> Settings:
         app_env="test",
         database_url=TEST_DATABASE_URL,
         telegram_bot_token=SecretStr(TEST_BOT_TOKEN),
-        recipient_keys=SecretStr(TEST_RECIPIENT_KEYS),
         log_format="console",
     )
 

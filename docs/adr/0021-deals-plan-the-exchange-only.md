@@ -29,8 +29,8 @@ themselves.
 - Migration 0010 drops `deal_legs.recipient_title` and `recipient_details`. No
   production deal had any.
 - The profile loses «Реквизиты», and so do the app's screens for them.
-- The `payment_methods` table, its api and `RECIPIENT_KEYS` stay until the owner
-  answers G7: four entries live there, and deleting them can't be undone.
+- The `payment_methods` table, its api and `RECIPIENT_KEYS` went in PR 1.16, once the
+  owner answered G7. Four entries lived there, and the owner agreed to lose them.
 
 **Three ways: cash, bank, crypto** (PR 1.13).
 - A card, a phone transfer (SBP) and «other» all move money between accounts, which is
@@ -45,8 +45,9 @@ themselves.
 
 ## Consequences
 
-- Q-B8 (who reads details in full) and the sealing of legs (ADR-0004) have nothing left
-  to apply to. `swap/crypto.py` and the key serve only the stored entries, until G7.
+- Q-B8 (who reads details in full) and the sealing in ADR-0004 have nothing left to
+  apply to. `swap/crypto.py`, the key and the `cryptography` dependency are gone, and
+  Swap stores no payment details at all.
 - A leg says how and by when, not where. Someone who needs a card number asks in
   Telegram.
 - The way to a proposal has fewer screens and fewer required fields.
