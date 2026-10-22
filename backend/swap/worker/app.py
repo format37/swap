@@ -25,6 +25,7 @@ from swap.bot.setup import configure_bot, make_bot
 from swap.config import Settings, get_settings
 from swap.db import Sessionmaker, create_engine, create_sessionmaker
 from swap.logs import configure_logging
+from swap.repeats import repeat_orders
 from swap.sentry import init_sentry
 from swap.worker.jobs import beat
 from swap.worker.outbox import send_due
@@ -33,6 +34,8 @@ log = structlog.get_logger("swap.worker")
 
 HEARTBEAT_EVERY_S = 30
 OUTBOX_EVERY_S = 5
+# Recurring orders are due by the day, so a few minutes late is on time (QUESTIONS K7).
+REPEATS_EVERY_S = 600
 
 
 def _scheduler(sessionmaker: Sessionmaker, bot: Bot | None, settings: Settings) -> AsyncIOScheduler:
@@ -41,6 +44,14 @@ def _scheduler(sessionmaker: Sessionmaker, bot: Bot | None, settings: Settings) 
     every = {"coalesce": True, "max_instances": 1, "next_run_time": datetime.now(UTC)}
     scheduler.add_job(
         beat, "interval", seconds=HEARTBEAT_EVERY_S, args=[sessionmaker], id="heartbeat", **every
+    )
+    scheduler.add_job(
+        repeat_orders,
+        "interval",
+        seconds=REPEATS_EVERY_S,
+        args=[sessionmaker, settings.assets],
+        id="repeats",
+        **every,
     )
     if bot is not None:
         # Without a bot, messages wait in the outbox (ADR-0014).

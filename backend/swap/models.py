@@ -332,6 +332,9 @@ class Order(Base):
         CheckConstraint(_kinds_check("receive_methods"), name="receive_methods"),
         CheckConstraint(one_of("status", OrderStatus), name="status"),
         CheckConstraint("reach IS NULL OR reach BETWEEN 0 AND 3", name="reach"),
+        CheckConstraint("repeat_day IS NULL OR repeat_day BETWEEN 1 AND 31", name="repeat_day"),
+        # One order per series and month: the monthly job publishes once (QUESTIONS K7).
+        UniqueConstraint("series_id", "series_month"),
         # What feeds and the expiry sweep look for (ADR-0002).
         Index("ix_orders_open_until", "available_until", postgresql_where=text("status = 'open'")),
     )
@@ -359,6 +362,12 @@ class Order(Base):
     # How many handshakes away it is seen (QUESTIONS J2, ADR-0028): 0 for its list alone,
     # 1 for the author's links, 2 and 3 further, None for anyone any chain reaches.
     reach: Mapped[int | None] = mapped_column(SmallInteger)
+    # «Повторять каждый месяц, N-го числа» (QUESTIONS K7): the day, on every order of the
+    # series until someone presses «Больше не повторять». The series is its first order's
+    # id, and each order says which month it is for.
+    repeat_day: Mapped[int | None] = mapped_column(SmallInteger)
+    series_id: Mapped[uuid.UUID | None]
+    series_month: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(Text, server_default=OrderStatus.OPEN.value)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())

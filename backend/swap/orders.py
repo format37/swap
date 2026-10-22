@@ -17,7 +17,7 @@ from typing import Annotated, Literal
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import ColumnElement, Date, and_, cast, exists, func, literal, or_, select
+from sqlalchemy import ColumnElement, Date, and_, cast, exists, func, literal, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -82,6 +82,8 @@ class OrderDraft(BaseModel):
     receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
     wants: list[Want] = Field(min_length=1, max_length=8)
     reach: Reach = DEFAULT_REACH
+    # «Повторять каждый месяц, N-го числа» (QUESTIONS K7); None: once.
+    repeat_day: int | None = Field(default=None, ge=1, le=31)
     # At reach 0, «Только выбранным»: the author's links who may see it, at least one.
     visible_to: list[uuid.UUID] | None = Field(default=None, max_length=200)
     note: str | None = Field(default=None, max_length=500)
@@ -174,7 +176,12 @@ def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
 
 
 async def create(
-    db: AsyncSession, author: User, draft: OrderDraft, assets: Collection[str]
+    db: AsyncSession,
+    author: User,
+    draft: OrderDraft,
+    assets: Collection[str],
+    *,
+    series: tuple[uuid.UUID, date] | None = None,
 ) -> Order:
     """Publish an order and tell the author's links, or its list (FR-2.1, FR-7.1). People
     further away find it in their feed (QUESTIONS J2)."""
@@ -205,6 +212,7 @@ async def create(
         receive_methods=list(dict.fromkeys(draft.receive_methods)),
         note=(draft.note or "").strip() or None,
         reach=draft.reach,
+        repeat_day=draft.repeat_day,
         status=OrderStatus.OPEN,
         wants=[
             OrderWant(
@@ -216,6 +224,12 @@ async def create(
             for position, want in enumerate(draft.wants)
         ],
     )
+    if series is not None:
+        # A monthly copy joins its series (QUESTIONS K7).
+        order.series_id, order.series_month = series
+    elif draft.repeat_day is not None:
+        # The first of a series stands for the month it was published in.
+        order.series_id, order.series_month = order.id, today(author).replace(day=1)
     db.add(order)
     # Its number comes from the database (QUESTIONS K8).
     await db.flush()
@@ -362,3 +376,15 @@ async def delete_finished(db: AsyncSession, order: Order) -> bool:
             await erase_deal(db, deal)
     await erase_order_if_bare(db, order)
     return True
+
+
+async def stop_repeating(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> Order:
+    """«Больше не повторять», on any order of a series, ends the series (QUESTIONS K7)."""
+    order = await _own(db, author, order_id)
+    if order.series_id is None or order.repeat_day is None:
+        raise DomainError(409, "order.not_repeating")
+    await db.execute(
+        update(Order).where(Order.series_id == order.series_id).values(repeat_day=None)
+    )
+    await db.refresh(order)
+    return order

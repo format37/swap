@@ -12,7 +12,7 @@ deals with it. The same Telegram account starting Swap again is someone new.
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap import deals, orders
@@ -108,6 +108,8 @@ async def delete_account(db: AsyncSession, me: User) -> None:
         # Closing cancels the proposals on it, and tells their proposers (Q-E2).
         await orders.close(db, me.id, order_id)
     await delete_history(db, me)
+    # No copy of theirs is published after they leave (QUESTIONS K7).
+    await db.execute(update(Order).where(Order.author_id == me.id).values(repeat_day=None))
     await db.execute(delete(Link).where(involves(me.id)))
     await db.execute(delete(Invite).where(Invite.created_by == me.id))
     await db.execute(delete(AuthSession).where(AuthSession.user_id == me.id))

@@ -52,6 +52,8 @@ class Order(BaseModel):
     wants: list[Want]
     note: str | None
     status: OrderStatus
+    # «Повторять каждый месяц, N-го числа», None once it doesn't (QUESTIONS K7).
+    repeat_day: int | None
     created_at: datetime
     # Only for its author.
     visibility: Visibility | None = None
@@ -86,6 +88,7 @@ class Order(BaseModel):
             ],
             note=order.note,
             status=OrderStatus(order.status),
+            repeat_day=order.repeat_day,
             created_at=order.created_at,
         )
 
@@ -145,6 +148,16 @@ async def close_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
 async def reopen_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
     """A closed order, open again as it was (QUESTIONS F7)."""
     order = await orders.reopen(db, user, order_id)
+    await db.commit()
+    return await _with_visibility(db, order, user, user.id)
+
+
+@router.post(
+    "/{order_id}/stop-repeating", responses={404: {"model": Problem}, 409: {"model": Problem}}
+)
+async def stop_repeating(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
+    """«Больше не повторять»: no more monthly copies of this series (QUESTIONS K7)."""
+    order = await orders.stop_repeating(db, user.id, order_id)
     await db.commit()
     return await _with_visibility(db, order, user, user.id)
 

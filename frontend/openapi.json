@@ -1037,6 +1037,17 @@
             "title": "Receive Methods",
             "type": "array"
           },
+          "repeat_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat Day"
+          },
           "status": {
             "$ref": "#/components/schemas/OrderStatus"
           },
@@ -1075,6 +1086,7 @@
           "wants",
           "note",
           "status",
+          "repeat_day",
           "created_at"
         ],
         "title": "Order",
@@ -1176,6 +1188,19 @@
             "minItems": 1,
             "title": "Receive Methods",
             "type": "array"
+          },
+          "repeat_day": {
+            "anyOf": [
+              {
+                "maximum": 31.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat Day"
           },
           "visible_to": {
             "anyOf": [
@@ -4670,6 +4695,85 @@
           }
         ],
         "summary": "Reopen Order",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{order_id}/stop-repeating": {
+      "post": {
+        "description": "\u00ab\u0411\u043e\u043b\u044c\u0448\u0435 \u043d\u0435 \u043f\u043e\u0432\u0442\u043e\u0440\u044f\u0442\u044c\u00bb: no more monthly copies of this series (QUESTIONS K7).",
+        "operationId": "stop_repeating",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stop Repeating",
         "tags": [
           "orders"
         ]
