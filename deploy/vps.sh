@@ -32,7 +32,8 @@ if [ "${1:-}" = "--pull" ]; then
 fi
 echo "deploying $(git log -1 --format='%h %s')"
 
-"${COMPOSE[@]}" build
+# The commit is the release in error reports (ADR-0025).
+"${COMPOSE[@]}" build --build-arg SENTRY_RELEASE="$(git rev-parse --short HEAD)"
 "${COMPOSE[@]}" up -d --wait db
 
 # A dump before every migration. It survives a bad migration, not a lost server; the
