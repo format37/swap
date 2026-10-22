@@ -295,7 +295,7 @@ veto on parts J and K.
       the other currencies follow.
 
 **PR 1.35 — Keep a photo's link when a launch brings none** (L3; ADR-0027)
-- [ ] The sign-in keeps the stored link when a launch has none, and still takes a new
+- [x] The sign-in keeps the stored link when a launch has none, and still takes a new
       one, Telegram's letter picture included.
 
 ### Потенциальные планы: not now
