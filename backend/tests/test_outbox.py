@@ -267,6 +267,7 @@ async def test_amounts_are_written_the_recipients_way(
             "order.opened",
             target=CARD,
             name="Alex",
+            number="17",
             amount="150000.00",
             currency="RUB",
             wants="GEL, USD",
@@ -276,3 +277,5 @@ async def test_amounts_are_written_the_recipients_way(
     [sent] = telegram.calls
     assert isinstance(sent, SendMessage)
     assert words in sent.text
+    # The order's number, as everyone calls it (QUESTIONS K8).
+    assert "17" in sent.text

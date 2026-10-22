@@ -217,6 +217,8 @@ async def create(
         ],
     )
     db.add(order)
+    # Its number comes from the database (QUESTIONS K8).
+    await db.flush()
     audience = set(draft.visible_to or []) if draft.reach == 0 else links
     # Whoever muted the author still sees the order, but hears nothing of it (FR-7.2).
     muting = set(await db.scalars(select(Mute.user_id).where(Mute.muted_id == author.id)))
@@ -231,11 +233,11 @@ async def create(
             "order.opened",
             target=target("order", order.id),
             name=person_label(author),
+            number=str(order.number),
             amount=str(order.amount_max),
             currency=order.give_currency,
             wants=", ".join(dict.fromkeys(want.currency for want in draft.wants)),
         )
-    await db.flush()
     return order
 
 

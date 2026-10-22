@@ -16,6 +16,7 @@ from swap.api.v1.people import Person
 from swap.deals import Dispute, Proposal
 from swap.models import Deal as DealRow
 from swap.models import DealStatus, Event, PaymentKind, User
+from swap.models import Order as OrderRow
 from swap.rates import FixedRate
 
 router = APIRouter(tags=["deals"], responses={401: {"model": Problem}})
@@ -73,6 +74,8 @@ class DealEvent(BaseModel):
 class Deal(BaseModel):
     id: uuid.UUID
     order_id: uuid.UUID
+    # The order's «№ 17» (QUESTIONS K8).
+    order_number: int
     status: DealStatus
     # Which side the signed-in user is on.
     role: Literal["proposer", "acceptor"]
@@ -101,6 +104,7 @@ class Deal(BaseModel):
         people: dict[uuid.UUID, User],
         journal: list[Event],
         viewer: uuid.UUID,
+        order_number: int,
     ) -> Self:
         def person(user_id: uuid.UUID) -> Person:
             return Person.of(people[user_id])
@@ -108,6 +112,7 @@ class Deal(BaseModel):
         return cls(
             id=deal.id,
             order_id=deal.order_id,
+            order_number=order_number,
             status=DealStatus(deal.status),
             role="proposer" if viewer == deal.proposer_id else "acceptor",
             proposer=person(deal.proposer_id),
@@ -174,7 +179,19 @@ async def _shown(db: Db, rows: list[DealRow], viewer: uuid.UUID) -> list[Deal]:
     # Read afresh: a deal that just settled has changed both scores (ADR-0029).
     fresh = select(User).where(User.id.in_(ids)).execution_options(populate_existing=True)
     people = {user.id: user for user in await db.scalars(fresh)}
-    return [Deal.of(row, people, await deals.journal(db, row), viewer) for row in rows]
+    numbers = dict(
+        (
+            await db.execute(
+                select(OrderRow.id, OrderRow.number).where(
+                    OrderRow.id.in_({row.order_id for row in rows})
+                )
+            )
+        ).all()
+    )
+    return [
+        Deal.of(row, people, await deals.journal(db, row), viewer, numbers[row.order_id])
+        for row in rows
+    ]
 
 
 async def _done(db: Db, row: DealRow, viewer: uuid.UUID) -> Deal:

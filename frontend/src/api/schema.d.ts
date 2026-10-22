@@ -714,6 +714,8 @@ export interface components {
              * Format: uuid
              */
             order_id: string;
+            /** Order Number */
+            order_number: number;
             proposer: components["schemas"]["Person"];
             rate: components["schemas"]["Rate"];
             /** Resolution */
@@ -1058,6 +1060,8 @@ export interface components {
             mine: boolean;
             /** Note */
             note: string | null;
+            /** Number */
+            number: number;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
             /** Receive Methods */

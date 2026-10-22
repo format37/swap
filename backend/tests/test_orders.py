@@ -397,6 +397,7 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
         assert len(list(await db.scalars(select(Notification)))) == before + 2
     params = {
         "name": "Alex (@format37)",
+        "number": str(order["number"]),
         "amount": "150000.00",
         "currency": "RUB",
         "wants": "GEL, USD",
@@ -671,6 +672,16 @@ async def test_a_rate_spec_of_no_known_kind_is_refused(
     )
     assert response.status_code == 422
     assert response.json()["code"] == "validation_error"
+
+
+async def test_orders_are_numbered_from_one_sequence(client: AsyncClient) -> None:
+    alex = await person(client, ALEX)
+    first = await publish(client, alex)
+    second = await publish(client, alex)
+    # «№ 17» (QUESTIONS K8): every order its own, one after another.
+    assert second["number"] == first["number"] + 1
+    card = (await client.get(f"/api/v1/orders/{first['id']}", headers=alex)).json()
+    assert card["number"] == first["number"]
 
 
 async def test_each_wanted_currency_keeps_its_own_rate(client: AsyncClient) -> None:

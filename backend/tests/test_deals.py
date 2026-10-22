@@ -247,6 +247,7 @@ async def test_a_deal_from_proposal_to_settled(world: World) -> None:
             "Alex",
             {
                 "name": "Nino B (@nino)",
+                "number": str(world.order["number"]),
                 "amount": "50000.00",
                 "currency": "RUB",
                 "counter_amount": "1712.33",

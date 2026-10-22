@@ -110,6 +110,10 @@
             "title": "Order Id",
             "type": "string"
           },
+          "order_number": {
+            "title": "Order Number",
+            "type": "integer"
+          },
           "proposer": {
             "$ref": "#/components/schemas/Person"
           },
@@ -158,6 +162,7 @@
         "required": [
           "id",
           "order_id",
+          "order_number",
           "status",
           "role",
           "proposer",
@@ -1014,6 +1019,10 @@
             ],
             "title": "Note"
           },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
           "payout_methods": {
             "items": {
               "$ref": "#/components/schemas/PaymentKind"
@@ -1051,6 +1060,7 @@
         },
         "required": [
           "id",
+          "number",
           "author",
           "mine",
           "give_currency",
