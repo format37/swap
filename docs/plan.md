@@ -176,6 +176,10 @@ both sides. The owner's notes are QUESTIONS part H.
 **PR 1.19 — Error reports** (I1; ADR-0025)
 - [x] One Sentry project, `swap`; the api, the worker and the Mini App report to it.
 - [x] Nothing personal: no bodies, no local variables, no initData, no bot token.
+- [ ] Follow-up: readable Mini App stack traces. Build with `sourcemap: 'hidden'`, upload
+      the maps with `@sentry/vite-plugin` in the image build (a Sentry auth token in the
+      VPS's `.env`, passed as a build secret, never a build arg), and keep them out of
+      `/assets`. Done when a production frontend issue shows `src/…` file and line.
 
 ### Slices 2–7
 
@@ -188,7 +192,7 @@ Each is broken into PRs when it starts.
 | 4 | Cancel requests, disputes and their resolution, deal notes (FR-4.5–4.7) |
 | 5 | Reminders (Q-B7); order and proposal expiry; the in-app feed and its counter; muting a link's new orders; the retention and session sweeps; `requestWriteAccess` for those who skipped /start (Q-B12) |
 | 6 | The manual rate (Q-B3); the profile's display name, time zone and default currencies; blocks and the block list; account deletion (Q-B10) |
-| 7 | Encrypted off-box backups and a restore drill; hardening, including the rate limit on sign-in; the user agreement (Q-B15) |
+| 7 | Encrypted off-box backups and a restore drill; hardening, including the rate limit on sign-in; the user agreement (Q-B15); Sentry source maps for the Mini App, if PR 1.19's follow-up is still open |
 
 ## Estimates
 
