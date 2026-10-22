@@ -3,6 +3,8 @@ import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import { useNavigate } from 'react-router'
 
 import { useLinks } from '../api/links'
+import { useMe } from '../api/me'
+import { audience, useNetwork } from '../api/network'
 import {
   useAssets,
   useMarketRate,
@@ -30,10 +32,12 @@ import {
   toDraft,
   toggled,
   wantProblem,
+  type Reach,
   whoProblem,
   type OrderForm,
   type WantForm,
 } from '../orders/form'
+import { Rings } from '../orders/Rings'
 import { hapticNotify, hapticSelect, useMainButton } from '../telegram'
 import { Button } from '../ui/Button'
 import { Chip } from '../ui/Chip'
@@ -636,35 +640,77 @@ function Digest({ form }: { form: OrderForm }) {
   )
 }
 
-/** Step 2, «Кому видно»: all links or chosen ones, and a note. */
+// The slider's five stops: 0 is «Только выбранным», 4 stands for the whole network.
+const STOPS: Reach[] = [0, 1, 2, 3, null]
+
+function stopKey(reach: Reach, kind: 'stop' | 'about'): MessageKey {
+  return `reach.${kind}.${reach ?? 'all'}`
+}
+
+/**
+ * Step 2, «Кому видно»: how many handshakes away the order is seen, on a slider in words,
+ * with who that is and the rings it reaches (QUESTIONS J2); at 0, the links to choose
+ * from. Then a note.
+ */
 function WhoStep({ form, change }: StepProps) {
   const { t } = useI18n()
   const links = useLinks()
+  const network = useNetwork()
+  const me = useMe().data
   const active = links.data?.active ?? []
+  const stop = STOPS.indexOf(form.reach)
+  const pick = (reach: Reach) => {
+    hapticSelect()
+    change({ reach })
+  }
+  const seen = network.data && audience(network.data, form.reach)
   return (
     <>
       <Section title={t('wizard.who.title')}>
-        <Choice
-          kind="radio"
-          label={t('wizard.who.all')}
-          checked={form.everyone}
-          onChange={() => {
-            change({ everyone: true })
-          }}
-        />
-        <Choice
-          kind="radio"
-          label={t('wizard.who.some')}
-          checked={!form.everyone}
-          onChange={() => {
-            change({ everyone: false })
-          }}
-        />
+        <div className="px-4 py-3">
+          <p className="font-medium">{t(stopKey(form.reach, 'about'))}</p>
+          <input
+            type="range"
+            className="mt-3 w-full accent-[var(--color-button)]"
+            min={0}
+            max={STOPS.length - 1}
+            step={1}
+            value={stop}
+            aria-label={t('wizard.who.title')}
+            aria-valuetext={t(stopKey(form.reach, 'about'))}
+            onChange={(event) => {
+              pick(STOPS[Number(event.target.value)] ?? null)
+            }}
+          />
+          <div className="mt-1 grid grid-cols-5 gap-1 text-center text-xs leading-tight">
+            {STOPS.map((reach) => (
+              <button
+                key={reach ?? 'all'}
+                type="button"
+                aria-pressed={form.reach === reach}
+                onClick={() => {
+                  pick(reach)
+                }}
+                className={form.reach === reach ? 'font-semibold text-accent' : 'text-hint'}
+              >
+                {t(stopKey(reach, 'stop'))}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-hint">
+            {form.reach === 0
+              ? t('reach.audience_chosen', { count: form.chosen.length })
+              : seen &&
+                (form.reach === 1
+                  ? t('reach.audience_links', { links: seen.links })
+                  : t('reach.audience', { links: seen.links, more: seen.more }))}
+          </p>
+        </div>
       </Section>
       {links.isSuccess && active.length === 0 && (
         <p className="px-6 text-sm text-hint">{t('wizard.who.none')}</p>
       )}
-      {!form.everyone && active.length > 0 && (
+      {form.reach === 0 && active.length > 0 && (
         <Section>
           {active.map((link) => {
             const checked = form.chosen.includes(link.person.id)
@@ -685,6 +731,9 @@ function WhoStep({ form, change }: StepProps) {
             )
           })}
         </Section>
+      )}
+      {form.reach !== 0 && network.data && me && (
+        <Rings me={me} network={network.data} reach={form.reach} />
       )}
       <Section title={t('wizard.note')}>
         <textarea

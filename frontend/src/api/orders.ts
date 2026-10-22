@@ -16,12 +16,13 @@ const ORDERS = ['orders'] as const
 
 /**
  * «Открытые мне» (`visible`), «Мои» (`mine`, the open ones), or the finished ones that are
- * mine or that I had a deal on (`history`, QUESTIONS H4).
+ * mine or that I had a deal on (`history`, QUESTIONS H4). `within` narrows «Открытые мне»
+ * to authors at most so many handshakes away; null is the whole network (J2).
  */
-export function useOrders(scope: 'visible' | 'mine' | 'history') {
+export function useOrders(scope: 'visible' | 'mine' | 'history', within: number | null = null) {
   return useQuery({
-    queryKey: [...ORDERS, scope],
-    queryFn: () => unwrap(api.GET('/api/v1/orders', { params: { query: { scope } } })),
+    queryKey: [...ORDERS, scope, within],
+    queryFn: () => unwrap(api.GET('/api/v1/orders', { params: { query: { scope, within } } })),
   })
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 const SIZES = {
+  xs: 'size-8 text-xs',
   sm: 'size-10 text-base',
   lg: 'size-14 text-xl',
   xl: 'size-20 text-3xl',

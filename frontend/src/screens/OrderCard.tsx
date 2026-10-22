@@ -1,4 +1,12 @@
-import { CalendarDays, Eye, Lock, MessageSquareText, RotateCcw, Trash2 } from 'lucide-react'
+import {
+  CalendarDays,
+  Eye,
+  Lock,
+  MessageSquareText,
+  RotateCcw,
+  Trash2,
+  Waypoints,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
@@ -18,6 +26,7 @@ import { DealRow } from '../deals/DealRow'
 import { countryName } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
 import { formatTime } from '../i18n/format'
+import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { formatRate, isZero } from '../money/format'
@@ -129,6 +138,14 @@ function Shown({ order, me }: { order: Order; me: Me }) {
         />
       </header>
 
+      {/* How this viewer reaches its author, their own link first (QUESTIONS J2). */}
+      {order.chain && order.chain.length > 0 && (
+        <p className="flex items-center gap-2 px-6 text-sm text-hint">
+          <Waypoints aria-hidden className="size-4 shrink-0 text-accent" />
+          {t('order.chain', { names: order.chain.map(fullName).join(' → ') })}
+        </p>
+      )}
+
       <Section title={order.mine ? t('order.i_give') : t('order.gives')}>
         <div className="flex flex-col gap-1 px-4 py-3">
           <p className="flex flex-wrap items-center gap-x-1.5 text-lg">
@@ -187,11 +204,11 @@ function Shown({ order, me }: { order: Order; me: Me }) {
       {order.visibility && (
         <Section>
           <Row icon={<Eye className="size-5" />}>
-            {order.visibility.all_links
-              ? t('order.visible_all')
-              : t('order.visible_some', {
+            {order.visibility.reach === 0
+              ? t('order.visible_some', {
                   names: order.visibility.people.map(fullName).join(', '),
-                })}
+                })
+              : t(`order.reach.${order.visibility.reach ?? 'all'}` as MessageKey)}
           </Row>
         </Section>
       )}

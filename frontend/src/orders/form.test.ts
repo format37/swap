@@ -95,6 +95,7 @@ it('turns a filled wizard into exactly what the api takes', () => {
         rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'USD', quote: 'RUB', value: '81.5' }] },
       },
     ],
+    reach: 2,
     visible_to: null,
     note: 'наличные',
   })
@@ -120,7 +121,10 @@ it('takes the whole amount as the least one when it goes at once', () => {
 
 it('sends the chosen links only when it isn’t for everyone', () => {
   const ids = ['a0000000-0000-4000-8000-000000000002']
-  expect(toDraft(filled({ everyone: false, chosen: ids })).visible_to).toEqual(ids)
+  expect(toDraft(filled({ reach: 0, chosen: ids }))).toMatchObject({ reach: 0, visible_to: ids })
+  // Any other reach sends no list, whatever was ticked before (J2).
+  expect(toDraft(filled({ reach: 2, chosen: ids }))).toMatchObject({ reach: 2, visible_to: null })
+  expect(toDraft(filled({ reach: null })).reach).toBeNull()
 })
 
 it.each<[Partial<OrderForm>, string]>([
@@ -164,6 +168,9 @@ it('wants a way to be paid (F2)', () => {
 })
 
 it('wants someone chosen when it isn’t for everyone', () => {
-  expect(whoProblem(filled({ everyone: false }))).toBe('wizard.error.who')
+  expect(whoProblem(filled({ reach: 0 }))).toBe('wizard.error.who')
+  expect(
+    whoProblem(filled({ reach: 0, chosen: ['a0000000-0000-4000-8000-000000000002'] })),
+  ).toBeNull()
   expect(whoProblem(filled())).toBeNull()
 })
