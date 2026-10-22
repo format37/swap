@@ -250,8 +250,8 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [x] «№ 17» on cards, rows and deals, and in bot messages.
 
 **PR 1.29 — CSV export** (K4; FR-6.3)
-- [ ] One row per deal the user took part in, in their language.
-- [ ] The bot sends the file to their chat.
+- [x] One row per deal the user took part in, in their language.
+- [x] The bot sends the file to their chat.
 
 **PR 1.30 — Recurring orders** (K7)
 - [ ] «Повторять каждый месяц, N-го числа» in the wizard.
