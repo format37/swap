@@ -14,6 +14,10 @@ const BY_CODE: Partial<Record<string, MessageKey>> = {
   'order.not_found': 'error.order_not_found',
   'order.not_open': 'error.order_not_open',
   'order.insufficient_remaining': 'error.order_short',
+  'order.window_past': 'error.order_window_past',
+  // Someone changed it in another window: closed, reopened or deleted it.
+  'order.not_closed': 'error.order_changed',
+  'order.open': 'error.order_changed',
   'payment.unavailable': 'error.payment_unavailable',
   'payment.text_required': 'error.payment_text_required',
   'payment.limit': 'error.payment_limit',

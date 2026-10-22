@@ -386,6 +386,59 @@ describe('the order card', () => {
     })
   })
 
+  it('lets its author reopen a closed order, or delete it once that is confirmed', async () => {
+    const { served } = fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, status: 'closed' })),
+      [`POST /api/v1/orders/${ORDER_ID}/reopen`]: () => json(200, order({ mine: true })),
+      [`DELETE /api/v1/orders/${ORDER_ID}`]: () => new Response(null, { status: 204 }),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    fireEvent.click(await screen.findByRole('button', { name: 'Открыть снова' }))
+    await waitFor(() => {
+      expect(served).toContain(`POST /api/v1/orders/${ORDER_ID}/reopen`)
+    })
+    vi.mocked(confirmAction).mockResolvedValueOnce(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить заявку' }))
+    await waitFor(() => {
+      expect(confirmAction).toHaveBeenCalledWith(
+        'Удалить заявку? Она пропадёт и у вас. Сделки по ней продолжатся.',
+        'Удалить заявку',
+        { destructive: true },
+      )
+    })
+    expect(served).not.toContain(`DELETE /api/v1/orders/${ORDER_ID}`)
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить заявку' }))
+    await waitFor(() => {
+      expect(served).toContain(`DELETE /api/v1/orders/${ORDER_ID}`)
+    })
+  })
+
+  it.each<[Order['status'], string[]]>([
+    ['open', ['Закрыть заявку']],
+    ['fulfilled', ['Удалить заявку']],
+    ['expired', ['Удалить заявку']],
+  ])('offers its author of a %s order only %j', async (status, actions) => {
+    fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, status })) })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    await screen.findByText(/Осталось/)
+    const offered = ['Закрыть заявку', 'Открыть снова', 'Удалить заявку'].filter((name) =>
+      screen.queryByRole('button', { name }),
+    )
+    expect(offered).toEqual(actions)
+  })
+
+  it('says why a closed order past its last day can’t reopen', async () => {
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, status: 'closed' })),
+      [`POST /api/v1/orders/${ORDER_ID}/reopen`]: () => problem(409, 'order.window_past'),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    fireEvent.click(await screen.findByRole('button', { name: 'Открыть снова' }))
+    expect(
+      await screen.findByText('Последний день заявки прошёл, открыть её снова нельзя.'),
+    ).toBeInTheDocument()
+  })
+
   it('tells a stranger only that there is no such order', async () => {
     fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => problem(404, 'order.not_found') })
     renderScreen(<OrderCard me={me} />, { route, path })

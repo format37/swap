@@ -91,6 +91,10 @@ export const ka: Messages = {
   'order.close': 'განცხადების დახურვა',
   'order.close_confirm':
     'დავხუროთ განცხადება? მას ვეღარავინ დაინახავს. მიღებული გარიგებები გაგრძელდება.',
+  'order.reopen': 'ხელახლა გახსნა',
+  'order.delete': 'განცხადების წაშლა',
+  'order.delete_confirm':
+    'წავშალოთ განცხადება? ის თქვენთანაც გაქრება. მისი გარიგებები გაგრძელდება.',
   'order.status.open': 'ღიაა',
   'order.status.fulfilled': 'შესრულებულია',
   'order.status.closed': 'დახურულია',
@@ -140,6 +144,8 @@ export const ka: Messages = {
   'wizard.error.who': 'აირჩიეთ ერთი კავშირი მაინც',
   'error.order_not_found': 'განცხადება ვერ მოიძებნა.',
   'error.order_not_open': 'განცხადება უკვე დახურულია.',
+  'error.order_window_past': 'განცხადების ბოლო დღე გავიდა, ხელახლა გახსნა შეუძლებელია.',
+  'error.order_changed': 'განცხადება შეიცვალა. გახსენით თავიდან.',
   'error.order_invalid': 'განცხადებაში რაღაც არასწორია. შეამოწმეთ თანხები, თარიღები და კურსი.',
   'profile.title': 'პროფილი',
   'profile.details': 'რეკვიზიტები',
