@@ -7,6 +7,7 @@ handshakes from Alex, Ana three, Dato four and Elene five. Zura is on an island 
 
 import random
 import uuid
+from itertools import pairwise
 from typing import Any
 
 import pytest
@@ -40,7 +41,7 @@ class Line:
         for profile in [*LINE, ZURA]:
             self.people[str(profile["first_name"])] = await person(self.client, profile)
         self.links: list[str] = []
-        for left, right in zip(LINE, LINE[1:], strict=False):
+        for left, right in pairwise(LINE):
             inviter = self.people[str(left["first_name"])]
             self.links.append(await linked(self.client, self.sessions, inviter, right))
         return self
@@ -228,7 +229,8 @@ async def test_the_network_names_three_rings_and_counts_the_rest(line: Line) -> 
 
 async def test_sql_and_python_agree_on_every_distance(sessionmaker: Sessions) -> None:
     """The feeds ask SQL and the screens ask Python; a random network keeps them honest."""
-    chance = random.Random(37)
+    # Not for secrets: a seeded network that is the same on every run.
+    chance = random.Random(37)  # noqa: S311
     async with sessionmaker() as db:
         people = [
             User(id=uuid.uuid4(), telegram_id=900_000 + n, first_name=f"P{n}") for n in range(40)
@@ -248,5 +250,5 @@ async def test_sql_and_python_agree_on_every_distance(sessionmaker: Sessions) ->
                 .where(ring.c.user_id != someone.id)
                 .group_by(ring.c.user_id)
             )
-            assert {person: depth for person, depth in rows} == graph.rings(someone.id)
+            assert dict(rows.all()) == graph.rings(someone.id)
         assert max(distance for p in people for distance in graph.rings(p.id).values()) == FAR
