@@ -105,7 +105,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
   const close = useCloseOrder()
   const reopen = useReopenOrder()
   const remove = useDeleteOrder()
-  const deals = useDeals('active', order.id)
+  // Finished deals too: the order's card is its history (QUESTIONS H4).
+  const deals = useDeals('all', order.id)
 
   // Someone else's open order: the main action is a proposal (§11).
   useMainButton(

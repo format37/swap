@@ -132,19 +132,24 @@ describe('Home', () => {
           outgoing: [],
           invites: [],
         }),
-      'GET /api/v1/orders': (request) =>
-        new URL(request.url).searchParams.get('scope') === 'mine'
-          ? json(200, [
-              order({
-                id: 'mine',
-                mine: true,
-                author: NINO,
-                give_currency: 'GEL',
-                status: 'closed',
-                available_until: null,
-              }),
-            ])
-          : json(200, [order()]),
+      'GET /api/v1/orders': (request) => {
+        const scope = new URL(request.url).searchParams.get('scope')
+        if (scope === 'mine')
+          return json(200, [order({ id: 'mine', mine: true, author: NINO, give_currency: 'GEL' })])
+        if (scope === 'history')
+          return json(200, [
+            order({
+              id: 'closed',
+              mine: true,
+              author: NINO,
+              give_currency: 'GEL',
+              status: 'closed',
+              available_until: null,
+            }),
+            order({ id: 'used-up', status: 'fulfilled' }),
+          ])
+        return json(200, [order()])
+      },
       'GET /api/v1/deals': () => json(200, [deal({ role: 'acceptor' })]),
     })
     renderScreen(<Home me={me} />)
@@ -156,7 +161,14 @@ describe('Home', () => {
     // jest-dom reads a no-break space as a plain one.
     expect(open).toHaveTextContent('150 000₽RUB₾GEL$USDAlex · 25 окт. – 8 нояб.')
     const mine = screen.getByRole('heading', { name: 'Мои заявки' }).parentElement
-    expect(mine).toHaveTextContent('Закрыта · с 25 окт., без срока')
+    expect(mine).toHaveTextContent('Открыта')
+    // Finished orders wait folded under one line, mine and those I dealt on (H4).
+    const past = screen.getByRole('button', { name: 'Завершённые заявки (2)' })
+    expect(past).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText(/Закрыта/)).toBeNull()
+    fireEvent.click(past)
+    expect(screen.getByText('Закрыта · с 25 окт., без срока')).toBeInTheDocument()
+    expect(screen.getByText('Alex · Исполнена · 25 окт. – 8 нояб.')).toBeInTheDocument()
   })
 
   it('opens the wizard from the main button', async () => {

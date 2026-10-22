@@ -60,6 +60,7 @@ export const ru = {
   'home.link_requests': 'Запросы связи',
   'home.open_to_me': 'Открытые мне',
   'home.mine': 'Мои заявки',
+  'home.past': 'Завершённые заявки ({count})',
   'home.new_order': 'Новая заявка',
   'home.nothing_open': 'Пока ваши связи ничего не предлагают.',
   'home.empty.title': 'Как это работает',

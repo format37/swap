@@ -92,9 +92,10 @@ async def create_order(body: OrderDraft, user: CurrentUser, db: Db, settings: Ap
 
 @router.get("")
 async def list_orders(
-    user: CurrentUser, db: Db, scope: Literal["visible", "mine"] = "visible"
+    user: CurrentUser, db: Db, scope: Literal["visible", "mine", "history"] = "visible"
 ) -> list[Order]:
-    """«Открытые мне» (`visible`) or «Мои» (`mine`)."""
+    """«Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
+    are mine or that I had a deal on (`history`)."""
     found = await orders.feed(db, user.id, scope)
     return [Order.of(order, author, user.id) for order, author in found]
 

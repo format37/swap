@@ -11,8 +11,8 @@ export type DealStatus = components['schemas']['DealStatus']
 
 const DEALS = ['deals'] as const
 
-/** My open deals, or closed ones; on one order, when it is named. */
-export function useDeals(scope: 'active' | 'history' = 'active', orderId?: string) {
+/** My open deals, closed ones, or all; on one order, when it is named. */
+export function useDeals(scope: 'active' | 'history' | 'all' = 'active', orderId?: string) {
   return useQuery({
     queryKey: [...DEALS, scope, orderId ?? null],
     queryFn: () =>

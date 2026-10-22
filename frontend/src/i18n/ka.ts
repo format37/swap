@@ -62,6 +62,7 @@ export const ka: Messages = {
   'home.link_requests': 'კავშირის მოთხოვნები',
   'home.open_to_me': 'ჩემთვის ღია',
   'home.mine': 'ჩემი განცხადებები',
+  'home.past': 'დასრულებული განცხადებები ({count})',
   'home.new_order': 'ახალი განცხადება',
   'home.nothing_open': 'თქვენი კავშირები ჯერ არაფერს სთავაზობენ.',
   'home.empty.title': 'როგორ მუშაობს',

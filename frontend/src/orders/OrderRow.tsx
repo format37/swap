@@ -13,7 +13,9 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
   const { t, locale } = i18n
   const name = fullName(order.author)
   const wanted = [...new Set(order.wants.map((want) => want.currency))]
-  const second = order.mine ? t(`order.status.${order.status}`) : name
+  const status = t(`order.status.${order.status}`)
+  // Someone else's order says whose it is, and how it ended once it has (QUESTIONS H4).
+  const second = order.mine ? status : order.status === 'open' ? name : `${name} · ${status}`
   return (
     <button
       type="button"

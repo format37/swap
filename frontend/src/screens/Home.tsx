@@ -1,10 +1,11 @@
-import { Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
 import { fullName, useLinks } from '../api/links'
 import { useDeals } from '../api/deals'
-import { useOrders } from '../api/orders'
+import { useOrders, type Order } from '../api/orders'
 import { DealRow } from '../deals/DealRow'
 import { useI18n } from '../i18n/useI18n'
 import { OrderRow } from '../orders/OrderRow'
@@ -25,6 +26,7 @@ export function Home({ me }: { me: Me }) {
   const links = useLinks()
   const open = useOrders('visible')
   const mine = useOrders('mine')
+  const past = useOrders('history')
   const deals = useDeals('active')
 
   useMainButton({
@@ -34,13 +36,15 @@ export function Home({ me }: { me: Me }) {
 
   const incoming = links.data?.incoming ?? []
   const linked = (links.data?.active.length ?? 0) > 0
-  const loaded = links.isSuccess && open.isSuccess && mine.isSuccess && deals.isSuccess
+  const loaded =
+    links.isSuccess && open.isSuccess && mine.isSuccess && past.isSuccess && deals.isSuccess
   const nothing =
     loaded &&
     !linked &&
     !incoming.length &&
     !open.data.length &&
     !mine.data.length &&
+    !past.data.length &&
     !deals.data.length
 
   return (
@@ -128,8 +132,46 @@ export function Home({ me }: { me: Me }) {
               ))}
             </Section>
           )}
+          {past.data && past.data.length > 0 && (
+            <Past orders={past.data} onOpen={(id) => void navigate(`/orders/${id}`)} />
+          )}
         </>
       )}
     </Screen>
+  )
+}
+
+/**
+ * Finished orders, mine and those I had a deal on, folded away under one line: kept to
+ * look back on, out of the way of what is open (QUESTIONS H4).
+ */
+function Past({ orders, onOpen }: { orders: Order[]; onOpen: (id: string) => void }) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const Chevron = open ? ChevronDown : ChevronRight
+  return (
+    <Section>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open)
+        }}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-secondary-bg"
+      >
+        <span className="min-w-0 flex-1">{t('home.past', { count: orders.length })}</span>
+        <Chevron aria-hidden className="size-5 shrink-0 text-hint" />
+      </button>
+      {open &&
+        orders.map((order) => (
+          <OrderRow
+            key={order.id}
+            order={order}
+            onOpen={() => {
+              onOpen(order.id)
+            }}
+          />
+        ))}
+    </Section>
   )
 }

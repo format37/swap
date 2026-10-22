@@ -12,8 +12,11 @@ export type MarketQuote = components['schemas']['MarketQuote']
 
 const ORDERS = ['orders'] as const
 
-/** «Открытые мне» (`visible`) or «Мои» (`mine`). */
-export function useOrders(scope: 'visible' | 'mine') {
+/**
+ * «Открытые мне» (`visible`), «Мои» (`mine`, the open ones), or the finished ones that are
+ * mine or that I had a deal on (`history`, QUESTIONS H4).
+ */
+export function useOrders(scope: 'visible' | 'mine' | 'history') {
   return useQuery({
     queryKey: [...ORDERS, scope],
     queryFn: () => unwrap(api.GET('/api/v1/orders', { params: { query: { scope } } })),
