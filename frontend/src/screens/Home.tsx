@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronRight, SlidersHorizontal, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
@@ -7,6 +7,7 @@ import { useLinks } from '../api/links'
 import { useDeals } from '../api/deals'
 import { useOrders, type Order } from '../api/orders'
 import { DealRow } from '../deals/DealRow'
+import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { OrderRow } from '../orders/OrderRow'
 import { useMainButton } from '../telegram'
@@ -24,7 +25,9 @@ export function Home({ me }: { me: Me }) {
   const { t } = useI18n()
   const navigate = useNavigate()
   const links = useLinks()
-  const open = useOrders('visible')
+  // The feed's filter, folded at the whole network (QUESTIONS J2).
+  const [within, setWithin] = useState<number | null>(null)
+  const open = useOrders('visible', within)
   const mine = useOrders('mine')
   const past = useOrders('history')
   const deals = useDeals('active')
@@ -106,6 +109,7 @@ export function Home({ me }: { me: Me }) {
         <>
           {open.data && (open.data.length > 0 || linked) && (
             <Section title={t('home.open_to_me')}>
+              <Within within={within} onChange={setWithin} />
               {open.data.length > 0 ? (
                 open.data.map((order) => (
                   <OrderRow
@@ -136,6 +140,66 @@ export function Home({ me }: { me: Me }) {
         </>
       )}
     </Screen>
+  )
+}
+
+const WITHIN: (number | null)[] = [1, 2, 3, null]
+
+function withinKey(within: number | null): MessageKey {
+  return `feed.within.${within ?? 'all'}` as MessageKey
+}
+
+/**
+ * How far away the authors of «Открытые мне» may be: 1 to 3 handshakes, or the whole
+ * network, the default. Folded under one line until someone opens it (QUESTIONS J2).
+ */
+function Within({
+  within,
+  onChange,
+}: {
+  within: number | null
+  onChange: (within: number | null) => void
+}) {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const Chevron = open ? ChevronDown : ChevronRight
+  const label = (key: MessageKey) => {
+    const text = t(key)
+    return text.charAt(0).toUpperCase() + text.slice(1)
+  }
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(!open)
+        }}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-hint active:bg-secondary-bg"
+      >
+        <SlidersHorizontal aria-hidden className="size-4 shrink-0" />
+        <span className="min-w-0 flex-1">{t('feed.within', { what: t(withinKey(within)) })}</span>
+        <Chevron aria-hidden className="size-4 shrink-0" />
+      </button>
+      {open && (
+        <div className="flex flex-wrap gap-2 px-4 pb-3">
+          {WITHIN.map((each) => (
+            <button
+              key={each ?? 'all'}
+              type="button"
+              aria-pressed={within === each}
+              onClick={() => {
+                onChange(each)
+                setOpen(false)
+              }}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${within === each ? 'bg-button text-button-text' : 'bg-secondary-bg'}`}
+            >
+              {label(withinKey(each))}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

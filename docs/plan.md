@@ -205,15 +205,15 @@ K. Sentry (K5) was done already, in PR 1.19. Everything else moves to «Поте
 - [ ] `dev_launch --photo`. After the deploy, count who has a photo.
 
 **PR 1.22 — Reach by handshakes** (J2; ADR-0028)
-- [ ] Migration: `orders.reach`; 1 for orders without a list, 0 for those with one.
-- [ ] Visibility through a recursive CTE over active links. Negative tests first: one
+- [x] Migration: `orders.reach`; 1 for orders without a list, 0 for those with one.
+- [x] Visibility through a recursive CTE over active links. Negative tests first: one
       ring too far, a broken link in the middle of a chain, an order at 0 and someone
       not on its list, the filter.
-- [ ] api: the reach in the draft, `within` on «Открытые мне», the chain on the card,
+- [x] api: the reach in the draft, `within` on «Открытые мне», the chain on the card,
       and the rings for the wizard.
-- [ ] App: the slider on step 2 with who will see the order and the rings; the folded
+- [x] App: the slider on step 2 with who will see the order and the rings; the folded
       filter on Home; the chain on the card.
-- [ ] The bot tells direct links only, and the words about links follow the new rule.
+- [x] The bot tells direct links only, and the words about links follow the new rule.
 
 **PR 1.23 — The score** (J5; ADR-0029)
 - [ ] api: each person's score, counted from settled deals.

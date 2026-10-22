@@ -3,10 +3,11 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from swap import orders
 from swap.api.deps import AppSettings, CurrentUser, Db
@@ -14,6 +15,7 @@ from swap.api.errors import Problem
 from swap.api.v1.people import Person
 from swap.models import Order as OrderRow
 from swap.models import OrderStatus, PaymentKind, User
+from swap.network import Graph
 from swap.orders import OrderDraft, Want
 from swap.rates import parse_spec
 
@@ -23,7 +25,9 @@ router = APIRouter(prefix="/orders", tags=["orders"], responses={401: {"model": 
 class Visibility(BaseModel):
     """Who may see an order. Its author alone is told."""
 
-    all_links: bool
+    # Handshakes (ADR-0028): 0 for its list alone, 1 to 3, None for any chain at all.
+    reach: int | None
+    # At reach 0, the people on its list.
     people: list[Person]
 
 
@@ -49,6 +53,10 @@ class Order(BaseModel):
     created_at: datetime
     # Only for its author.
     visibility: Visibility | None = None
+    # On someone else's card: the people between them and its author on one shortest chain
+    # of links, [] for a direct link (QUESTIONS J2). None in lists, on the author's own,
+    # and once no chain joins them.
+    chain: list[Person] | None = None
 
     @classmethod
     def of(cls, order: OrderRow, author: User, viewer: uuid.UUID) -> Self:
@@ -84,8 +92,15 @@ async def _with_visibility(db: Db, order: OrderRow, author: User, viewer: uuid.U
     if shown.mine:
         people = await orders.chosen_viewers(db, order.id)
         shown.visibility = Visibility(
-            all_links=people is None, people=[Person.of(person) for person in people or []]
+            reach=order.reach, people=[Person.of(person) for person in people or []]
         )
+    else:
+        between = (await Graph.load(db)).chain(viewer, author.id)
+        if between is not None:
+            found = {
+                user.id: user for user in await db.scalars(select(User).where(User.id.in_(between)))
+            }
+            shown.chain = [Person.of(found[person]) for person in between]
     return shown
 
 
@@ -98,11 +113,15 @@ async def create_order(body: OrderDraft, user: CurrentUser, db: Db, settings: Ap
 
 @router.get("")
 async def list_orders(
-    user: CurrentUser, db: Db, scope: Literal["visible", "mine", "history"] = "visible"
+    user: CurrentUser,
+    db: Db,
+    scope: Literal["visible", "mine", "history"] = "visible",
+    within: Annotated[int | None, Query(ge=1, le=3)] = None,
 ) -> list[Order]:
     """«Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
-    are mine or that I had a deal on (`history`)."""
-    found = await orders.feed(db, user.id, scope)
+    are mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to
+    authors at most so many handshakes away (QUESTIONS J2)."""
+    found = await orders.feed(db, user.id, scope, within)
     return [Order.of(order, author, user.id) for order, author in found]
 
 

@@ -30,6 +30,13 @@ function press() {
 }
 
 const ORDER_ID = 'd0000000-0000-4000-8000-000000000001'
+const GIO = {
+  id: 'a0000000-0000-4000-8000-000000000003',
+  first_name: 'Gio',
+  last_name: null,
+  username: 'gio',
+  photo_url: null,
+}
 const MARKET: RateSpec = { v: 1, type: 'reference', source: 'coinbase' }
 
 function fixed(base: string, quote: string, value: string): RateSpec {
@@ -85,6 +92,19 @@ const me: Me = {
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',
+}
+
+// One link, two people two handshakes away, none three away, and five farther.
+const NETWORK = {
+  rings: [
+    { distance: 1, people: [NINO] },
+    {
+      distance: 2,
+      people: [GIO, { ...GIO, id: 'a0000000-0000-4000-8000-000000000004', first_name: 'Ana' }],
+    },
+    { distance: 3, people: [] },
+  ],
+  farther: 5,
 }
 
 afterEach(() => {
@@ -173,6 +193,44 @@ describe('Home', () => {
     ).toHaveTextContent('150 000₽RUB')
   })
 
+  it('narrows the orders open to me to so many handshakes, folded until asked (J2)', async () => {
+    const asked: (string | null)[] = []
+    fakeApi({
+      'GET /api/v1/links': () =>
+        json(200, {
+          active: [
+            {
+              id: 'l1',
+              person: NINO,
+              status: 'active',
+              direction: 'outgoing',
+              requested_at: '2026-10-20T10:00:00Z',
+              accepted_at: '2026-10-21T10:00:00Z',
+            },
+          ],
+          incoming: [],
+          outgoing: [],
+          invites: [],
+        }),
+      'GET /api/v1/orders': (request) => {
+        const query = new URL(request.url).searchParams
+        if (query.get('scope') === 'visible') asked.push(query.get('within'))
+        return json(200, [])
+      },
+      'GET /api/v1/deals': () => json(200, []),
+    })
+    renderScreen(<Home me={me} />)
+    const filter = await screen.findByRole('button', { name: 'Показаны: вся сеть' })
+    expect(filter).toHaveAttribute('aria-expanded', 'false')
+    expect(asked).toEqual([null])
+    fireEvent.click(filter)
+    fireEvent.click(screen.getByRole('button', { name: 'Мои связи' }))
+    expect(await screen.findByRole('button', { name: 'Показаны: мои связи' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(asked).toContain('1')
+    })
+  })
+
   it('opens the wizard from the main button', async () => {
     fakeApi({
       'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
@@ -210,6 +268,8 @@ describe('the wizard', () => {
           amount: '5136.99',
           rate: { base: 'GEL', quote: 'RUB', value: '29.20', source: null, fetched_at: null },
         }),
+      'GET /api/v1/me': () => json(200, me),
+      'GET /api/v1/network': () => json(200, NETWORK),
       'POST /api/v1/orders': async (request) => {
         published = await request.json()
         return json(201, order({ mine: true }))
@@ -270,10 +330,14 @@ describe('the wizard', () => {
     press()
 
     await screen.findByText('Шаг 2 из 2')
-    expect(screen.getByRole('radio', { name: 'Всем моим связям' })).toHaveAttribute(
-      'aria-checked',
-      'true',
+    // A new order reaches links and their links, and says who that is (QUESTIONS J2).
+    expect(screen.getByRole('slider', { name: 'Кому видно' })).toHaveAttribute(
+      'aria-valuetext',
+      'Вашим связям и их связям',
     )
+    expect(
+      await screen.findByText('Увидят: ваших связей — 1, дальше по цепочке — 2'),
+    ).toBeInTheDocument()
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'вечером' } })
     expect(mainButton()?.text).toBe('Опубликовать')
     press()
@@ -288,9 +352,74 @@ describe('the wizard', () => {
       payout_methods: ['bank'],
       receive_methods: ['cash'],
       wants: [{ currency: 'GEL', country: 'GE', rate_spec: fixed('GEL', 'RUB', '29.20') }],
+      reach: 2,
       visible_to: null,
       note: 'вечером',
     })
+  })
+
+  it('reaches as far as the slider says, and at 0 only those chosen', async () => {
+    let published: unknown
+    fakeApi({
+      'GET /api/v1/assets': () => json(200, ['RUB', 'GEL']),
+      'GET /api/v1/links': () =>
+        json(200, {
+          active: [
+            {
+              id: 'l1',
+              person: NINO,
+              status: 'active',
+              direction: 'outgoing',
+              requested_at: '2026-10-20T10:00:00Z',
+              accepted_at: '2026-10-21T10:00:00Z',
+            },
+          ],
+          incoming: [],
+          outgoing: [],
+          invites: [],
+        }),
+      'GET /api/v1/rates/market': () => problem(503, 'rate.unavailable'),
+      'GET /api/v1/me': () => json(200, me),
+      'GET /api/v1/network': () => json(200, NETWORK),
+      'POST /api/v1/orders': async (request) => {
+        published = await request.json()
+        return json(201, order({ mine: true }))
+      },
+    })
+    renderScreen(<NewOrder />, { route: '/orders/new' })
+    await screen.findAllByRole('option', { name: '₽ RUB' })
+    const [give, get] = screen.getAllByRole('combobox', { name: /^Валюта/ })
+    fireEvent.change(give as HTMLElement, { target: { value: 'RUB' } })
+    fireEvent.change(screen.getByRole('textbox', { name: /^Сумма/ }), {
+      target: { value: '1000' },
+    })
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Как вы можете отдать' })).getByRole('button', {
+        name: 'Банк',
+      }),
+    )
+    fireEvent.change(get as HTMLElement, { target: { value: 'GEL' } })
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Как получать' })).getByRole('button', {
+        name: 'Наличные',
+      }),
+    )
+    press()
+    await screen.findByText('Шаг 2 из 2')
+    // The whole network: the rings' farthest count joins the line.
+    fireEvent.click(screen.getByRole('button', { name: 'Вся сеть' }))
+    expect(
+      await screen.findByText('Увидят: ваших связей — 1, дальше по цепочке — 7'),
+    ).toBeInTheDocument()
+    // «Только выбранным» lists the author's links, and needs one of them.
+    fireEvent.change(screen.getByRole('slider', { name: 'Кому видно' }), { target: { value: '0' } })
+    expect(screen.getByText('Увидят только выбранные: 0')).toBeInTheDocument()
+    press()
+    expect(await screen.findByText('Выберите хотя бы одну связь')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Nino B/ }))
+    press()
+    await screen.findByTestId('elsewhere')
+    expect(published).toMatchObject({ reach: 0, visible_to: [NINO.id] })
   })
 
   it('fixes the rate per currency, and says so in the digest', async () => {
@@ -457,7 +586,7 @@ describe('the order card', () => {
   it('lets its author see who sees it, and close it once that is confirmed', async () => {
     const { served } = fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>
-        json(200, order({ mine: true, visibility: { all_links: false, people: [NINO] } })),
+        json(200, order({ mine: true, visibility: { reach: 0, people: [NINO] } })),
       [`POST /api/v1/orders/${ORDER_ID}/close`]: () =>
         json(200, order({ mine: true, status: 'closed' })),
     })
@@ -550,6 +679,26 @@ describe('the order card', () => {
       'Курс по рынку: 1 ₾GEL = 31,39 ₽RUB· Coinbase, 12:00',
     )
     expect(served).toContain('GET /api/v1/rates/market')
+  })
+
+  it('shows how its viewer reaches its author, their own link first (J2)', async () => {
+    fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ chain: [NINO, GIO] })) })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    expect(await screen.findByText('Через Nino B → Gio')).toBeInTheDocument()
+  })
+
+  it.each<[number | null, string]>([
+    [1, 'Видно вашим связям'],
+    [2, 'Видно вашим связям и их связям'],
+    [3, 'Видно на три рукопожатия от вас'],
+    [null, 'Видно всей вашей сети'],
+  ])('tells its author how far it reaches, at %s', async (reach, text) => {
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () =>
+        json(200, order({ mine: true, visibility: { reach, people: [] } })),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    expect(await screen.findByText(text)).toBeInTheDocument()
   })
 
   it('tells a stranger only that there is no such order', async () => {

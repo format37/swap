@@ -89,9 +89,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         "bot.description": (
             "Swap помогает знакомым людям договориться о встречных переводах: у вас "
             "рубли в России, у знакомого — лари в Грузии, и каждый платит получателю "
-            "другого у себя. Видны только те, с кем вы связаны по приглашению. Swap не "
-            "хранит, не переводит и не гарантирует деньги: он ведёт сделку по шагам и "
-            "показывает, кто кому должен."
+            "другого у себя. Заявки видны по цепочке приглашений — так далеко, как "
+            "разрешил их автор. Swap не хранит, не переводит и не гарантирует деньги: "
+            "он ведёт сделку по шагам и показывает, кто кому должен."
         ),
     },
     "en": {
@@ -154,9 +154,9 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         "bot.description": (
             "Swap helps people who know each other arrange counter-transfers: you have "
             "roubles in Russia, a friend has lari in Georgia, and each of you pays the "
-            "other's recipient at home. You only see people you have linked with by "
-            "invitation. Swap never holds, moves or guarantees money: it walks the deal "
-            "step by step and shows who owes whom."
+            "other's recipient at home. Offers travel along chains of invitations, as "
+            "far as their authors allow. Swap never holds, moves or guarantees money: it "
+            "walks the deal step by step and shows who owes whom."
         ),
     },
     "ka": {
@@ -222,10 +222,10 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         "bot.description": (
             "Swap ეხმარება ნაცნობ ადამიანებს, შეთანხმდნენ ურთიერთგადარიცხვებზე: თქვენ "
             "გაქვთ რუბლი რუსეთში, თქვენს ნაცნობს — ლარი საქართველოში, და თითოეული "
-            "უხდის მეორის მიმღებს საკუთარ ქვეყანაში. ხედავთ მხოლოდ მათ, ვისთანაც "
-            "მოწვევით ხართ დაკავშირებული. Swap არ ინახავს, არ გადარიცხავს და არ "
-            "იძლევა ფულის გარანტიას: ის ნაბიჯ-ნაბიჯ მიჰყვება გარიგებას და აჩვენებს, "
-            "ვინ ვის რა მართებს."
+            "უხდის მეორის მიმღებს საკუთარ ქვეყანაში. განცხადებები მოწვევების ჯაჭვით "
+            "ვრცელდება, იმდენად შორს, რამდენადაც ავტორი დაუშვებს. Swap არ ინახავს, "
+            "არ გადარიცხავს და არ იძლევა ფულის გარანტიას: ის ნაბიჯ-ნაბიჯ მიჰყვება "
+            "გარიგებას და აჩვენებს, ვინ ვის რა მართებს."
         ),
     },
 }

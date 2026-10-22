@@ -788,6 +788,27 @@
         "title": "MeUpdate",
         "type": "object"
       },
+      "Network": {
+        "properties": {
+          "farther": {
+            "title": "Farther",
+            "type": "integer"
+          },
+          "rings": {
+            "items": {
+              "$ref": "#/components/schemas/Ring"
+            },
+            "title": "Rings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rings",
+          "farther"
+        ],
+        "title": "Network",
+        "type": "object"
+      },
       "NewInvite": {
         "properties": {
           "created_at": {
@@ -855,6 +876,20 @@
               }
             ],
             "title": "Available Until"
+          },
+          "chain": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Person"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chain"
           },
           "created_at": {
             "format": "date-time",
@@ -1018,6 +1053,20 @@
             "minItems": 1,
             "title": "Payout Methods",
             "type": "array"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "maximum": 3.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": 2,
+            "title": "Reach"
           },
           "receive_methods": {
             "items": {
@@ -1491,6 +1540,27 @@
         "title": "Resolution",
         "type": "object"
       },
+      "Ring": {
+        "properties": {
+          "distance": {
+            "title": "Distance",
+            "type": "integer"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/Person"
+            },
+            "title": "People",
+            "type": "array"
+          }
+        },
+        "required": [
+          "distance",
+          "people"
+        ],
+        "title": "Ring",
+        "type": "object"
+      },
       "SignedIn": {
         "properties": {
           "expires_at": {
@@ -1572,20 +1642,27 @@
       "Visibility": {
         "description": "Who may see an order. Its author alone is told.",
         "properties": {
-          "all_links": {
-            "title": "All Links",
-            "type": "boolean"
-          },
           "people": {
             "items": {
               "$ref": "#/components/schemas/Person"
             },
             "title": "People",
             "type": "array"
+          },
+          "reach": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reach"
           }
         },
         "required": [
-          "all_links",
+          "reach",
           "people"
         ],
         "title": "Visibility",
@@ -3536,9 +3613,45 @@
         ]
       }
     },
+    "/api/v1/network": {
+      "get": {
+        "operationId": "get_network",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Network",
+        "tags": [
+          "network"
+        ]
+      }
+    },
     "/api/v1/orders": {
       "get": {
-        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones) or the finished ones that\nare mine or that I had a deal on (`history`).",
+        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones) or the finished ones that\nare mine or that I had a deal on (`history`). `within` narrows \u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb to\nauthors at most so many handshakes away (QUESTIONS J2).",
         "operationId": "list_orders",
         "parameters": [
           {
@@ -3554,6 +3667,24 @@
               ],
               "title": "Scope",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "within",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Within"
             }
           }
         ],

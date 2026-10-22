@@ -33,10 +33,17 @@ export interface OrderForm {
   limited: boolean
   until: string
   wants: WantForm[]
-  everyone: boolean
+  /** How far it is seen, in handshakes: 0 for those chosen, null for ∞ (QUESTIONS J2). */
+  reach: Reach
+  /** At reach 0, the links who may see it. */
   chosen: string[]
   note: string
 }
+
+/** Handshakes over active links (ADR-0028): 0 is the chosen ones, null the whole network. */
+export type Reach = 0 | 1 | 2 | 3 | null
+/** «Мои связи и их связи» for a new order (QUESTIONS J2, a default). */
+export const DEFAULT_REACH: Reach = 2
 
 // Roughly how much one unit is worth, the strongest first. A rate reads best as «1 strong
 // = so many weak»: «1 GEL = 29,20 RUB», whichever of the two is given.
@@ -95,7 +102,7 @@ export function emptyForm(today: string): OrderForm {
     limited: false,
     until: addDays(today, 14),
     wants: [newWant('')],
-    everyone: true,
+    reach: DEFAULT_REACH,
     chosen: [],
     note: '',
   }
@@ -142,7 +149,8 @@ export function wantProblem(form: OrderForm): MessageKey | null {
 
 /** What is wrong with step 2's «Кому видно», if anything. */
 export function whoProblem(form: OrderForm): MessageKey | null {
-  return form.everyone || form.chosen.length > 0 ? null : 'wizard.error.who'
+  // «Только выбранным» needs someone chosen, so the slider has no broken state (J2).
+  return form.reach !== 0 || form.chosen.length > 0 ? null : 'wizard.error.who'
 }
 
 /** «1 GEL = 29.20 RUB» as the api's quote. */
@@ -177,7 +185,8 @@ export function toDraft(form: OrderForm): OrderDraft {
       country: want.country,
       rate_spec: specOf(form.giveCurrency, want),
     })),
-    visible_to: form.everyone ? null : form.chosen,
+    reach: form.reach,
+    visible_to: form.reach === 0 ? form.chosen : null,
     note: form.note.trim() || null,
   }
 }

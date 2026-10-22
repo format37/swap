@@ -260,8 +260,8 @@ def _kinds_check(column: str) -> str:
 class Order(Base):
     """An intent: «I give X here, between these dates, and want Y there» (§5, ADR-0016).
 
-    Who sees it is a query over active links (§3): the author always; anyone else only
-    while it is open, through an active link, and when they are on its list, if it has one.
+    Who sees it is a query over chains of active links (ADR-0028): the author always;
+    anyone else only while it is open, and within its reach.
     """
 
     __tablename__ = "orders"
@@ -277,6 +277,7 @@ class Order(Base):
         CheckConstraint(_kinds_check("payout_methods"), name="payout_methods"),
         CheckConstraint(_kinds_check("receive_methods"), name="receive_methods"),
         CheckConstraint(one_of("status", OrderStatus), name="status"),
+        CheckConstraint("reach IS NULL OR reach BETWEEN 0 AND 3", name="reach"),
         # What feeds and the expiry sweep look for (ADR-0002).
         Index("ix_orders_open_until", "available_until", postgresql_where=text("status = 'open'")),
     )
@@ -297,6 +298,9 @@ class Order(Base):
     payout_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     receive_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
     note: Mapped[str | None] = mapped_column(Text)
+    # How many handshakes away it is seen (QUESTIONS J2, ADR-0028): 0 for its list alone,
+    # 1 for the author's links, 2 and 3 further, None for anyone any chain reaches.
+    reach: Mapped[int | None] = mapped_column(SmallInteger)
     status: Mapped[str] = mapped_column(Text, server_default=OrderStatus.OPEN.value)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
@@ -333,7 +337,8 @@ class OrderWant(Base):
 
 
 class OrderVisibility(Base):
-    """Who may see an order that is not for all links. No rows: all active links (§5)."""
+    """Who may see an order of reach 0, «Только выбранным»: the author's links they picked
+    (ADR-0028). Other orders have no rows."""
 
     __tablename__ = "order_visibility"
 

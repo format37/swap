@@ -1,5 +1,5 @@
-"""Orders (ADR-0016). Visibility first (kickoff rule 6): outside the author's active links,
-and off the order's list, nobody sees it."""
+"""Orders (ADR-0016). Visibility first (kickoff rule 6): with no chain of links to the
+author, and off the order's list, nobody sees it. Reach itself is tests/test_reach.py."""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -112,17 +112,6 @@ async def test_a_request_not_yet_accepted_shows_nothing(
     assert not await sees(client, nino, order["id"])
 
 
-async def test_links_are_not_transitive(client: AsyncClient, sessionmaker: Sessions) -> None:
-    alex = await person(client, ALEX)
-    nino = await person(client, NINO)
-    gio = await person(client, GIO)
-    await linked(client, sessionmaker, alex, NINO)
-    await linked(client, sessionmaker, nino, GIO)
-    order = await publish(client, alex)
-    assert await sees(client, nino, order["id"])
-    assert not await sees(client, gio, order["id"])
-
-
 async def test_breaking_a_link_hides_orders_at_once(
     client: AsyncClient, sessionmaker: Sessions
 ) -> None:
@@ -146,7 +135,7 @@ async def test_an_order_for_chosen_links_hides_from_the_others(
     gio = await person(client, GIO)
     await linked(client, sessionmaker, alex, NINO)
     await linked(client, sessionmaker, alex, GIO)
-    order = await publish(client, alex, visible_to=[await user_id(client, nino)])
+    order = await publish(client, alex, reach=0, visible_to=[await user_id(client, nino)])
     assert await sees(client, nino, order["id"])
     assert not await sees(client, gio, order["id"])
 
@@ -248,12 +237,12 @@ async def test_who_else_may_see_it_is_the_authors_to_know(
     alex = await person(client, ALEX)
     nino = await person(client, NINO)
     await linked(client, sessionmaker, alex, NINO)
-    order = await publish(client, alex, visible_to=[await user_id(client, nino)])
+    order = await publish(client, alex, reach=0, visible_to=[await user_id(client, nino)])
     seen = (await client.get(f"/api/v1/orders/{order['id']}", headers=nino)).json()
     assert seen["visibility"] is None
     assert seen["mine"] is False
     own = (await client.get(f"/api/v1/orders/{order['id']}", headers=alex)).json()
-    assert own["visibility"]["all_links"] is False
+    assert own["visibility"]["reach"] == 0
     assert [p["first_name"] for p in own["visibility"]["people"]] == ["Nino"]
 
 
@@ -264,16 +253,22 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
     nino = await person(client, NINO)
     gio = await person(client, GIO)
     await linked(client, sessionmaker, alex, NINO)
-    for visible_to, code in [
-        ([await user_id(client, gio)], "order.visible_to_unlinked"),
-        ([await user_id(client, nino), await user_id(client, gio)], "order.visible_to_unlinked"),
-        ([str(uuid.uuid4())], "order.visible_to_unlinked"),
-        ([], "order.visible_to_nobody"),
+    nino_id, gio_id = await user_id(client, nino), await user_id(client, gio)
+    for reach, visible_to, code in [
+        (0, [gio_id], "order.visible_to_unlinked"),
+        (0, [nino_id, gio_id], "order.visible_to_unlinked"),
+        (0, [str(uuid.uuid4())], "order.visible_to_unlinked"),
+        # «Только выбранным» needs someone chosen: the slider has no broken state (J2).
+        (0, [], "order.visible_to_nobody"),
+        (0, None, "order.visible_to_nobody"),
+        # A list belongs to reach 0 alone.
+        (1, [nino_id], "order.visible_to_needs_reach_0"),
+        (None, [nino_id], "order.visible_to_needs_reach_0"),
     ]:
         response = await client.post(
-            "/api/v1/orders", json=draft(visible_to=visible_to), headers=alex
+            "/api/v1/orders", json=draft(reach=reach, visible_to=visible_to), headers=alex
         )
-        assert response.status_code == 422, visible_to
+        assert response.status_code == 422, (reach, visible_to)
         assert response.json()["code"] == code
     async with sessionmaker() as db:
         assert list(await db.scalars(select(Order))) == []
@@ -345,6 +340,9 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
         ({"wants": [{"currency": "GEL", "country": "GE"}]}, "validation_error"),
         ({"rate_spec": MARKET}, "validation_error"),
         ({"note": "x" * 501}, "validation_error"),
+        ({"reach": 4}, "validation_error"),
+        ({"reach": -1}, "validation_error"),
+        ({"reach": "far"}, "validation_error"),
         ({"extra": "field"}, "validation_error"),
     ],
 )
@@ -384,7 +382,8 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
         want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
         want("USD", "GE", fixed("USD", "RUB", "81.50")),
     ]
-    assert order["visibility"] == {"all_links": True, "people": []}
+    # «Мои связи и их связи» unless the author says otherwise (QUESTIONS J2).
+    assert order["visibility"] == {"reach": 2, "people": []}
 
     async with sessionmaker() as db:
         told = (
@@ -418,7 +417,7 @@ async def test_an_order_for_chosen_links_tells_only_them(
     await person(client, GIO)
     await linked(client, sessionmaker, alex, NINO)
     await linked(client, sessionmaker, alex, GIO)
-    await publish(client, alex, visible_to=[await user_id(client, nino)])
+    await publish(client, alex, reach=0, visible_to=[await user_id(client, nino)])
     async with sessionmaker() as db:
         told = list(
             await db.scalars(
@@ -520,7 +519,7 @@ async def test_a_closed_order_reopens_as_it_was_and_tells_nobody(
     gio = await person(client, GIO)
     await linked(client, sessionmaker, alex, NINO)
     await linked(client, sessionmaker, alex, GIO)
-    order = await publish(client, alex, visible_to=[await user_id(client, nino)])
+    order = await publish(client, alex, reach=0, visible_to=[await user_id(client, nino)])
     await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
     async with sessionmaker() as db:
         before = len(list(await db.scalars(select(Notification))))

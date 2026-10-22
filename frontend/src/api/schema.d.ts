@@ -424,6 +424,23 @@ export interface paths {
         patch: operations["update_me"];
         trace?: never;
     };
+    "/api/v1/network": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Network */
+        get: operations["get_network"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders": {
         parameters: {
             query?: never;
@@ -434,7 +451,8 @@ export interface paths {
         /**
          * List Orders
          * @description «Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
-         *     are mine or that I had a deal on (`history`).
+         *     are mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to
+         *     authors at most so many handshakes away (QUESTIONS J2).
          */
         get: operations["list_orders"];
         put?: never;
@@ -874,6 +892,13 @@ export interface components {
             /** Tz */
             tz?: string | null;
         };
+        /** Network */
+        Network: {
+            /** Farther */
+            farther: number;
+            /** Rings */
+            rings: components["schemas"]["Ring"][];
+        };
         /** NewInvite */
         NewInvite: {
             /**
@@ -910,6 +935,8 @@ export interface components {
             available_from: string;
             /** Available Until */
             available_until: string | null;
+            /** Chain */
+            chain?: components["schemas"]["Person"][] | null;
             /**
              * Created At
              * Format: date-time
@@ -973,6 +1000,11 @@ export interface components {
             note?: string | null;
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
+            /**
+             * Reach
+             * @default 2
+             */
+            reach: number | null;
             /** Receive Methods */
             receive_methods: components["schemas"]["PaymentKind"][];
             /** Visible To */
@@ -1168,6 +1200,13 @@ export interface components {
              */
             outcome: "settled" | "cancelled";
         };
+        /** Ring */
+        Ring: {
+            /** Distance */
+            distance: number;
+            /** People */
+            people: components["schemas"]["Person"][];
+        };
         /** SignedIn */
         SignedIn: {
             /**
@@ -1202,10 +1241,10 @@ export interface components {
          * @description Who may see an order. Its author alone is told.
          */
         Visibility: {
-            /** All Links */
-            all_links: boolean;
             /** People */
             people: components["schemas"]["Person"][];
+            /** Reach */
+            reach: number | null;
         };
         /**
          * Want
@@ -2626,10 +2665,40 @@ export interface operations {
             };
         };
     };
+    get_network: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Network"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     list_orders: {
         parameters: {
             query?: {
                 scope?: "visible" | "mine" | "history";
+                within?: number | null;
             };
             header?: never;
             path?: never;
