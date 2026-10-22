@@ -1,6 +1,6 @@
 """What the wizard and the proposal need about money: the assets, live previews of a
-counter-amount (ADR-0004), and the market rate to start from (ADR-0020). The UI never does
-money arithmetic, so it asks here, debounced.
+counter-amount both ways (ADR-0004, ADR-0038), and the market rate to start from
+(ADR-0020). The UI never does money arithmetic, so it asks here, debounced.
 """
 
 from datetime import datetime
@@ -29,6 +29,9 @@ class QuoteRequest(BaseModel):
     rate_spec: RateSpec
     # Round to whole units, for cash (Q-B4).
     whole: bool = False
+    # Which currency `amount` is in: the given one, or the wanted one, to find what to give
+    # for it (QUESTIONS L2, ADR-0038). The answer is in the other.
+    side: Literal["give", "want"] = "give"
 
 
 class QuoteRate(BaseModel):
@@ -50,12 +53,14 @@ class QuoteResult(BaseModel):
 @router.post("/quote", responses={422: {"model": Problem}, 503: {"model": Problem}})
 async def quote(body: QuoteRequest, user: CurrentUser, market: MarketRates) -> QuoteResult:
     """What `amount` of the give currency comes to in the want currency, at the order's
-    rate: the author's, or the market's of the moment (QUESTIONS G2)."""
+    rate: the author's, or the market's of the moment (QUESTIONS G2). With side "want",
+    what to give for `amount` of the wanted currency, at the same rate (QUESTIONS L2)."""
     give, want = body.give_currency, body.want_currency
     spec, found = await lock(body.rate_spec, give, want, market)
     used = spec.quote_for(give, want)
+    source, target = (give, want) if body.side == "give" else (want, give)
     return QuoteResult(
-        amount=convert(body.amount, spec, give, want, whole=body.whole),
+        amount=convert(body.amount, spec, source, target, whole=body.whole),
         rate=QuoteRate(
             base=used.base,
             quote=used.quote,

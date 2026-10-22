@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Me } from '../api/client'
 import type { Deal } from '../api/deals'
-import type { Order, RateSpec } from '../api/orders'
+import type { Order, QuoteRequest, RateSpec } from '../api/orders'
 import { backOverride } from '../back'
 import { confirmAction, useMainButton, type MainAction } from '../telegram'
 import { fakeApi, json, problem } from '../test/api'
@@ -330,9 +330,9 @@ describe('the wizard', () => {
     // The author's own rate, fixed for this currency (QUESTIONS G2, J1).
     fireEvent.click(screen.getByRole('switch', { name: 'Зафиксировать курс' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Курс' }), { target: { value: '29,20' } })
-    // The preview comes from the api, which does the arithmetic.
+    // What the sum comes to, from the api, which does the arithmetic (QUESTIONS L2).
     await waitFor(() => {
-      expect(document.body).toHaveTextContent('Отдав 150 000₽RUB, получите ≈ 5 136,99₾GEL')
+      expect(screen.getByRole('textbox', { name: /^Получите/ })).toHaveValue('5\u00a0136,99')
     })
     expect(served).toContain('POST /api/v1/quote')
     const payIn = screen.getByRole('group', { name: 'Как получать' })
@@ -522,6 +522,84 @@ describe('the wizard', () => {
           receive_methods: ['bank'],
         },
       ],
+    })
+  })
+})
+
+describe('what one gets (L2)', () => {
+  it('can be typed, and the sum and the other currencies follow it', async () => {
+    const asked: QuoteRequest[] = []
+    // What the api answers, «1 GEL = 29,20 RUB» and «1 USD = 81,50 RUB»: no arithmetic here.
+    const answers: Record<string, string> = {
+      'want 100 GEL': '2920.00',
+      'give 2920 USD': '35.83',
+      'give 5840 GEL': '200.00',
+      'give 5840 USD': '71.66',
+    }
+    fakeApi({
+      'GET /api/v1/assets': () => json(200, ['RUB', 'GEL', 'USD']),
+      'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
+      'GET /api/v1/rates/market': () => problem(503, 'rate.unavailable'),
+      'POST /api/v1/quote': async (request) => {
+        const body = (await request.json()) as QuoteRequest
+        asked.push(body)
+        const amount = answers[`${body.side} ${body.amount} ${body.want_currency}`] ?? '0.00'
+        return json(200, {
+          amount,
+          rate: {
+            base: body.want_currency,
+            quote: 'RUB',
+            value: '1',
+            source: null,
+            fetched_at: null,
+          },
+        })
+      },
+    })
+    renderScreen(<NewOrder />, { route: '/orders/new' })
+    await screen.findAllByRole('option', { name: '₽ RUB' })
+    const [give, first] = screen.getAllByRole('combobox', { name: /^Валюта/ })
+    fireEvent.change(give as HTMLElement, { target: { value: 'RUB' } })
+    fireEvent.change(first as HTMLElement, { target: { value: 'GEL' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ещё валюта' }))
+    fireEvent.change(screen.getAllByRole('combobox', { name: /^Валюта/ })[2] as HTMLElement, {
+      target: { value: 'USD' },
+    })
+    fireEvent.change(screen.getAllByRole('combobox', { name: /^Страна/ })[2] as HTMLElement, {
+      target: { value: 'GE' },
+    })
+    for (const [index, rate] of ['29,20', '81,50'].entries()) {
+      fireEvent.click(
+        screen.getAllByRole('switch', { name: 'Зафиксировать курс' })[index] as HTMLElement,
+      )
+      fireEvent.change(screen.getAllByRole('textbox', { name: 'Курс' })[index] as HTMLElement, {
+        target: { value: rate },
+      })
+    }
+    const gets = () => screen.getAllByRole('textbox', { name: /^Получите/ })
+    const sum = screen.getByRole('textbox', { name: /^Сумма/ })
+
+    // 100 GEL typed: the api says what to give for it, and USD follows the new sum.
+    fireEvent.change(gets()[0] as HTMLElement, { target: { value: '100' } })
+    await waitFor(() => {
+      expect(sum).toHaveValue('2\u00a0920')
+    })
+    expect(asked).toContainEqual(
+      expect.objectContaining({ amount: '100', want_currency: 'GEL', side: 'want' }),
+    )
+    await waitFor(() => {
+      expect(gets()[1]).toHaveValue('35,83')
+    })
+    // What was typed stays as it was typed.
+    expect(gets()[0]).toHaveValue('100')
+
+    // The sum typed leads again, and both currencies follow it.
+    fireEvent.change(sum, { target: { value: '5840' } })
+    await waitFor(() => {
+      expect(gets()[0]).toHaveValue('200')
+    })
+    await waitFor(() => {
+      expect(gets()[1]).toHaveValue('71,66')
     })
   })
 })
