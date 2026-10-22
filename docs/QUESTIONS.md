@@ -13,6 +13,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part E** was raised while planning phase 1. I follow its defaults until you answer.
 - **Part F** records the owner's notes after his first test of slice 1, on 2026-10-22.
 - **Part G** records his notes after the demo with others, the same day, and asks G7.
+- **Part H** records his notes after the first real deal, the same day.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -649,3 +650,56 @@ until you answer, because deleting them can't be undone.
 **Answer:** yes (the owner, 2026-10-22: «Да, можно удалять»). Done in PR 1.16, without
 waiting for slice 2: migration 0013 drops the table, the code that sealed them goes, and
 `RECIPIENT_KEYS` leaves the server's `.env`.
+
+## H. The owner's notes after the first real deal (2026-10-22)
+
+@format37 and irinayurasova ran a deal to «Получил» on both sides. The owner then sent
+four notes. Like parts F and G, they are decisions; where they differ from Q-B1, Q-B7 or
+Q-B16, they win. ADR-0023 and ADR-0024 hold the details.
+
+### H1 · No «who goes first» and no dates
+
+> Давай уберем опции:
+> * Кто отправляет первым
+> * Когда (срок перевода)
+
+The proposal asks neither. Legs have no order and no due dates, and Q-B16's default
+(the proposer first) goes with them. → PR 1.18.
+
+### H2 · Both buttons at once
+
+> По сути у нас оба участника должны и отправить и получить средства.
+> Так что я бы обоим поставил кнопку подтверждения отправки и кнопку подтверждения
+> получения
+> […]
+> По сути обе кнопки уже есть у каждого участника, но сейчас они разделены в очереди. А
+> я предлагаю сделать обе кнопки доступны сразу, что бы участники сами решали кто и
+> когда отправит и подтверждали по мере получения.
+
+Once a deal is accepted, each side can mark «Отправил» on what they pay and «Получил» on
+what they get, in any order. The deal settles when both receipts are marked. This
+replaces Q-B1's strict order of legs. → PR 1.18, ADR-0024.
+
+### H3 · The journal says what moved
+
+> Очень удобно что есть лог. в него можно и записать какая валюта и в какой стране была
+> отправлена
+> какая валюта и в какой стране была получена - указывать это не нужно. программа это и
+> так знает из параметров сделки
+
+Each «отправлено» and «получено» line in the deal's journal names the amount, the
+currency and the country, taken from the leg. Nobody types them. → PR 1.18.
+
+### H4 · Past orders stay
+
+> @format37 после завершения сделки вышел из неё нажав back и получил сообщение Не
+> получилось заявка не найдена. Я понмиаю что она видимо ушла в архив или в историю или
+> удалилась - но я бы хранил заявки прошлого для истории. Это помогает нам вспоминать что
+> мы делали раньше. Для учета расходов например. Ну и базово это выглядит как ошибка. У
+> irinayurasova жта заявка в списке как исполнена. можно их все поместить в foldable
+> группу исполненные, или на отдельную страницу
+
+Whoever had a deal on an order can still open it after it ends, though not propose on it
+again. Home folds finished orders, the author's own and those one dealt on, under
+«Завершённые заявки». An order's card lists its finished deals too. → PR 1.17,
+ADR-0023.

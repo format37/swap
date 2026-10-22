@@ -157,6 +157,20 @@ through (G5). The owner's notes are QUESTIONS part G, ADR-0021 and ADR-0022.
 - [x] The api, the sealing code, `new_key` and the `cryptography` dependency go;
       `RECIPIENT_KEYS` leaves `.env.example`, the deploy guide and the server.
 
+**The first real deal (2026-10-22).** @format37 and irinayurasova ran one to «Получил» on
+both sides. The owner's notes are QUESTIONS part H.
+
+**PR 1.17 — Past orders stay** (H4; ADR-0023)
+- [x] Whoever dealt on an order can still open it; proposing still needs it open to them.
+- [x] Home folds finished orders under «Завершённые заявки»; an order's card lists its
+      finished deals too.
+
+**PR 1.18 — Both legs at once** (H1–H3; ADR-0024)
+- [ ] The proposal loses «who goes first» and the dates.
+- [ ] After acceptance, each side marks «Отправил» and «Получил» in any order; both
+      receipts settle the deal.
+- [ ] The journal names the amount, currency and country of each transfer.
+
 **Demo, again.** Deploy, then ask the owner to run the deal.
 
 ### Slices 2–7
@@ -177,7 +191,7 @@ Each is broken into PRs when it starts.
 | Phase | Sessions | Calendar |
 |---|---|---|
 | 0 — skeleton | 4 (done) | 2026-10-21 to 2026-10-22 |
-| 1 — MVP | ≈ 21.5 | ≈ 4 weeks; the last days wait on the group's real deal |
+| 1 — MVP | ≈ 22.5 | ≈ 4 weeks; the last days wait on the group's real deal |
 
 Phase 1 by slice (ADR-0006):
 
@@ -187,8 +201,9 @@ Phase 1 by slice (ADR-0006):
 | Orders (PRs 1.3–1.4) | 2 |
 | Payment details, deals, the state machine (PRs 1.5–1.7) | 3.75 |
 | The owner's notes (PRs 1.8–1.11) | 1.5 |
-| The demo's notes (PRs 1.12–1.15) | 1.5 |
-| **Demo** | **≈ 10.5** |
+| The demo's notes (PRs 1.12–1.16) | 1.5 |
+| The first deal's notes (PRs 1.17–1.18) | 1 |
+| **Demo** | **≈ 11.5** |
 | Balances, lists, order editing and filters | 1.5 |
 | Documents through the bot | 1.5 |
 | Cancel, dispute, notes | 1 |
@@ -196,11 +211,12 @@ Phase 1 by slice (ADR-0006):
 | Manual rate, profile, blocks, deletion | 1.5 |
 | Backups, hardening, agreement | 1.5 |
 | Georgian review, acceptance fixes | 1.5 |
-| **Total** | **≈ 21.5** |
+| **Total** | **≈ 22.5** |
 
 Slice 2 grew by half a session on 2026-10-22: order editing and the filters had no
 slice. Slice 1 grew by one and a half the same day, for the owner's notes after his
-first test, and by one and a half again for his notes after the demo.
+first test, by one and a half again for his notes after the demo, and by one for his
+notes after the first real deal.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
