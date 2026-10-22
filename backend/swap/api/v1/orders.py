@@ -10,14 +10,16 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from swap import deals, orders
-from swap.api.deps import AppSettings, CurrentUser, Db
+from swap.api.deps import AppSettings, CurrentUser, Db, MarketRates
 from swap.api.errors import Problem
 from swap.api.v1.people import Person
+from swap.errors import DomainError
+from swap.market import Market, lock
 from swap.models import Order as OrderRow
 from swap.models import OrderStatus, PaymentKind, User
 from swap.network import Graph
 from swap.orders import OrderDraft, Want
-from swap.rates import parse_spec
+from swap.rates import convert, parse_spec
 
 router = APIRouter(prefix="/orders", tags=["orders"], responses={401: {"model": Problem}})
 
@@ -29,6 +31,15 @@ class Visibility(BaseModel):
     reach: int | None
     # At reach 0, the people on its list.
     people: list[Person]
+
+
+class WantShown(Want):
+    """A wanted currency as the api shows it."""
+
+    # What the order's amount comes to in this currency: all that remains while it is
+    # open, all it was for once over. At the author's rate, or the market's of the moment
+    # (QUESTIONS N1). Set in lists; None there when the market has no rate.
+    amount: Decimal | None = None
 
 
 class Order(BaseModel):
@@ -48,7 +59,7 @@ class Order(BaseModel):
     available_until: date | None
     payout_methods: list[PaymentKind]
     # Each with its own rate (ADR-0026) and ways to be paid (ADR-0037).
-    wants: list[Want]
+    wants: list[WantShown]
     note: str | None
     status: OrderStatus
     # «Повторять каждый месяц, N-го числа», None once it doesn't (QUESTIONS K7).
@@ -77,7 +88,7 @@ class Order(BaseModel):
             available_until=order.available_until,
             payout_methods=[PaymentKind(kind) for kind in order.payout_methods],
             wants=[
-                Want(
+                WantShown(
                     currency=want.currency,
                     country=want.country,
                     rate_spec=parse_spec(want.rate_spec),
@@ -90,6 +101,20 @@ class Order(BaseModel):
             repeat_day=order.repeat_day,
             created_at=order.created_at,
         )
+
+
+async def _priced(shown: Order, market: Market) -> Order:
+    """Each wanted currency with what the order's amount comes to in it, as a row shows it
+    (QUESTIONS N1). The market's table is kept ten minutes, so a list costs no extra trips."""
+    amount = shown.amount_remaining if shown.status == OrderStatus.OPEN else shown.amount_max
+    for want in shown.wants:
+        try:
+            spec, _ = await lock(want.rate_spec, shown.give_currency, want.currency, market)
+            want.amount = convert(amount, spec, shown.give_currency, want.currency)
+        except DomainError:
+            # The market has no rate now: the row names the currency alone.
+            continue
+    return shown
 
 
 async def _with_visibility(db: Db, order: OrderRow, author: User, viewer: uuid.UUID) -> Order:
@@ -120,14 +145,16 @@ async def create_order(body: OrderDraft, user: CurrentUser, db: Db, settings: Ap
 async def list_orders(
     user: CurrentUser,
     db: Db,
+    market: MarketRates,
     scope: Literal["visible", "mine", "history"] = "visible",
     within: Annotated[int | None, Query(ge=1, le=3)] = None,
 ) -> list[Order]:
     """«Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
     are mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to
-    authors at most so many handshakes away (QUESTIONS J2)."""
+    authors at most so many handshakes away (QUESTIONS J2). Each wanted currency says what
+    the order's amount comes to in it (QUESTIONS N1)."""
     found = await orders.feed(db, user.id, scope, within)
-    return [Order.of(order, author, user.id) for order, author in found]
+    return [await _priced(Order.of(order, author, user.id), market) for order, author in found]
 
 
 @router.get("/{order_id}", responses={404: {"model": Problem}})

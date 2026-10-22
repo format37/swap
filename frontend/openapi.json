@@ -1060,7 +1060,7 @@
           },
           "wants": {
             "items": {
-              "$ref": "#/components/schemas/Want"
+              "$ref": "#/components/schemas/WantShown"
             },
             "title": "Wants",
             "type": "array"
@@ -1853,6 +1853,75 @@
           "receive_methods"
         ],
         "title": "Want",
+        "type": "object"
+      },
+      "WantShown": {
+        "additionalProperties": false,
+        "description": "A wanted currency as the api shows it.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "country": {
+            "examples": [
+              "GE"
+            ],
+            "pattern": "^[A-Z]{2}$",
+            "title": "Country",
+            "type": "string"
+          },
+          "currency": {
+            "examples": [
+              "GEL"
+            ],
+            "pattern": "^[A-Z]{3,5}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "rate_spec": {
+            "discriminator": {
+              "mapping": {
+                "fixed": "#/components/schemas/FixedRate",
+                "reference": "#/components/schemas/ReferenceRate"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FixedRate"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenceRate"
+              }
+            ],
+            "title": "Rate Spec"
+          },
+          "receive_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentKind"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Receive Methods",
+            "type": "array"
+          }
+        },
+        "required": [
+          "currency",
+          "country",
+          "rate_spec",
+          "receive_methods"
+        ],
+        "title": "WantShown",
         "type": "object"
       }
     },
@@ -4173,7 +4242,7 @@
     },
     "/api/v1/orders": {
       "get": {
-        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones) or the finished ones that\nare mine or that I had a deal on (`history`). `within` narrows \u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb to\nauthors at most so many handshakes away (QUESTIONS J2).",
+        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones) or the finished ones that\nare mine or that I had a deal on (`history`). `within` narrows \u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb to\nauthors at most so many handshakes away (QUESTIONS J2). Each wanted currency says what\nthe order's amount comes to in it (QUESTIONS N1).",
         "operationId": "list_orders",
         "parameters": [
           {

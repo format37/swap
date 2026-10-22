@@ -542,7 +542,8 @@ export interface paths {
          * List Orders
          * @description «Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
          *     are mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to
-         *     authors at most so many handshakes away (QUESTIONS J2).
+         *     authors at most so many handshakes away (QUESTIONS J2). Each wanted currency says what
+         *     the order's amount comes to in it (QUESTIONS N1).
          */
         get: operations["list_orders"];
         put?: never;
@@ -1112,7 +1113,7 @@ export interface components {
             status: components["schemas"]["OrderStatus"];
             visibility?: components["schemas"]["Visibility"] | null;
             /** Wants */
-            wants: components["schemas"]["Want"][];
+            wants: components["schemas"]["WantShown"][];
         };
         /**
          * OrderDraft
@@ -1414,6 +1415,28 @@ export interface components {
          * @description A currency the author would take, where, and at what rate (ADR-0026).
          */
         Want: {
+            /**
+             * Country
+             * @example GE
+             */
+            country: string;
+            /**
+             * Currency
+             * @example GEL
+             */
+            currency: string;
+            /** Rate Spec */
+            rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
+            /** Receive Methods */
+            receive_methods: components["schemas"]["PaymentKind"][];
+        };
+        /**
+         * WantShown
+         * @description A wanted currency as the api shows it.
+         */
+        WantShown: {
+            /** Amount */
+            amount?: string | null;
             /**
              * Country
              * @example GE
