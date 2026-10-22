@@ -101,6 +101,8 @@ export const ka: Messages = {
   'wizard.currency': 'ვალუტა',
   'wizard.country': 'ქვეყანა',
   'wizard.choose': 'აირჩიეთ',
+  'wizard.give.prompt': 'გასცემთ',
+  'wizard.want.prompt': 'იღებთ',
   'wizard.amount': 'თანხა',
   'wizard.amount_total': 'სულ',
   'wizard.amount_exact': 'მხოლოდ მთლიანად',

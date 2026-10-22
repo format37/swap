@@ -98,6 +98,8 @@ export const ru = {
   'wizard.currency': 'Валюта',
   'wizard.country': 'Страна',
   'wizard.choose': 'Выберите',
+  'wizard.give.prompt': 'Отдаёте',
+  'wizard.want.prompt': 'Получаете',
   'wizard.amount': 'Сумма',
   'wizard.amount_total': 'Всего',
   'wizard.amount_exact': 'Только целиком',

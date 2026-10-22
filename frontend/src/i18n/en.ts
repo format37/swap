@@ -98,6 +98,8 @@ export const en: Messages = {
   'wizard.currency': 'Currency',
   'wizard.country': 'Country',
   'wizard.choose': 'Choose',
+  'wizard.give.prompt': 'You give',
+  'wizard.want.prompt': 'You get',
   'wizard.amount': 'Amount',
   'wizard.amount_total': 'In total',
   'wizard.amount_exact': 'All at once only',

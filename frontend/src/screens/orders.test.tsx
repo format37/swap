@@ -204,6 +204,8 @@ describe('the wizard', () => {
     expect(await screen.findByText('Выберите валюту и страну')).toBeInTheDocument()
 
     await screen.findByRole('option', { name: '₽ RUB' })
+    // The list says which side it is for, in case its reader got distracted (F1).
+    expect(screen.getByRole('option', { name: 'Отдаёте' })).toBeDisabled()
     fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
       target: { value: 'RUB' },
     })
@@ -228,6 +230,7 @@ describe('the wizard', () => {
     press()
 
     await screen.findByText('Шаг 2 из 3')
+    expect(screen.getByRole('option', { name: 'Получаете' })).toBeDisabled()
     fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
       target: { value: 'GEL' },
     })
