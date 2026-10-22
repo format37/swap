@@ -121,8 +121,8 @@ with others.
 - [x] Step 2 asks for them, the card shows them, and a proposal pays in one of them.
 
 **PR 1.10 — Orders: the market rate** (F5, ADR-0020)
-- [ ] api: Coinbase's public rates, cached, as one endpoint.
-- [ ] The wizard fills each rate in from it, with the source and time; the author can
+- [x] api: Coinbase's public rates, cached, as one endpoint.
+- [x] The wizard fills each rate in from it, with the source and time; the author can
       change it.
 
 **PR 1.11 — Orders: reopen and delete** (F6, F7)
