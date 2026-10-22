@@ -5,7 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal, Self
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
@@ -217,6 +217,15 @@ async def get_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
     row = await deals.get(db, user.id, deal_id)
     [shown] = await _shown(db, [row], user.id)
     return shown
+
+
+@router.delete("/deals/{deal_id}", status_code=204, responses=REFUSALS)
+async def delete_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Response:
+    """Delete your own finished deal, for yourself alone (QUESTIONS J3). The other side keeps
+    it, and it is erased once its order's author has deleted the order too."""
+    await deals.delete(db, user, deal_id)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/deals/{deal_id}/accept", responses=REFUSALS)

@@ -22,7 +22,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
 from swap.deeplinks import target
+from swap.erasure import erase_deal, erase_order_if_bare
 from swap.errors import DomainError
+from swap.journal import TERMINAL
 from swap.links import linked_ids
 from swap.models import Deal, Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
 from swap.money import Asset, Country, Money, MoneyOrZero
@@ -128,10 +130,13 @@ def open_to(viewer: uuid.UUID, within: Within = None) -> ColumnElement[bool]:
 
 
 def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
-    """Whether `viewer` may open an order: as `open_to`, and also as history once they had a
-    deal on it, of any outcome, so going back from the deal never ends in «не найдена»."""
-    dealt = exists().where(Deal.order_id == Order.id, Deal.proposer_id == viewer)
-    return or_(open_to(viewer), and_(Order.deleted_at.is_(None), dealt))
+    """Whether `viewer` may open an order: as `open_to`, and also as history while they
+    keep a deal on it, of any outcome, so going back from the deal never ends in «не
+    найдена». Its author deleting it changes nothing for them (QUESTIONS J3)."""
+    dealt = exists().where(
+        Deal.order_id == Order.id, Deal.proposer_id == viewer, Deal.proposer_deleted_at.is_(None)
+    )
+    return or_(open_to(viewer), dealt)
 
 
 def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
@@ -317,11 +322,20 @@ async def reopen(db: AsyncSession, author: User, order_id: uuid.UUID) -> Order:
 
 
 async def delete(db: AsyncSession, author: uuid.UUID, order_id: uuid.UUID) -> None:
-    """The author deletes an order that isn't open (QUESTIONS F6). Its deals carry on.
+    """The author deletes a finished order with all its deals, for themselves alone
+    (QUESTIONS J3). Deals their proposers deleted already are erased, and so is the order
+    once none remain (ADR-0030).
 
     An open one is closed first, which cancels its proposals (Q-E2).
     """
     order = await _own(db, author, order_id)
     if order.status == OrderStatus.OPEN:
         raise DomainError(409, "order.open")
+    deals = list(await db.scalars(select(Deal).where(Deal.order_id == order.id).with_for_update()))
+    if any(deal.status not in TERMINAL for deal in deals):
+        raise DomainError(409, "order.deals_running")
     order.deleted_at = datetime.now(UTC)
+    for deal in deals:
+        if deal.proposer_deleted_at is not None:
+            await erase_deal(db, deal)
+    await erase_order_if_bare(db, order)

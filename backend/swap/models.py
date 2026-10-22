@@ -311,8 +311,8 @@ class Order(Base):
     status: Mapped[str] = mapped_column(Text, server_default=OrderStatus.OPEN.value)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
-    # Its author deleted it (QUESTIONS F6): gone from every list and card, theirs too. The
-    # row stays, because its deals point at it.
+    # Its author deleted it, with all its deals, for themselves (QUESTIONS J3, ADR-0030).
+    # Whoever dealt on it keeps it. The row goes once none of its deals remain.
     deleted_at: Mapped[datetime | None]
 
     wants: Mapped[list["OrderWant"]] = relationship(
@@ -430,6 +430,9 @@ class Deal(Base):
     resolution_by: Mapped[uuid.UUID | None]
     # The event that recorded the latest change; the trigger checks it.
     last_event_id: Mapped[int | None] = mapped_column(BigInteger)
+    # Its proposer deleted it for themselves (QUESTIONS J3). The author's deletion is the
+    # order's. Once both have, the deal is erased (ADR-0030).
+    proposer_deleted_at: Mapped[datetime | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
@@ -474,13 +477,16 @@ class DealLeg(Base):
 class Event(Base):
     """The deal journal (§5, ADR-0002): append-only, with a total order.
 
-    A trigger refuses UPDATE and DELETE.
+    A trigger refuses UPDATE, and DELETE but for a deal being erased whole (ADR-0030).
     """
 
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    deal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("deals.id"), index=True)
+    # Goes with its deal, the one way a line may go (ADR-0030).
+    deal_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("deals.id", ondelete="CASCADE"), index=True
+    )
     # Null for the system: an expiry.
     actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
     type: Mapped[str] = mapped_column(Text)

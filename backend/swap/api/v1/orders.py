@@ -150,7 +150,8 @@ async def reopen_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
     "/{order_id}", status_code=204, responses={404: {"model": Problem}, 409: {"model": Problem}}
 )
 async def delete_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Response:
-    """Gone for everyone, its author included; its deals carry on (QUESTIONS F6)."""
+    """Delete a finished order with all its deals, for yourself alone (QUESTIONS J3). Whoever
+    dealt on it keeps their deals and the order with them."""
     await orders.delete(db, user.id, order_id)
     await db.commit()
     return Response(status_code=204)
