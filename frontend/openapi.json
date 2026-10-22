@@ -880,6 +880,13 @@
           "rate_spec": {
             "$ref": "#/components/schemas/FixedRate"
           },
+          "receive_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentKind"
+            },
+            "title": "Receive Methods",
+            "type": "array"
+          },
           "status": {
             "$ref": "#/components/schemas/OrderStatus"
           },
@@ -913,6 +920,7 @@
           "available_from",
           "available_until",
           "payout_methods",
+          "receive_methods",
           "wants",
           "rate_spec",
           "note",
@@ -999,6 +1007,15 @@
           "rate_spec": {
             "$ref": "#/components/schemas/FixedRate"
           },
+          "receive_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentKind"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Receive Methods",
+            "type": "array"
+          },
           "visible_to": {
             "anyOf": [
               {
@@ -1032,6 +1049,7 @@
           "amount_max",
           "available_from",
           "payout_methods",
+          "receive_methods",
           "wants",
           "rate_spec"
         ],

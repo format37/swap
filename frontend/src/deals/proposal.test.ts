@@ -15,6 +15,7 @@ const ORDER = {
   amount_remaining: '150000.00',
   available_from: '2026-10-25',
   payout_methods: ['card', 'phone', 'cash'],
+  receive_methods: ['cash', 'bank'],
   wants: [
     { currency: 'GEL', country: 'GE' },
     { currency: 'USD', country: 'GE' },
@@ -37,8 +38,10 @@ it('starts with the first wanted currency, the proposer first, from when the ord
   expect(form.want).toBe('GEL')
   expect(form.first).toBe('proposer')
   expect([form.myDue, form.theirDue]).toEqual(['2026-10-26', '2026-10-28'])
-  // One payout way is no choice at all.
+  expect([form.giveMethod, form.counterMethod]).toEqual(['', ''])
+  // One way is no choice at all.
   expect(emptyProposal({ ...ORDER, payout_methods: ['cash'] }, TODAY).giveMethod).toBe('cash')
+  expect(emptyProposal({ ...ORDER, receive_methods: ['bank'] }, TODAY).counterMethod).toBe('bank')
 })
 
 it('turns a filled form into exactly what the api takes', () => {

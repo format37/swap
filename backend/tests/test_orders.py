@@ -31,6 +31,7 @@ def draft(**changes: Any) -> dict[str, Any]:
         "available_from": str(TODAY),
         "available_until": str(TODAY + timedelta(days=14)),
         "payout_methods": ["card", "phone"],
+        "receive_methods": ["cash", "bank"],
         "wants": [{"currency": "GEL", "country": "GE"}, {"currency": "USD", "country": "GE"}],
         "rate_spec": {
             "v": 1,
@@ -268,6 +269,9 @@ async def test_an_order_cannot_be_shown_to_someone_unlinked(
         ({"amount_min": "1e3"}, "validation_error"),
         ({"payout_methods": []}, "validation_error"),
         ({"payout_methods": ["pigeon"]}, "validation_error"),
+        ({"receive_methods": []}, "validation_error"),
+        ({"receive_methods": ["pigeon"]}, "validation_error"),
+        ({"receive_methods": None}, "validation_error"),
         ({"give_country": "Russia"}, "validation_error"),
         ({"wants": []}, "validation_error"),
         ({"note": "x" * 501}, "validation_error"),
@@ -405,6 +409,16 @@ async def test_closing_an_order_twice_is_refused(client: AsyncClient) -> None:
     again = await client.post(f"/api/v1/orders/{order['id']}/close", headers=alex)
     assert again.status_code == 409
     assert again.json()["code"] == "order.not_open"
+
+
+async def test_an_order_says_how_its_author_pays_and_is_paid(client: AsyncClient) -> None:
+    alex = await person(client, ALEX)
+    order = await publish(client, alex, receive_methods=["cash", "bank", "cash"])
+    # In the order chosen, once each (QUESTIONS F2).
+    assert order["payout_methods"] == ["card", "phone"]
+    assert order["receive_methods"] == ["cash", "bank"]
+    card = await client.get(f"/api/v1/orders/{order['id']}", headers=alex)
+    assert card.json()["receive_methods"] == ["cash", "bank"]
 
 
 async def test_an_order_needs_no_minimum_and_no_last_day(

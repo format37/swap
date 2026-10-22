@@ -69,7 +69,8 @@ class Proposal(BaseModel):
     give_method: PaymentKind
     # Where the proposer wants it: their saved details for that currency. None for cash.
     receive_with: uuid.UUID | None = None
-    # How the proposer pays the other currency: «в ответ GEL наличными».
+    # How the proposer pays the other currency, «в ответ GEL наличными»: one of the ways
+    # the order's author can be paid (QUESTIONS F2).
     counter_method: PaymentKind
     # The due date of the proposer's own transfer, and of the author's.
     my_due: date
@@ -197,6 +198,8 @@ async def propose(
         raise _refuse("deal.amount_range", 422)
     if proposal.give_method not in order.payout_methods:
         raise _refuse("deal.method_not_offered", 422)
+    if proposal.counter_method not in order.receive_methods:
+        raise _refuse("deal.method_not_accepted", 422)
     today = orders.today(proposer)
     if min(proposal.my_due, proposal.their_due) < today:
         raise _refuse("deal.due_past", 422)

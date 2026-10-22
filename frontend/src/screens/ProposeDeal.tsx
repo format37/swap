@@ -248,13 +248,9 @@ function Form({ order }: { order: Order }) {
       </Section>
 
       <Section title={t('propose.my_way', { currency: form.want })}>
-        {chips(
-          KINDS.map(({ kind }) => kind),
-          form.counterMethod,
-          (counterMethod) => {
-            change({ counterMethod })
-          },
-        )}
+        {chips(order.receive_methods, form.counterMethod, (counterMethod) => {
+          change({ counterMethod })
+        })}
       </Section>
 
       <Section title={t('propose.first')}>

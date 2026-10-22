@@ -14,7 +14,7 @@ export interface ProposalForm {
   giveMethod: PaymentKind | ''
   /** Where the proposer wants it: a saved entry's id; null for cash. */
   receiveWith: string | null
-  /** How the proposer pays the other currency. */
+  /** How the proposer pays the other currency: one of the ways the author is paid (F2). */
   counterMethod: PaymentKind | ''
   myDue: string
   theirDue: string
@@ -23,15 +23,16 @@ export interface ProposalForm {
 /** A fresh proposal: the proposer first (Q-B16), a day apart from when the order starts. */
 export function emptyProposal(order: Order, today: string): ProposalForm {
   const start = order.available_from > today ? order.available_from : today
-  const [only] = order.payout_methods
+  // One way is no choice at all.
+  const only = (kinds: PaymentKind[]) => (kinds.length === 1 && kinds[0] ? kinds[0] : '')
   return {
     amount: '',
     want: order.wants[0]?.currency ?? '',
     whole: false,
     first: 'proposer',
-    giveMethod: order.payout_methods.length === 1 && only ? only : '',
+    giveMethod: only(order.payout_methods),
     receiveWith: null,
-    counterMethod: '',
+    counterMethod: only(order.receive_methods),
     myDue: addDays(start, 1),
     theirDue: addDays(start, 3),
   }

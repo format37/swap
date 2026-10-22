@@ -200,6 +200,8 @@ async def test_a_closed_order_takes_no_proposals(world: World) -> None:
         ({"amount": "150000.01"}, "deal.amount_range"),
         ({"want_currency": "EUR"}, "deal.unknown_want"),
         ({"give_method": "crypto"}, "deal.method_not_offered"),
+        # Alex is paid in cash or by bank, not by card (QUESTIONS F2).
+        ({"counter_method": "card"}, "deal.method_not_accepted"),
         ({"receive_with": None}, "deal.details_required"),
         ({"receive_with": str(uuid.uuid4())}, "deal.details_unknown"),
         ({"my_due": str(TODAY - timedelta(days=1))}, "deal.due_past"),

@@ -914,6 +914,8 @@ export interface components {
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
             rate_spec: components["schemas"]["FixedRate"];
+            /** Receive Methods */
+            receive_methods: components["schemas"]["PaymentKind"][];
             status: components["schemas"]["OrderStatus"];
             visibility?: components["schemas"]["Visibility"] | null;
             /** Wants */
@@ -956,6 +958,8 @@ export interface components {
             /** Payout Methods */
             payout_methods: components["schemas"]["PaymentKind"][];
             rate_spec: components["schemas"]["FixedRate"];
+            /** Receive Methods */
+            receive_methods: components["schemas"]["PaymentKind"][];
             /** Visible To */
             visible_to?: string[] | null;
             /** Wants */

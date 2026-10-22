@@ -50,6 +50,8 @@ class OrderDraft(BaseModel):
     # None: open until its author closes it (QUESTIONS F3).
     available_until: date | None = None
     payout_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
+    # How the author can be paid, whichever currency they get (QUESTIONS F2).
+    receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
     wants: list[Want] = Field(min_length=1, max_length=8)
     rate_spec: FixedRate
     # None: all active links, now and later. Otherwise only these, who must be links now.
@@ -139,6 +141,7 @@ async def create(
         available_from=draft.available_from,
         available_until=draft.available_until,
         payout_methods=list(dict.fromkeys(draft.payout_methods)),
+        receive_methods=list(dict.fromkeys(draft.receive_methods)),
         note=(draft.note or "").strip() or None,
         rate_spec=draft.rate_spec.model_dump(mode="json"),
         status=OrderStatus.OPEN,
