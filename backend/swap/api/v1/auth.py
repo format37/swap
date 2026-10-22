@@ -39,8 +39,11 @@ async def sign_in_with_telegram(body: TelegramSignIn, db: Db, settings: AppSetti
         raise ApiError(401, exc.code) from exc
 
     user = await upsert_user(db, launch.user, can_message=launch.user.allows_write_to_pm)
-    # Whatever this launch says, a removed photo included (ADR-0027).
-    user.photo_url = launch.user.photo_url
+    # A launch that brings no link keeps the stored one: not every launch is known to carry
+    # it, and a hidden photo comes as Telegram's letter picture, a link of its own
+    # (QUESTIONS L3, ADR-0027).
+    if launch.user.photo_url:
+        user.photo_url = launch.user.photo_url
     token = new_token()
     expires_at = datetime.now(UTC) + timedelta(seconds=settings.session_ttl_s)
     db.add(AuthSession(user_id=user.id, token_hash=hash_token(token), expires_at=expires_at))

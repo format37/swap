@@ -1,6 +1,6 @@
 # 0027. People are shown with their Telegram photo, name and @username
 
-Status: Accepted · Date: 2026-10-22 · Spec: §7 «Приватность», §11; QUESTIONS J4; amends ADR-0003
+Status: Accepted · Date: 2026-10-22 · Spec: §7 «Приватность», §11; QUESTIONS J4, L3; amends ADR-0003
 
 ## Context
 
@@ -20,8 +20,10 @@ host, as in `https://t.me/i/userpic/320/<id>.svg`, and the picture is a JPEG or 
 ## Decision
 
 **Only the link is stored.**
-- `users.photo_url` is taken from `initData` at every sign-in. When `initData` has none,
-  the column is cleared, so a removed photo goes too.
+- `users.photo_url` is taken from `initData` at every sign-in that brings one. A launch
+  without one keeps the stored link (L3): not every launch is known to carry it. A photo
+  removed or hidden still goes, because Telegram then sends its letter picture, a link of
+  its own, and `t.me` serves only what is public when the picture loads.
 - Only an `https://t.me/` URL is kept. Anything else is dropped, so the column can't
   point a browser elsewhere.
 - The bot's /start carries no photo and leaves the column alone.
