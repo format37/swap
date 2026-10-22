@@ -21,6 +21,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part K** records the owner's priority list for the rest of phase 1, with its defaults.
 - **Part L** records the owner's notes after testing parts J and K, the same evening.
 - **Part M** records the owner's notes after testing part L, the same evening.
+- **Part N** records the owner's requests of 2026-10-23.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1174,3 +1175,23 @@ Someone else's open order shows, under each wanted currency, what they would giv
 «Вы отдадите от 342,47 до 5 136,99 ₾ GEL», from the smallest deal to all that remains.
 It says «до …» when any amount goes, and one amount when the order is all or nothing.
 «≈» marks a market rate. The api works the amounts out, as in the wizard. → PR 1.38.
+
+## N. The owner's requests (2026-10-23)
+
+The owner confirmed that part M is fixed («Все исправлено»).
+
+### N1 · Amounts in the order lists
+
+> Когда rin видит в списке заявок заявку Алекса, она видит:
+> 29283,93 RUB -> GEL, USD
+> wrapped lines.
+> Я предлагаю сделать aligned left {amount} {what_they_give} ->
+> and the next lines aligned right {amount} {what_they_got} так же с флагом но и с суммой.
+> Суммы сейчас нет.
+
+A row in the order lists says what is given on the left, «29 283,93 ₽ RUB →», then each
+wanted currency on a line of its own, on the right, with what that amount comes to in it:
+«≈ 927 ₾ GEL». «≈» marks a market rate. The api works the amounts out for the whole
+list, at the author's rate or the market's of the moment, from what remains while the
+order is open and from all it was for once it is over. A currency the market has no rate
+for shows alone. → PR 1.39.
