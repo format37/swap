@@ -25,7 +25,12 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
       {!order.mine && <Avatar name={name} size="sm" />}
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-          <Money locale={locale} amount={order.amount_remaining} code={order.give_currency} />
+          {/* What remains while it is open; once over, what it was for: «0 RUB» says nothing. */}
+          <Money
+            locale={locale}
+            amount={order.status === 'open' ? order.amount_remaining : order.amount_max}
+            code={order.give_currency}
+          />
           <ArrowRight aria-hidden className="size-4 text-hint" />
           {wanted.map((code) => (
             <Asset key={code} code={code} />

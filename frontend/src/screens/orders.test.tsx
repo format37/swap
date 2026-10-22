@@ -146,7 +146,7 @@ describe('Home', () => {
               status: 'closed',
               available_until: null,
             }),
-            order({ id: 'used-up', status: 'fulfilled' }),
+            order({ id: 'used-up', status: 'fulfilled', amount_remaining: '0.00' }),
           ])
         return json(200, [order()])
       },
@@ -168,7 +168,9 @@ describe('Home', () => {
     expect(screen.queryByText(/Закрыта/)).toBeNull()
     fireEvent.click(past)
     expect(screen.getByText('Закрыта · с 25 окт., без срока')).toBeInTheDocument()
-    expect(screen.getByText('Alex · Исполнена · 25 окт. – 8 нояб.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Alex · Исполнена · 25 окт. – 8 нояб.').parentElement,
+    ).toHaveTextContent('150 000₽RUB')
   })
 
   it('opens the wizard from the main button', async () => {
