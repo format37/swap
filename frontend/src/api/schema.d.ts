@@ -1011,6 +1011,7 @@ export interface components {
             photo_url: string | null;
             /** Score */
             score: number;
+            telegram_locale: components["schemas"]["Locale"];
             /** Terms Accepted */
             terms_accepted: boolean;
             /** Tz */

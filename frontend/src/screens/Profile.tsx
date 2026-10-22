@@ -18,8 +18,8 @@ import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 
 /**
- * The profile behind Home's avatar (Q-B14), which holds the settings (QUESTIONS K1): who I
- * am, notifications, the language, and deleting my history or my account (K2). No payment
+ * The «Настройки» tab (QUESTIONS L5), also behind Home's avatar (Q-B14): who I am,
+ * notifications, the language, and deleting my history or my account (K1, K2). No payment
  * details: the parties settle where to pay among themselves (QUESTIONS G3).
  */
 export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
@@ -33,7 +33,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
   const [copied, setCopied] = useState(false)
 
   return (
-    <Screen>
+    <Screen tabs>
       <header className="flex flex-col items-center gap-2 px-6 pt-8 text-center">
         <Avatar name={name} photo={me.photo_url} size="xl" />
         <div className="flex items-center gap-2">
@@ -54,7 +54,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
         <Cell
           icon={<Globe aria-hidden className="size-6" />}
           label={t('settings.language')}
-          detail={LANGUAGE_NAMES[locale]}
+          detail={me.locale_chosen ? LANGUAGE_NAMES[locale] : t('language.telegram')}
           opens
           onClick={() => void navigate('/language')}
         />

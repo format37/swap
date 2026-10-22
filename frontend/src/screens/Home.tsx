@@ -53,11 +53,11 @@ export function Home({ me }: { me: Me }) {
   return (
     <Screen tabs>
       <header className="flex items-center gap-4 px-6 pt-4">
-        {/* The profile opens from the avatar (Q-B14). */}
+        {/* The avatar opens the profile (Q-B14), as its tab does (QUESTIONS L5). */}
         <button
           type="button"
           aria-label={t('profile.title')}
-          onClick={() => void navigate('/profile')}
+          onClick={() => void navigate('/profile', { replace: true })}
           className="rounded-full active:opacity-70"
         >
           <Avatar name={me.first_name} photo={me.photo_url} />

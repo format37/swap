@@ -36,6 +36,8 @@ class Me(BaseModel):
     # picked it or it came from Telegram.
     locale: Locale
     locale_chosen: bool
+    # What «Как в Telegram» gives: their Telegram's language (ADR-0039).
+    telegram_locale: Locale
     # Null until the app sends the device's zone at the first launch.
     tz: str | None
     # What they switched off: everything, or kinds of messages (QUESTIONS K1).
@@ -55,6 +57,7 @@ class Me(BaseModel):
             score=user.score,
             locale=resolve_locale(user.locale, user.language_code),
             locale_chosen=user.locale is not None,
+            telegram_locale=resolve_locale(None, user.language_code),
             tz=user.tz,
             notifications_off=user.notifications_off,
             muted_kinds=[NotificationKind(kind) for kind in user.muted_kinds],
@@ -65,6 +68,7 @@ class Me(BaseModel):
 class MeUpdate(BaseModel):
     """Only what is sent changes."""
 
+    # A language, or null to let the choice go and follow Telegram's (ADR-0039).
     locale: Locale | None = None
     # An IANA zone, such as Asia/Tbilisi.
     tz: str | None = None
@@ -90,7 +94,7 @@ async def get_me(user: CurrentUser) -> Me:
 @router.patch("/me", responses={422: {"model": Problem}})
 async def update_me(body: MeUpdate, user: CurrentUser, db: Db) -> Me:
     # Stored on the server so the bot writes in the same language as the app.
-    if body.locale is not None:
+    if "locale" in body.model_fields_set:
         user.locale = body.locale
     if body.tz is not None:
         user.tz = body.tz

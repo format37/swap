@@ -188,6 +188,21 @@ async def test_the_chosen_language_sticks(client: AsyncClient) -> None:
     assert again["me"]["locale"] == "ka"
 
 
+async def test_letting_the_choice_go_follows_telegram_again(client: AsyncClient) -> None:
+    signed_in = await sign_in(client, user={"language_code": "en"})
+    me = "/api/v1/me"
+    await client.patch(me, json={"locale": "ru"}, headers=bearer(signed_in))
+    # Sending something else leaves the choice alone (ADR-0039).
+    kept = await client.patch(me, json={"tz": "Asia/Tbilisi"}, headers=bearer(signed_in))
+    assert (kept.json()["locale"], kept.json()["locale_chosen"]) == ("ru", True)
+    assert kept.json()["telegram_locale"] == "en"
+    response = await client.patch(me, json={"locale": None}, headers=bearer(signed_in))
+    assert response.status_code == 200
+    assert (response.json()["locale"], response.json()["locale_chosen"]) == ("en", False)
+    again = await sign_in(client, user={"language_code": "ka"})
+    assert (again["me"]["locale"], again["me"]["telegram_locale"]) == ("ka", "ka")
+
+
 async def test_other_languages_fall_back_to_english(client: AsyncClient) -> None:
     signed_in = await sign_in(client, user={"language_code": "pt-br"})
     assert signed_in["me"]["locale"] == "en"

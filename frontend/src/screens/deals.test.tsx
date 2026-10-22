@@ -35,6 +35,7 @@ function meOf(
     ...person,
     locale: 'ru',
     locale_chosen: false,
+    telegram_locale: 'ru',
     tz: 'Asia/Tbilisi',
     notifications_off: false,
     muted_kinds: [],

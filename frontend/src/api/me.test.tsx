@@ -15,6 +15,7 @@ const me: Me = {
   score: 0,
   locale: 'ru',
   locale_chosen: false,
+  telegram_locale: 'ru',
   tz: null,
   notifications_off: false,
   muted_kinds: [],
