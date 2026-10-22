@@ -90,6 +90,9 @@ export const en: Messages = {
   'order.reach.3': 'Seen up to three handshakes from you',
   'order.reach.all': 'Seen by your whole network',
   'order.chain': 'Through {names}',
+  'score.label': 'Score: {count}',
+  'score.about':
+    'Settled deals with different people: {count}. Repeat deals with the same person add nothing.',
   'order.close': 'Close offer',
   'order.close_confirm': 'Close the offer? Nobody will see it anymore. Accepted deals carry on.',
   'order.reopen': 'Reopen offer',

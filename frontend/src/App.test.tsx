@@ -15,6 +15,7 @@ const me: Me = {
   last_name: null,
   username: 'format37',
   photo_url: null,
+  score: 0,
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',

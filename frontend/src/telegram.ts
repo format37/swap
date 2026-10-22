@@ -160,6 +160,15 @@ export async function confirmAction(
   return pressed === 'ok'
 }
 
+/** A native popup that only explains something, with one button to close it. */
+export async function explain(message: string): Promise<void> {
+  if (!popup.show.isAvailable()) {
+    window.alert(message)
+    return
+  }
+  await popup.show({ message, buttons: [{ id: 'ok', type: 'ok' }] })
+}
+
 /** Telegram's share sheet for a link; false where there is none. */
 export function shareLink(url: string, text: string): boolean {
   if (!shareURL.isAvailable()) return false
