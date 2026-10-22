@@ -341,13 +341,11 @@ class OrderVisibility(Base):
 
 
 class DealStatus(StrEnum):
-    """Q-B1: six states a deal moves through, and three it ends in."""
+    """Three states a deal moves through, and three it ends in. Its two transfers move on
+    their own while it is accepted, in any order (QUESTIONS H2, ADR-0024)."""
 
     PROPOSED = "proposed"
     ACCEPTED = "accepted"
-    LEG1_SENT = "leg1_sent"
-    LEG1_RECEIVED = "leg1_received"
-    LEG2_SENT = "leg2_sent"
     DISPUTED = "disputed"
     SETTLED = "settled"
     CANCELLED = "cancelled"
@@ -450,7 +448,8 @@ class DealLeg(Base):
     # How the payer pays: an order's payout way for its own currency, the proposer's
     # word for the other.
     method: Mapped[str] = mapped_column(Text)
-    due_date: Mapped[date] = mapped_column(Date)
+    # Deals made since QUESTIONS H1 have none: the parties settle when among themselves.
+    due_date: Mapped[date | None] = mapped_column(Date)
     sent_at: Mapped[datetime | None]
     received_at: Mapped[datetime | None]
 

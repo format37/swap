@@ -166,10 +166,10 @@ both sides. The owner's notes are QUESTIONS part H.
       finished deals too.
 
 **PR 1.18 — Both legs at once** (H1–H3; ADR-0024)
-- [ ] The proposal loses «who goes first» and the dates.
-- [ ] After acceptance, each side marks «Отправил» and «Получил» in any order; both
+- [x] The proposal loses «who goes first» and the dates.
+- [x] After acceptance, each side marks «Отправил» and «Получил» in any order; both
       receipts settle the deal.
-- [ ] The journal names the amount, currency and country of each transfer.
+- [x] The journal names the amount, currency and country of each transfer.
 
 **Demo, again.** Deploy, then ask the owner to run the deal.
 

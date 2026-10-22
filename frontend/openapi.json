@@ -245,7 +245,8 @@
             "title": "Seq"
           },
           "to": {
-            "$ref": "#/components/schemas/DealStatus"
+            "title": "To",
+            "type": "string"
           },
           "type": {
             "title": "Type",
@@ -262,13 +263,10 @@
         "type": "object"
       },
       "DealStatus": {
-        "description": "Q-B1: six states a deal moves through, and three it ends in.",
+        "description": "Three states a deal moves through, and three it ends in. Its two transfers move on\ntheir own while it is accepted, in any order (QUESTIONS H2, ADR-0024).",
         "enum": [
           "proposed",
           "accepted",
-          "leg1_sent",
-          "leg1_received",
-          "leg2_sent",
           "disputed",
           "settled",
           "cancelled",
@@ -407,9 +405,16 @@
             "type": "string"
           },
           "due_date": {
-            "format": "date",
-            "title": "Due Date",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
           },
           "method": {
             "$ref": "#/components/schemas/PaymentKind"
@@ -1205,22 +1210,8 @@
           "counter_method": {
             "$ref": "#/components/schemas/PaymentKind"
           },
-          "first": {
-            "default": "proposer",
-            "enum": [
-              "proposer",
-              "author"
-            ],
-            "title": "First",
-            "type": "string"
-          },
           "give_method": {
             "$ref": "#/components/schemas/PaymentKind"
-          },
-          "my_due": {
-            "format": "date",
-            "title": "My Due",
-            "type": "string"
           },
           "note": {
             "anyOf": [
@@ -1233,11 +1224,6 @@
               }
             ],
             "title": "Note"
-          },
-          "their_due": {
-            "format": "date",
-            "title": "Their Due",
-            "type": "string"
           },
           "want_currency": {
             "examples": [
@@ -1257,9 +1243,7 @@
           "amount",
           "want_currency",
           "give_method",
-          "counter_method",
-          "my_due",
-          "their_due"
+          "counter_method"
         ],
         "title": "Proposal",
         "type": "object"

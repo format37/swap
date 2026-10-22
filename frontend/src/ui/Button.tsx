@@ -1,8 +1,10 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 const TONES = {
-  plain: 'text-link',
-  destructive: 'text-destructive',
+  plain: 'bg-section-bg text-link',
+  destructive: 'bg-section-bg text-destructive',
+  // The button colour of Telegram's theme: for an action inside a card of section colour.
+  filled: 'bg-button text-button-text',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -18,7 +20,7 @@ export function Button({ icon, tone = 'plain', children, className = '', ...butt
   return (
     <button
       type="button"
-      className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-section-bg px-4 py-3 font-medium active:opacity-70 disabled:opacity-50 ${TONES[tone]} ${className}`}
+      className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium active:opacity-70 disabled:opacity-50 ${TONES[tone]} ${className}`}
       {...button}
     >
       {icon}

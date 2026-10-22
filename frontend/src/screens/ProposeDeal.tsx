@@ -17,10 +17,8 @@ import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { formatRate, isZero, parseAmount } from '../money/format'
 import { KINDS } from '../money/kinds'
-import { isoDate } from '../orders/form'
 import { hapticNotify, hapticSelect, useMainButton } from '../telegram'
 import { Chip } from '../ui/Chip'
-import { Choice } from '../ui/Choice'
 import { CONTROL, Field } from '../ui/Field'
 import { FormError } from '../ui/FormError'
 import { Loading } from '../ui/Loading'
@@ -47,8 +45,7 @@ export function ProposeDeal() {
 function Form({ order }: { order: Order }) {
   const { t, tn, locale } = useI18n()
   const navigate = useNavigate()
-  const today = useMemo(() => isoDate(new Date()), [])
-  const [form, setForm] = useState<ProposalForm>(() => emptyProposal(order, today, locale))
+  const [form, setForm] = useState<ProposalForm>(() => emptyProposal(order, locale))
   const [shown, setShown] = useState<MessageKey | null>(null)
   const propose = usePropose(order.id)
   const give = order.give_currency
@@ -59,7 +56,7 @@ function Form({ order }: { order: Order }) {
     setForm((current) => ({ ...current, ...changes }))
   }
 
-  const problem = proposalProblem(form, order, today)
+  const problem = proposalProblem(form, order)
   useMainButton({
     text: t('propose.send'),
     busy: propose.isPending,
@@ -232,50 +229,6 @@ function Form({ order }: { order: Order }) {
         {chips(order.receive_methods, form.counterMethod, (counterMethod) => {
           change({ counterMethod })
         })}
-      </Section>
-
-      <Section title={t('propose.first')}>
-        <Choice
-          kind="radio"
-          label={t('propose.first_me')}
-          checked={form.first === 'proposer'}
-          onChange={() => {
-            change({ first: 'proposer' })
-          }}
-        />
-        <Choice
-          kind="radio"
-          label={author}
-          checked={form.first === 'author'}
-          onChange={() => {
-            change({ first: 'author' })
-          }}
-        />
-      </Section>
-
-      <Section title={t('order.when')}>
-        <Field label={t('propose.due_mine')}>
-          <input
-            type="date"
-            className={CONTROL}
-            min={today}
-            value={form.myDue}
-            onChange={(event) => {
-              change({ myDue: event.target.value })
-            }}
-          />
-        </Field>
-        <Field label={t('propose.due_theirs')}>
-          <input
-            type="date"
-            className={CONTROL}
-            min={today}
-            value={form.theirDue}
-            onChange={(event) => {
-              change({ theirDue: event.target.value })
-            }}
-          />
-        </Field>
       </Section>
 
       {/* Which bank and the like: theirs to settle, here if they like (QUESTIONS G3). */}

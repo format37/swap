@@ -660,16 +660,18 @@ export interface components {
             reason?: string | null;
             /** Seq */
             seq?: number | null;
-            to: components["schemas"]["DealStatus"];
+            /** To */
+            to: string;
             /** Type */
             type: string;
         };
         /**
          * DealStatus
-         * @description Q-B1: six states a deal moves through, and three it ends in.
+         * @description Three states a deal moves through, and three it ends in. Its two transfers move on
+         *     their own while it is accepted, in any order (QUESTIONS H2, ADR-0024).
          * @enum {string}
          */
-        DealStatus: "proposed" | "accepted" | "leg1_sent" | "leg1_received" | "leg2_sent" | "disputed" | "settled" | "cancelled" | "expired";
+        DealStatus: "proposed" | "accepted" | "disputed" | "settled" | "cancelled" | "expired";
         /** Dispute */
         Dispute: {
             /** Note */
@@ -739,11 +741,8 @@ export interface components {
             country: string;
             /** Currency */
             currency: string;
-            /**
-             * Due Date
-             * Format: date
-             */
-            due_date: string;
+            /** Due Date */
+            due_date: string | null;
             method: components["schemas"]["PaymentKind"];
             payee: components["schemas"]["Person"];
             payer: components["schemas"]["Person"];
@@ -1037,25 +1036,9 @@ export interface components {
              */
             amount: string;
             counter_method: components["schemas"]["PaymentKind"];
-            /**
-             * First
-             * @default proposer
-             * @enum {string}
-             */
-            first: "proposer" | "author";
             give_method: components["schemas"]["PaymentKind"];
-            /**
-             * My Due
-             * Format: date
-             */
-            my_due: string;
             /** Note */
             note?: string | null;
-            /**
-             * Their Due
-             * Format: date
-             */
-            their_due: string;
             /**
              * Want Currency
              * @example GEL
