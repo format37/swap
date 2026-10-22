@@ -31,14 +31,6 @@ files from that day sit beside them: `Caddyfile.bak-20261021-swap` and
    - a long random `POSTGRES_PASSWORD` in hex, because it goes into a URL.
 
    Leave `TELEGRAM_API_BASE` out: compose gives it to the worker alone.
-
-   Since phase 1 it also holds `RECIPIENT_KEYS`, the key that seals payment details
-   (ADR-0004). Make it on the box, so it never travels:
-
-       key=$(sudo docker run --rm --entrypoint python swap-app:prod -m swap.tools.new_key)
-       echo "RECIPIENT_KEYS=$key" >> .env
-
-   The owner keeps a copy off the server: without it, saved details can't be read back.
 4. **Deploy.** `./deploy/vps.sh`.
 5. **The relay** (format37/telegram_bot), once the worker is listening:
    - The bot must be logged out of the cloud Bot API first. The owner did that on

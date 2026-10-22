@@ -15,7 +15,7 @@ STATUS_CHECKS: list[tuple[str, type[StrEnum]]] = [
     ("ck_notifications_tg_status", NotificationStatus),
     ("ck_orders_status", OrderStatus),
     ("ck_orders_payout_methods", PaymentKind),
-    ("ck_payment_methods_kind", PaymentKind),
+    ("ck_orders_receive_methods", PaymentKind),
     ("ck_deals_status", DealStatus),
     ("ck_deal_legs_method", PaymentKind),
 ]
