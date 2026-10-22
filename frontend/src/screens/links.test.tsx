@@ -13,6 +13,7 @@ vi.mock('../telegram', () => ({
   useMainButton: vi.fn(),
   confirmAction: vi.fn(() => Promise.resolve(true)),
   hapticNotify: vi.fn(),
+  hapticSelect: vi.fn(),
   shareLink: vi.fn(() => false),
   copyText: vi.fn(() => Promise.resolve(true)),
 }))
@@ -286,6 +287,25 @@ describe('the request screen', () => {
     fakeApi({ [`GET /api/v1/links/${LINK_ID}`]: () => json(200, { ...link(), mutual_links: 0 }) })
     renderScreen(<LinkScreen />, { route, path })
     expect(await screen.findByRole('button', { name: 'Разорвать связь' })).toBeInTheDocument()
+  })
+
+  it('mutes and unmutes the new orders of an active link (K1)', async () => {
+    let muted = false
+    const { served } = fakeApi({
+      [`GET /api/v1/links/${LINK_ID}`]: () => json(200, { ...link(), mutual_links: 0, muted }),
+      [`PUT /api/v1/links/${LINK_ID}/mute`]: () => {
+        muted = true
+        return json(200, { ...link(), mutual_links: 0, muted })
+      },
+    })
+    renderScreen(<LinkScreen />, { route, path })
+    const toggle = await screen.findByRole('switch', { name: 'Сообщать о новых заявках' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(toggle)
+    await waitFor(() => {
+      expect(toggle).toHaveAttribute('aria-checked', 'false')
+    })
+    expect(served).toContain(`PUT /api/v1/links/${LINK_ID}/mute`)
   })
 
   it('tells a stranger only that there is no such link', async () => {

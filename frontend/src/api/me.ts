@@ -3,11 +3,26 @@ import { useEffect } from 'react'
 
 import type { Locale } from '../i18n/locale'
 import { api, unwrap, type Me } from './client'
+import type { components } from './schema'
+
+export type MeUpdate = components['schemas']['MeUpdate']
+export type NotificationKind = components['schemas']['NotificationKind']
 
 const ME = ['me'] as const
 
 export function useMe() {
   return useQuery({ queryKey: ME, queryFn: () => unwrap(api.GET('/api/v1/me')) })
+}
+
+/** Changes what is sent of the settings, and keeps the answer as the new /me. */
+export function useUpdateMe() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (changes: MeUpdate) => unwrap(api.PATCH('/api/v1/me', { body: changes })),
+    onSuccess: (me: Me) => {
+      queryClient.setQueryData(ME, me)
+    },
+  })
 }
 
 /** Saves the language on the server, so the bot speaks it too (ADR-0009). */

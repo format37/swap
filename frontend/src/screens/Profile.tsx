@@ -1,8 +1,9 @@
-import { Globe } from 'lucide-react'
+import { Bell, Globe } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import type { Me } from '../api/client'
 import { useI18n } from '../i18n/useI18n'
+import { notificationsState } from '../settings/notifications'
 import { LANGUAGE_NAMES } from '../i18n/locale'
 import { Avatar } from '../ui/Avatar'
 import { Cell } from '../ui/Cell'
@@ -31,6 +32,13 @@ export function Profile({ me }: { me: Me }) {
       </header>
 
       <Section title={t('home.settings')}>
+        <Cell
+          icon={<Bell aria-hidden className="size-6" />}
+          label={t('settings.notifications')}
+          detail={t(notificationsState(me))}
+          opens
+          onClick={() => void navigate('/settings/notifications')}
+        />
         <Cell
           icon={<Globe aria-hidden className="size-6" />}
           label={t('settings.language')}

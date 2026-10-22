@@ -2,17 +2,26 @@ import { CircleCheck, CircleSlash, Clock, Undo2, Unlink, UserPlus, Users, X } fr
 import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
-import { fullName, useAnswerLink, useLink, useRemoveLink, type LinkDetail } from '../api/links'
+import {
+  fullName,
+  useAnswerLink,
+  useLink,
+  useMuteLink,
+  useRemoveLink,
+  type LinkDetail,
+} from '../api/links'
 import { errorMessage } from '../i18n/errors'
 import { formatDate } from '../i18n/format'
 import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
-import { confirmAction, hapticNotify, useMainButton } from '../telegram'
+import { confirmAction, hapticNotify, hapticSelect, useMainButton } from '../telegram'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { Loading } from '../ui/Loading'
 import { Score } from '../ui/Person'
 import { Screen } from '../ui/Screen'
+import { Section } from '../ui/Section'
+import { Switch } from '../ui/Switch'
 import { Problem } from './Problem'
 
 /**
@@ -67,6 +76,7 @@ function Shown({ link, answer }: { link: LinkDetail; answer: ReturnType<typeof u
   const { t, locale } = useI18n()
   const navigate = useNavigate()
   const remove = useRemoveLink()
+  const mute = useMuteLink(link.id)
   const name = fullName(link.person)
   const failure = answer.error ?? remove.error
 
@@ -147,6 +157,19 @@ function Shown({ link, answer }: { link: LinkDetail; answer: ReturnType<typeof u
         </p>
       </div>
       <div className="mx-4 rounded-xl bg-section-bg px-4 py-3">{status}</div>
+      {/* Their new orders still show in the feed; only the bot stops telling (FR-7.2). */}
+      {link.status === 'active' && (
+        <Section>
+          <Switch
+            label={t('link.notify_orders')}
+            checked={!link.muted}
+            onChange={(on) => {
+              hapticSelect()
+              mute.mutate(!on)
+            }}
+          />
+        </Section>
+      )}
       {failure && <p className="px-6 text-destructive">{t(errorMessage(failure))}</p>}
       {link.status === 'pending' && link.direction === 'incoming' && (
         <p className="px-6 text-sm text-hint">{t('links.how')}</p>

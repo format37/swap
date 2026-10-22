@@ -31,7 +31,14 @@ function press() {
 function meOf(
   person: Pick<Me, 'id' | 'first_name' | 'last_name' | 'username' | 'photo_url' | 'score'>,
 ): Me {
-  return { ...person, locale: 'ru', locale_chosen: false, tz: 'Asia/Tbilisi' }
+  return {
+    ...person,
+    locale: 'ru',
+    locale_chosen: false,
+    tz: 'Asia/Tbilisi',
+    notifications_off: false,
+    muted_kinds: [],
+  }
 }
 
 const route = `/deals/${DEAL_ID}`
