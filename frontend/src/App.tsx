@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { backButton } from '@tma.js/sdk-react'
-import { House, Users } from 'lucide-react'
+import { House, Settings, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router'
 
@@ -43,7 +43,7 @@ const queryClient = new QueryClient({
 })
 
 // The tabs' own screens (Q-B14). Everything else sits above one of them.
-const TAB_ROOTS = ['/', '/links']
+const TAB_ROOTS = ['/', '/links', '/profile']
 
 /** Telegram's BackButton follows the router: hidden on a tab, and it goes back. */
 function BackButtonSync() {
@@ -78,6 +78,12 @@ function Tabs() {
       tabs={[
         { path: '/', label: t('tab.home'), icon: <House aria-hidden className="size-6" /> },
         { path: '/links', label: t('tab.links'), icon: <Users aria-hidden className="size-6" /> },
+        // The settings, which the avatar alone didn't make findable (QUESTIONS L5).
+        {
+          path: '/profile',
+          label: t('tab.settings'),
+          icon: <Settings aria-hidden className="size-6" />,
+        },
       ]}
     />
   )
@@ -107,7 +113,7 @@ function Screens({
         <Route path="/orders/:id/propose" element={<ProposeDeal />} />
         <Route path="/deals/:id" element={<DealCard me={me} />} />
         <Route path="/profile" element={<Profile me={me} onGone={onGone} />} />
-        <Route path="/language" element={<Language />} />
+        <Route path="/language" element={<Language me={me} />} />
         <Route path="/settings/notifications" element={<Notifications me={me} />} />
       </Routes>
       <Tabs />

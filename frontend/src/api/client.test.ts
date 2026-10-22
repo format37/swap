@@ -9,6 +9,7 @@ const me = {
   username: 'format37',
   locale: 'ru',
   locale_chosen: false,
+  telegram_locale: 'ru',
 }
 
 function json(status: number, body: unknown, type = 'application/json') {

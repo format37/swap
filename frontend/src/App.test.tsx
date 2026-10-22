@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import type { Me } from './api/client'
@@ -24,6 +24,7 @@ const me: Me = {
   score: 0,
   locale: 'ru',
   locale_chosen: false,
+  telegram_locale: 'ru',
   tz: 'Asia/Tbilisi',
   notifications_off: false,
   muted_kinds: [],
@@ -88,4 +89,18 @@ it('asks for the agreement before anything else, once (Q-B15, K3)', async () => 
   await waitFor(() => {
     expect(served).toContain('POST /api/v1/me/terms')
   })
+})
+
+it('opens the settings from a tab of their own (QUESTIONS L5)', async () => {
+  fakeApi({
+    'GET /api/v1/me': () => json(200, me),
+    'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
+    'GET /api/v1/orders': () => json(200, []),
+    'GET /api/v1/deals': () => json(200, []),
+  })
+  render(<App launch={{ initDataRaw: 'query_id=x', languageCode: 'ru', startParam: undefined }} />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Настройки' }))
+  expect(await screen.findByRole('heading', { name: 'Alex' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Настройки' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('button', { name: /Язык.*Как в Telegram/ })).toBeInTheDocument()
 })
