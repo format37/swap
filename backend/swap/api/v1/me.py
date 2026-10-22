@@ -2,6 +2,7 @@
 
 import uuid
 import zoneinfo
+from datetime import UTC, datetime
 from typing import Self
 
 from fastapi import APIRouter, Response
@@ -14,6 +15,10 @@ from swap.i18n import Locale, resolve_locale
 from swap.models import NotificationKind, User
 
 router = APIRouter(tags=["me"], responses={401: {"model": Problem}})
+
+# The agreement's version (Q-B15, QUESTIONS K3). A new text bumps it, and everyone accepts
+# it again at their next launch.
+TERMS_VERSION = 1
 
 
 class Me(BaseModel):
@@ -33,6 +38,8 @@ class Me(BaseModel):
     # What they switched off: everything, or kinds of messages (QUESTIONS K1).
     notifications_off: bool
     muted_kinds: list[NotificationKind]
+    # Whether they accepted the agreement as it stands; until then the app shows it.
+    terms_accepted: bool
 
     @classmethod
     def of(cls, user: User) -> Self:
@@ -48,6 +55,7 @@ class Me(BaseModel):
             tz=user.tz,
             notifications_off=user.notifications_off,
             muted_kinds=[NotificationKind(kind) for kind in user.muted_kinds],
+            terms_accepted=(user.terms_version or 0) >= TERMS_VERSION,
         )
 
 
@@ -113,3 +121,12 @@ async def delete_me(user: CurrentUser, db: Db) -> Response:
     await accounts.delete_account(db, user)
     await db.commit()
     return Response(status_code=204)
+
+
+@router.post("/me/terms")
+async def accept_terms(user: CurrentUser, db: Db) -> Me:
+    """«Принимаю»: the agreement as it stands now (Q-B15, QUESTIONS K3)."""
+    user.terms_version = TERMS_VERSION
+    user.terms_accepted_at = datetime.now(UTC)
+    await db.commit()
+    return Me.of(user)

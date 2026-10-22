@@ -474,6 +474,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Terms
+         * @description «Принимаю»: the agreement as it stands now (Q-B15, QUESTIONS K3).
+         */
+        post: operations["accept_terms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/network": {
         parameters: {
             query?: never;
@@ -949,6 +969,8 @@ export interface components {
             photo_url: string | null;
             /** Score */
             score: number;
+            /** Terms Accepted */
+            terms_accepted: boolean;
             /** Tz */
             tz: string | null;
             /** Username */
@@ -2968,6 +2990,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoryDeleted"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    accept_terms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
                 };
             };
             /** @description Unauthorized */
