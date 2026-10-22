@@ -476,6 +476,35 @@ async def delete(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> None:
     await delete_for_proposer(db, deal)
 
 
+async def delete_order(db: AsyncSession, actor: uuid.UUID, order_id: uuid.UUID) -> None:
+    """«Удалить у себя» on an order's card, for oneself alone (QUESTIONS J3, L4). Its author
+    deletes it with all its deals (`orders.delete`). Whoever proposed on it deletes all
+    their own deals on it at once, once every one of them is over (ADR-0030).
+    """
+    author = await db.scalar(select(Order.author_id).where(Order.id == order_id))
+    if author == actor:
+        await orders.delete(db, actor, order_id)
+        return
+    mine = list(
+        await db.scalars(
+            select(Deal)
+            .where(
+                Deal.order_id == order_id,
+                Deal.proposer_id == actor,
+                Deal.proposer_deleted_at.is_(None),
+            )
+            .with_for_update()
+        )
+    )
+    if not mine:
+        # The same answer whether it doesn't exist or holds nothing of theirs.
+        raise _refuse("order.not_found", 404)
+    if any(deal.status not in TERMINAL for deal in mine):
+        raise _refuse("deal.running")
+    for deal in mine:
+        await delete_for_proposer(db, deal)
+
+
 async def delete_for_proposer(db: AsyncSession, deal: Deal) -> None:
     """Mark a finished deal deleted by its proposer, and erase it if its author has deleted
     the order already (ADR-0030). The caller has checked it may."""

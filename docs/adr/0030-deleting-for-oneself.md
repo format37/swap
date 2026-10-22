@@ -1,6 +1,6 @@
 # 0030. Each side deletes for themselves, and the server erases what all have deleted
 
-Status: Accepted · Date: 2026-10-22 · Spec: §3, §5, §7 «Приватность», «Целостность»; QUESTIONS J3; amends ADR-0002 and ADR-0019
+Status: Accepted · Date: 2026-10-22 · Spec: §3, §5, §7 «Приватность», «Целостность»; QUESTIONS J3, L4; amends ADR-0002 and ADR-0019
 
 ## Context
 
@@ -21,6 +21,11 @@ There is no restore. The server erases a row once everyone it belongs to has del
   order is still open. A deal still running answers 409 `deal.running`, and the author
   asking to delete one deal answers 409 `deal.delete_with_order`. The app offers it on a
   finished deal's card as «Удалить у себя».
+- **A participant, all at once** (L4): `DELETE /orders/{id}` from someone who isn't its
+  author deletes all their own deals on it, each as above, once every one of them is
+  over. One still running answers 409 `deal.running`, and someone with no deal on it gets
+  404. The app offers it on the order's card as «Удалить у себя», and the order then
+  leaves their history.
 - **The author** deletes the whole order with all its deals, once the order is no longer
   open and none of its deals runs. Otherwise the answer is 409 `order.open` or
   `order.deals_running`. The order card offers it only then.
