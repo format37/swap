@@ -216,6 +216,38 @@ describe('Home', () => {
     ).toHaveTextContent('150 000₽RUB')
   })
 
+  it('says what each wanted currency comes to, on its own line (N1)', async () => {
+    fakeApi({
+      'GET /api/v1/links': () => json(200, { active: [], incoming: [], outgoing: [], invites: [] }),
+      'GET /api/v1/orders': (request) => {
+        if (new URL(request.url).searchParams.get('scope') !== 'visible') return json(200, [])
+        const wanted = (currency: string, rate_spec: RateSpec, amount: string | null) => ({
+          currency,
+          country: 'GE',
+          rate_spec,
+          receive_methods: ['bank' as const],
+          amount,
+        })
+        return json(200, [
+          order({
+            wants: [
+              wanted('GEL', fixed('GEL', 'RUB', '29.20'), '5136.99'),
+              wanted('USD', MARKET, '1842.98'),
+              // The market has no rate for it now: the currency alone.
+              wanted('KZT', MARKET, null),
+            ],
+          }),
+        ])
+      },
+      'GET /api/v1/deals': () => json(200, []),
+    })
+    renderScreen(<Home me={me} />)
+    const open = (await screen.findByRole('heading', { name: 'Открытые мне' })).parentElement
+    // The api's amounts, «≈» at the market's rate.
+    expect(open).toHaveTextContent('150 000₽RUB5 136,99₾GEL≈1 842,98$USD')
+    expect(open).toHaveTextContent(/\$USD\D*KZT№ 17 · Alex/)
+  })
+
   it('narrows the orders open to me to so many handshakes, folded until asked (J2)', async () => {
     const asked: (string | null)[] = []
     fakeApi({

@@ -49,8 +49,10 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
 - [ ] A phone check of PRs 1.31–1.35: the «Настройки» tab and «Как в Telegram»,
       «Удалить у себя» on an order you only dealt on, «Как получать» on each currency,
       typing «Получите», and whether Ira's photo now shows in the rings (L3).
-- [ ] A phone check of PRs 1.36–1.38, in English: «You get» with two currencies, going
-      Home after «Удалить у себя», and «You'd give» on someone else's order.
+- [x] A phone check of PRs 1.36–1.38, in English: «You get» with two currencies, going
+      Home after «Удалить у себя», and «You'd give» on someone else's order. «Все
+      исправлено», 2026-10-23.
+- [ ] A look at the order lists' amounts (PR 1.39).
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -320,6 +322,13 @@ in, and typing USD moves GEL.
 **PR 1.38 — What the other side gives, on the order's card** (M3)
 - [x] Someone else's open order shows, per wanted currency, «Вы отдадите от … до …».
 
+**The owner's requests of 2026-10-23.** QUESTIONS part N.
+
+**PR 1.39 — Amounts in the order lists** (N1)
+- [x] `GET /orders` says, for each wanted currency, what the order's amount comes to in it.
+- [x] A row puts what is given on the left, and each wanted currency with its amount on
+      the right, a line each.
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -388,8 +397,9 @@ Phase 1, PR by PR:
 | 1.36 | M2 · amounts in any language's way | 0.25 |
 | 1.37 | M1 · after deleting, Home | 0.25 |
 | 1.38 | M3 · what the other side gives, on the card | 0.5 |
+| 1.39 | N1 · amounts in the order lists | 0.25 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 26** |
+| | **Total** | **≈ 26.25** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and

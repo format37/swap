@@ -7,12 +7,14 @@ import { Asset, Money } from '../money/Asset'
 import { Avatar } from '../ui/Avatar'
 import { orderDates } from './words'
 
-/** One order in a feed: what remains → what is wanted, and who and when. */
+/**
+ * One order in a feed (QUESTIONS N1): what is given, on the left, then each wanted currency
+ * with what that comes to in it, on the right; then its number, whose it is and when.
+ */
 export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }) {
   const i18n = useI18n()
   const { t, locale } = i18n
   const name = fullName(order.author)
-  const wanted = [...new Set(order.wants.map((want) => want.currency))]
   const status = t(`order.status.${order.status}`)
   // Someone else's order says whose it is, and how it ended once it has (QUESTIONS H4).
   const second = order.mine ? status : order.status === 'open' ? name : `${name} · ${status}`
@@ -24,7 +26,7 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
     >
       {!order.mine && <Avatar name={name} photo={order.author.photo_url} size="sm" />}
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        <span className="flex flex-wrap items-center gap-x-1.5">
           {/* What remains while it is open; once over, what it was for: «0 RUB» says nothing. */}
           <Money
             locale={locale}
@@ -32,10 +34,20 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
             code={order.give_currency}
           />
           <ArrowRight aria-hidden className="size-4 text-hint" />
-          {wanted.map((code) => (
-            <Asset key={code} code={code} />
-          ))}
         </span>
+        {/* The api works each amount out; «≈» while the market sets the rate (G2). */}
+        {order.wants.map((want) => (
+          <span key={want.currency} className="flex items-center justify-end gap-1">
+            {want.amount ? (
+              <>
+                {want.rate_spec.type === 'reference' && <span className="text-hint">≈</span>}
+                <Money locale={locale} amount={want.amount} code={want.currency} />
+              </>
+            ) : (
+              <Asset code={want.currency} />
+            )}
+          </span>
+        ))}
         <span className="block truncate text-sm text-hint">
           {t('order.number', { n: order.number })} · {second} · {orderDates(i18n, order)}
         </span>

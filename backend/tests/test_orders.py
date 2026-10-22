@@ -395,9 +395,10 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
     assert order["amount_min"] == "10000.00"
     assert order["note"] == "карта Сбер или СБП"
     assert order["payout_methods"] == ["bank", "crypto"]
+    # What each comes to is said in lists (QUESTIONS N1).
     assert order["wants"] == [
-        want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
-        want("USD", "GE", fixed("USD", "RUB", "81.50"), ways=("bank",)),
+        {**want("GEL", "GE", fixed("GEL", "RUB", "29.20")), "amount": None},
+        {**want("USD", "GE", fixed("USD", "RUB", "81.50"), ways=("bank",)), "amount": None},
     ]
     # «Мои связи и их связи» unless the author says otherwise (QUESTIONS J2).
     assert order["visibility"] == {"reach": 2, "people": []}
@@ -682,6 +683,28 @@ async def test_an_order_follows_the_market_unless_its_rate_is_fixed(
         "/api/v1/quote", json={**body, "amount": "100.00", "side": "want"}, headers=nino
     )
     assert wanted.json()["amount"] == "3139.00"
+
+
+async def test_a_list_says_what_each_wanted_currency_comes_to(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    alex = await person(client, ALEX)
+    nino = await person(client, NINO)
+    await linked(client, sessionmaker, alex, NINO)
+    wants = [
+        want("GEL", "GE", fixed("GEL", "RUB", "29.20")),
+        want("USD", "GE"),
+        # Not in the recorded table, as when Coinbase has been away for a day.
+        want("KZT", "KZ"),
+    ]
+    order = await publish(client, alex, wants=wants)
+    # All that remains, at the author's rate, at the market's of the moment, or nothing
+    # when the market has no rate (QUESTIONS N1).
+    [listed] = (await client.get("/api/v1/orders", headers=nino)).json()
+    assert [w["amount"] for w in listed["wants"]] == ["5136.99", "1842.98", None]
+    # The card asks for its own amounts (QUESTIONS M3).
+    card = (await client.get(f"/api/v1/orders/{order['id']}", headers=nino)).json()
+    assert [w["amount"] for w in card["wants"]] == [None, None, None]
 
 
 @pytest.mark.parametrize(
