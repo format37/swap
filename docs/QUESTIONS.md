@@ -1158,7 +1158,9 @@ Deleting refreshed the order's own card before the card could leave, so it turne
 
 A bug in PR 1.34, in English only. The sum worked out from a typed «You get» was written
 the English way, «2,920», and read back with the comma as a decimal point: 2.920, which
-is no amount. The other currencies then had no sum to follow, and emptied. The same
+is no amount. The other currencies then had no sum to follow, and emptied, and the step
+refused to go on: the owner's screenshot shows «15,795» for 500 GEL above «Enter an
+amount, such as 150000 or 1712.50». The same
 misreading refused the proposal's prefilled «150,000». Amount fields now read every
 language's way of writing a number. → PR 1.36, ADR-0040.
 

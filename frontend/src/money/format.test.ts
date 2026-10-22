@@ -28,6 +28,8 @@ it.each([
   ['007', '7'],
   // English groups with commas, and its decimals follow a point (QUESTIONS M2).
   ['150,000', '150000'],
+  // The sum the owner's English wizard wrote for 500 GEL, and then refused (M2).
+  ['15,795', '15795'],
   ['1,712.33', '1712.33'],
   ['9,999,999.5', '9999999.5'],
   [`1${NBSP}712,33`, '1712.33'],
