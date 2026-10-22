@@ -8,6 +8,7 @@ export type OrderDraft = components['schemas']['OrderDraft']
 export type PaymentKind = components['schemas']['PaymentKind']
 export type FixedRate = components['schemas']['FixedRate']
 export type QuoteRequest = components['schemas']['QuoteRequest']
+export type MarketQuote = components['schemas']['MarketQuote']
 
 const ORDERS = ['orders'] as const
 
@@ -55,6 +56,20 @@ export function useAssets() {
     queryKey: ['assets'],
     queryFn: () => unwrap(api.GET('/api/v1/assets')),
     staleTime: Infinity,
+  })
+}
+
+/**
+ * The market's rate for 1 `base` in `quote`, to fill the wizard in with (ADR-0020). The
+ * api keeps Coinbase's answer for ten minutes; without one, the author types the rate.
+ */
+export function useMarketRate(base: string, quote: string) {
+  return useQuery({
+    queryKey: ['market', base, quote],
+    queryFn: () => unwrap(api.GET('/api/v1/rates/market', { params: { query: { base, quote } } })),
+    enabled: Boolean(base && quote && base !== quote),
+    staleTime: 5 * 60_000,
+    retry: false,
   })
 }
 

@@ -115,6 +115,8 @@ export const ru = {
   'wizard.add_want': 'Ещё валюта',
   'wizard.remove_want': 'Убрать валюту',
   'wizard.flip': 'Поменять направление курса',
+  'wizard.market': 'Курс Coinbase, {time}: {rate}',
+  'wizard.market_source': 'Курс Coinbase, {time}',
   'wizard.preview': 'Отдав {give}, получите ≈ {want}',
   'wizard.who.title': 'Кому видно',
   'wizard.who.all': 'Всем моим связям',

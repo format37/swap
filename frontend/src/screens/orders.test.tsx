@@ -271,6 +271,65 @@ describe('the wizard', () => {
   })
 })
 
+describe('the wizard’s rate', () => {
+  it('is the market’s until the author types one, and can be had back', async () => {
+    const at = new Date()
+    at.setHours(10, 30, 0, 0)
+    fakeApi({
+      'GET /api/v1/assets': () => json(200, ['RUB', 'GEL']),
+      'GET /api/v1/rates/market': (request) => {
+        const query = new URL(request.url).searchParams
+        const base = query.get('base')
+        return json(200, {
+          base,
+          quote: query.get('quote'),
+          value: base === 'GEL' ? '31.39' : '0.03185',
+          source: 'coinbase',
+          fetched_at: at.toISOString(),
+        })
+      },
+      'POST /api/v1/quote': () => json(200, { amount: '4778.59' }),
+    })
+    renderScreen(<NewOrder />, { route: '/orders/new' })
+    await screen.findByRole('option', { name: '₽ RUB' })
+    fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
+      target: { value: 'RUB' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: /^Всего/ }), {
+      target: { value: '150000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Карта' }))
+    press()
+    await screen.findByText('Шаг 2 из 3')
+    fireEvent.change(screen.getByRole('combobox', { name: /^Валюта/ }), {
+      target: { value: 'GEL' },
+    })
+
+    // Filled in at once, with where it comes from and when (F5, §11).
+    const rate = screen.getByRole('textbox', { name: 'Курс' })
+    await waitFor(() => {
+      expect(rate).toHaveValue('31,39')
+    })
+    // Only where it comes from and when, while the rate is the market's own.
+    expect(screen.getByText(/Курс Coinbase/)).toHaveTextContent(/^Курс Coinbase, 10:30$/)
+    // The other way round, it is the market's again.
+    fireEvent.click(screen.getByRole('button', { name: 'Поменять направление курса' }))
+    await waitFor(() => {
+      expect(rate).toHaveValue('0,03185')
+    })
+    // What the author types stays, even emptied, until they ask for the market's back.
+    fireEvent.change(rate, { target: { value: '' } })
+    expect(rate).toHaveValue('')
+    fireEvent.change(rate, { target: { value: '0,032' } })
+    expect(rate).toHaveValue('0,032')
+    expect(screen.getByText(/Курс Coinbase/)).toHaveTextContent(
+      'Курс Coinbase, 10:30: 1 ₽RUB = 0,03185 ₾GEL',
+    )
+    fireEvent.click(screen.getByText(/Курс Coinbase/))
+    expect(rate).toHaveValue('0,03185')
+  })
+})
+
 describe('the order card', () => {
   const route = `/orders/${ORDER_ID}`
   const path = '/orders/:id'

@@ -23,6 +23,16 @@ function toDate(iso: string): Date {
   return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(iso)
 }
 
+/** «14:05» today, «21.10, 14:05» on another day: when a rate was taken (§11). */
+export function formatTime(locale: Locale, iso: string, now: Date = new Date()): string {
+  const at = new Date(iso)
+  const options: Intl.DateTimeFormatOptions =
+    at.toDateString() === now.toDateString()
+      ? { hour: '2-digit', minute: '2-digit' }
+      : { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }
+  return new Intl.DateTimeFormat(INTL_LOCALES[locale], options).format(at)
+}
+
 /** «25 окт. – 8 нояб.», «25.10 – 08.11». */
 export function formatDates(locale: Locale, from: string, until: string): string {
   return `${formatDate(locale, from)} – ${formatDate(locale, until)}`

@@ -36,6 +36,10 @@ it('starts today, with no last day, and offers two weeks if asked for one', () =
   expect(addDays('2026-12-25', 10)).toBe('2027-01-04')
 })
 
+it('leaves a new rate to the market until the author types one (F5)', () => {
+  expect(newWant('RUB', 'GEL')).toMatchObject({ rate: '', typed: false })
+})
+
 it('reads a rate as «1 strong = so many weak», whichever is given', () => {
   expect(newWant('RUB', 'GEL').flipped).toBe(false) // 1 GEL = … RUB
   expect(newWant('GEL', 'RUB').flipped).toBe(true) // 1 GEL = … RUB

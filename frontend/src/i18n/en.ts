@@ -115,6 +115,8 @@ export const en: Messages = {
   'wizard.add_want': 'Another currency',
   'wizard.remove_want': 'Remove currency',
   'wizard.flip': 'Flip the rate',
+  'wizard.market': 'Coinbase rate, {time}: {rate}',
+  'wizard.market_source': 'Coinbase rate, {time}',
   'wizard.preview': 'Give {give}, get ≈ {want}',
   'wizard.who.title': 'Who sees it',
   'wizard.who.all': 'All my links',

@@ -1,10 +1,11 @@
 import { ArrowLeftRight, Plus, X } from 'lucide-react'
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 import { fullName, useLinks } from '../api/links'
 import {
   useAssets,
+  useMarketRate,
   usePublishOrder,
   useQuote,
   type PaymentKind,
@@ -13,11 +14,12 @@ import {
 import { useBackOverride } from '../back'
 import { sortedCountries } from '../i18n/countries'
 import { errorMessage } from '../i18n/errors'
+import { formatTime } from '../i18n/format'
 import type { MessageKey } from '../i18n/ru'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { assetText, look } from '../money/looks'
-import { parseAmount, parseRate } from '../money/format'
+import { formatRate, parseAmount, parseRate } from '../money/format'
 import { KINDS } from '../money/kinds'
 import {
   emptyForm,
@@ -272,9 +274,10 @@ function GiveStep({ form, today, change }: StepProps & { today: string }) {
             change({
               giveCurrency: code,
               giveCountry: look(code).home ?? form.giveCountry,
-              // An untouched rate turns to read the right way round for the new currency.
+              // A rate the author hasn't typed turns to read the right way round for the
+              // new currency, and the market's rate for the new pair fills it in again.
               wants: form.wants.map((want) =>
-                want.rate ? want : { ...newWant(code, want.currency, want.country) },
+                want.typed ? want : newWant(code, want.currency, want.country),
               ),
             })
           }}
@@ -377,7 +380,7 @@ function WantStep({ form, change }: StepProps) {
             value={want.currency}
             onChange={(code) => {
               const fresh = newWant(form.giveCurrency, code, look(code).home ?? want.country)
-              update(index, want.rate ? { currency: code, country: fresh.country } : fresh)
+              update(index, want.typed ? { currency: code, country: fresh.country } : fresh)
             }}
           />
           <CountrySelect
@@ -432,7 +435,10 @@ function WantStep({ form, change }: StepProps) {
   )
 }
 
-/** «1 GEL = [29,20] RUB ⇄», typed the way the author thinks (ADR-0004). */
+/**
+ * «1 GEL = [29,20] RUB ⇄», typed the way the author thinks (ADR-0004). Until they type,
+ * it holds the market's rate for the pair, with its source and time beneath (F5).
+ */
 function RateRow({
   give,
   want,
@@ -442,40 +448,70 @@ function RateRow({
   want: WantForm
   onChange: (changes: Partial<WantForm>) => void
 }) {
-  const { t } = useI18n()
+  const { t, tn, locale } = useI18n()
   const [base, quote] = want.flipped ? [give, want.currency] : [want.currency, give]
+  const market = useMarketRate(base, quote).data
+  const suggested = market && formatRate(locale, market.value)
+  useEffect(() => {
+    if (suggested && !want.typed && !want.rate) onChange({ rate: suggested })
+  }, [suggested, want.typed, want.rate, onChange])
   const label = (code: string): ReactNode => (code ? <Asset code={code} /> : '…')
+  // One child of the section, so no line parts the rate from where it came from.
   return (
-    <div className="flex min-h-12 items-center gap-2 px-4 py-2">
-      <span className="shrink-0">{t('order.rate')}</span>
-      <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 whitespace-nowrap">
-        <span>1</span>
-        {label(base)}
-        <span>=</span>
-        <input
-          className={`${CONTROL} w-20`}
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="0"
-          aria-label={t('order.rate')}
-          value={want.rate}
-          onChange={(event) => {
-            onChange({ rate: event.target.value })
+    <div>
+      <div className="flex min-h-12 items-center gap-2 px-4 py-2">
+        <span className="shrink-0">{t('order.rate')}</span>
+        <span className="flex min-w-0 flex-1 items-center justify-end gap-1.5 whitespace-nowrap">
+          <span>1</span>
+          {label(base)}
+          <span>=</span>
+          <input
+            className={`${CONTROL} w-20`}
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0"
+            aria-label={t('order.rate')}
+            value={want.rate}
+            onChange={(event) => {
+              onChange({ rate: event.target.value, typed: true })
+            }}
+          />
+          {label(quote)}
+        </span>
+        <button
+          type="button"
+          aria-label={t('wizard.flip')}
+          onClick={() => {
+            hapticSelect()
+            onChange({ flipped: !want.flipped, rate: '', typed: false })
           }}
-        />
-        {label(quote)}
-      </span>
-      <button
-        type="button"
-        aria-label={t('wizard.flip')}
-        onClick={() => {
-          hapticSelect()
-          onChange({ flipped: !want.flipped, rate: '' })
-        }}
-        className="flex size-9 shrink-0 items-center justify-center rounded-full text-accent active:bg-secondary-bg"
-      >
-        <ArrowLeftRight aria-hidden className="size-5" />
-      </button>
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-accent active:bg-secondary-bg"
+        >
+          <ArrowLeftRight aria-hidden className="size-5" />
+        </button>
+      </div>
+      {market && suggested && (
+        // The market's rate itself only once the author's differs; tapping puts it back.
+        <button
+          type="button"
+          onClick={() => {
+            hapticSelect()
+            onChange({ rate: suggested, typed: false })
+          }}
+          className="flex w-full flex-wrap items-center gap-1 px-4 pb-2 text-left text-sm text-hint active:opacity-70"
+        >
+          {want.rate === suggested
+            ? t('wizard.market_source', { time: formatTime(locale, market.fetched_at) })
+            : tn('wizard.market', {
+                time: formatTime(locale, market.fetched_at),
+                rate: (
+                  <>
+                    1 <Asset code={base} /> = {suggested} <Asset code={quote} />
+                  </>
+                ),
+              })}
+        </button>
+      )}
     </div>
   )
 }
