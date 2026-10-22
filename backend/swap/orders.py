@@ -26,7 +26,16 @@ from swap.erasure import erase_deal, erase_order_if_bare
 from swap.errors import DomainError
 from swap.journal import TERMINAL
 from swap.links import linked_ids
-from swap.models import Deal, Order, OrderStatus, OrderVisibility, OrderWant, PaymentKind, User
+from swap.models import (
+    Deal,
+    Mute,
+    Order,
+    OrderStatus,
+    OrderVisibility,
+    OrderWant,
+    PaymentKind,
+    User,
+)
 from swap.money import Asset, Country, Money, MoneyOrZero
 from swap.network import FAR, distances
 from swap.notifications import notify
@@ -209,9 +218,13 @@ async def create(
     )
     db.add(order)
     audience = set(draft.visible_to or []) if draft.reach == 0 else links
+    # Whoever muted the author still sees the order, but hears nothing of it (FR-7.2).
+    muting = set(await db.scalars(select(Mute.user_id).where(Mute.muted_id == author.id)))
     for viewer in audience:
         if draft.reach == 0:
             db.add(OrderVisibility(order_id=order.id, user_id=viewer))
+        if viewer in muting:
+            continue
         notify(
             db,
             viewer,

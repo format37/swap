@@ -24,6 +24,7 @@ from swap.db import Sessionmaker
 from swap.i18n import format_amount, resolve_locale, t
 from swap.logs import Redactor
 from swap.models import Notification, NotificationStatus, User
+from swap.notifications import KIND_OF
 
 log = structlog.get_logger("swap.outbox")
 
@@ -75,6 +76,11 @@ async def _send(
     """Try one message and record what happened. False means Telegram asked us to slow down."""
     if not recipient.can_message or recipient.telegram_id is None:
         note.tg_status = NotificationStatus.SKIPPED
+        return True
+    # What the recipient switched off in the settings goes unsent (QUESTIONS K1).
+    if recipient.notifications_off or KIND_OF.get(note.type) in recipient.muted_kinds:
+        note.tg_status = NotificationStatus.SKIPPED
+        note.last_error = "switched off"
         return True
     locale = resolve_locale(recipient.locale, recipient.language_code)
     try:

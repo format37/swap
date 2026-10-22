@@ -19,6 +19,8 @@ const me: Me = {
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',
+  notifications_off: false,
+  muted_kinds: [],
 }
 
 function quietApi() {

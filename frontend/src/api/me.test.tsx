@@ -16,6 +16,8 @@ const me: Me = {
   locale: 'ru',
   locale_chosen: false,
   tz: null,
+  notifications_off: false,
+  muted_kinds: [],
 }
 
 function Probe({ who }: { who: Me }) {

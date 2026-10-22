@@ -18,6 +18,7 @@ import { Language } from './screens/Language'
 import { LinkScreen } from './screens/LinkScreen'
 import { Links } from './screens/Links'
 import { NewOrder } from './screens/NewOrder'
+import { Notifications } from './screens/Notifications'
 import { OrderCard } from './screens/OrderCard'
 import { ProposeDeal } from './screens/ProposeDeal'
 import { Profile } from './screens/Profile'
@@ -97,6 +98,7 @@ function Screens({ me, startParam }: { me: Me; startParam: string | undefined })
         <Route path="/deals/:id" element={<DealCard me={me} />} />
         <Route path="/profile" element={<Profile me={me} />} />
         <Route path="/language" element={<Language />} />
+        <Route path="/settings/notifications" element={<Notifications me={me} />} />
       </Routes>
       <Tabs />
     </MemoryRouter>

@@ -96,6 +96,8 @@ const me: Me = {
   locale: 'ru',
   locale_chosen: false,
   tz: 'Asia/Tbilisi',
+  notifications_off: false,
+  muted_kinds: [],
 }
 
 // One link, two people two handshakes away, none three away, and five farther.

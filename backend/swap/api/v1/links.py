@@ -45,6 +45,8 @@ class Link(BaseModel):
 class LinkDetail(Link):
     # How many people are linked to both; never who (§3).
     mutual_links: int
+    # Whether the signed-in user hears nothing of this person's new orders (FR-7.2).
+    muted: bool
 
 
 class Invite(BaseModel):
@@ -122,7 +124,26 @@ async def revoke_invite(invite_id: uuid.UUID, user: CurrentUser, db: Db) -> None
 @router.get("/{link_id}", responses={404: {"model": Problem}})
 async def get_link(link_id: uuid.UUID, user: CurrentUser, db: Db) -> LinkDetail:
     item, mutual = await links.view(db, user.id, link_id)
-    return LinkDetail(**Link.of(item.link, item.person).model_dump(), mutual_links=mutual)
+    return LinkDetail(
+        **Link.of(item.link, item.person).model_dump(),
+        mutual_links=mutual,
+        muted=await links.muted(db, user.id, item.person.id),
+    )
+
+
+@router.put("/{link_id}/mute", responses={404: {"model": Problem}})
+async def mute_link(link_id: uuid.UUID, user: CurrentUser, db: Db) -> LinkDetail:
+    """Hear nothing of this person's new orders; they still show in the feed (FR-7.2)."""
+    await links.set_muted(db, user.id, link_id, on=True)
+    await db.commit()
+    return await get_link(link_id, user, db)
+
+
+@router.delete("/{link_id}/mute", responses={404: {"model": Problem}})
+async def unmute_link(link_id: uuid.UUID, user: CurrentUser, db: Db) -> LinkDetail:
+    await links.set_muted(db, user.id, link_id, on=False)
+    await db.commit()
+    return await get_link(link_id, user, db)
 
 
 async def _answered(db: Db, link: LinkRow, me: uuid.UUID) -> Link:

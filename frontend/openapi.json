@@ -546,6 +546,10 @@
             "title": "Id",
             "type": "string"
           },
+          "muted": {
+            "title": "Muted",
+            "type": "boolean"
+          },
           "mutual_links": {
             "title": "Mutual Links",
             "type": "integer"
@@ -569,7 +573,8 @@
           "direction",
           "requested_at",
           "accepted_at",
-          "mutual_links"
+          "mutual_links",
+          "muted"
         ],
         "title": "LinkDetail",
         "type": "object"
@@ -713,6 +718,17 @@
             "title": "Locale Chosen",
             "type": "boolean"
           },
+          "muted_kinds": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationKind"
+            },
+            "title": "Muted Kinds",
+            "type": "array"
+          },
+          "notifications_off": {
+            "title": "Notifications Off",
+            "type": "boolean"
+          },
           "photo_url": {
             "anyOf": [
               {
@@ -760,7 +776,9 @@
           "score",
           "locale",
           "locale_chosen",
-          "tz"
+          "tz",
+          "notifications_off",
+          "muted_kinds"
         ],
         "title": "Me",
         "type": "object"
@@ -777,6 +795,32 @@
                 "type": "null"
               }
             ]
+          },
+          "muted_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/NotificationKind"
+                },
+                "maxItems": 5,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Muted Kinds"
+          },
+          "notifications_off": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notifications Off"
           },
           "tz": {
             "anyOf": [
@@ -844,6 +888,18 @@
         ],
         "title": "NewInvite",
         "type": "object"
+      },
+      "NotificationKind": {
+        "description": "The kinds of messages a person can switch off one by one (QUESTIONS K1).",
+        "enum": [
+          "orders",
+          "links",
+          "proposals",
+          "transfers",
+          "cancellations"
+        ],
+        "title": "NotificationKind",
+        "type": "string"
       },
       "Order": {
         "properties": {
@@ -3608,6 +3664,141 @@
           }
         ],
         "summary": "Decline Link",
+        "tags": [
+          "links"
+        ]
+      }
+    },
+    "/api/v1/links/{link_id}/mute": {
+      "delete": {
+        "operationId": "unmute_link",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Link Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unmute Link",
+        "tags": [
+          "links"
+        ]
+      },
+      "put": {
+        "description": "Hear nothing of this person's new orders; they still show in the feed (FR-7.2).",
+        "operationId": "mute_link",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Link Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mute Link",
         "tags": [
           "links"
         ]

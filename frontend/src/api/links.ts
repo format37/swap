@@ -63,6 +63,24 @@ export function useRequestLink() {
   )
 }
 
+/** Hears nothing more of this person's new orders, or hears them again (FR-7.2, K1). */
+export function useMuteLink(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (muted: boolean) => {
+      const options = { params: { path: { link_id: id } } }
+      return unwrap(
+        muted
+          ? api.PUT('/api/v1/links/{link_id}/mute', options)
+          : api.DELETE('/api/v1/links/{link_id}/mute', options),
+      )
+    },
+    onSuccess: (link: LinkDetail) => {
+      queryClient.setQueryData([...LINKS, id], link)
+    },
+  })
+}
+
 /** Breaks an active link, or withdraws one's own request. */
 export function useRemoveLink() {
   return useLinksMutation((id: string) =>
