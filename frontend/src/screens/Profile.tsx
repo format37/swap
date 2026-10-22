@@ -64,6 +64,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
         <Cell
           icon={<ShieldCheck aria-hidden className="size-6" />}
           label={t('settings.privacy')}
+          wrap
           opens
           onClick={() => {
             openPage(privacyUrl())
@@ -74,6 +75,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
           icon={<Mail aria-hidden className="size-6" />}
           label={t('settings.contact')}
           subtitle={DEVELOPER_EMAIL}
+          wrap
           detail={copied ? t('settings.copied') : t('invite.copy_short')}
           onClick={() => {
             void copyText(DEVELOPER_EMAIL).then((done) => {
@@ -93,6 +95,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
           icon={<FileSpreadsheet aria-hidden className="size-6" />}
           label={t('settings.export')}
           subtitle={exported.isSuccess ? t('settings.export_sent') : t('settings.export_hint')}
+          wrap
           disabled={exported.isPending}
           onClick={() => {
             exported.mutate(undefined, {
@@ -105,6 +108,8 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
             })
           }}
         />
+      </Section>
+      <div className="mx-4 flex flex-col gap-2">
         <Button
           tone="destructive"
           icon={<Eraser aria-hidden className="size-5" />}
@@ -150,7 +155,7 @@ export function Profile({ me, onGone }: { me: Me; onGone?: () => void }) {
         >
           {t('settings.delete_account')}
         </Button>
-      </Section>
+      </div>
       {history.data && (
         <p className="px-6 text-sm text-hint">{t('settings.history_deleted', history.data)}</p>
       )}
