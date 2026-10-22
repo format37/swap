@@ -32,10 +32,14 @@ from swap.users import person_label
 
 
 class Want(BaseModel):
+    """A currency the author would take, where, and at what rate (ADR-0026)."""
+
     model_config = ConfigDict(extra="forbid")
 
     currency: Asset
     country: Country
+    # Fixed by the author, or the market's until a proposal locks it (QUESTIONS G2, J1).
+    rate_spec: RateSpec
 
 
 class OrderDraft(BaseModel):
@@ -56,8 +60,6 @@ class OrderDraft(BaseModel):
     # How the author can be paid, whichever currency they get (QUESTIONS F2).
     receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
     wants: list[Want] = Field(min_length=1, max_length=8)
-    # Fixed by the author, or the market's until a proposal locks it (QUESTIONS G2).
-    rate_spec: RateSpec
     # None: all active links, now and later. Otherwise only these, who must be links now.
     visible_to: list[uuid.UUID] | None = Field(default=None, max_length=200)
     note: str | None = Field(default=None, max_length=500)
@@ -113,17 +115,16 @@ def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
         raise DomainError(422, "order.unknown_currency")
     if draft.give_currency in wanted:
         raise DomainError(422, "order.wants_own_currency")
-    if len({(want.currency, want.country) for want in draft.wants}) != len(draft.wants):
+    # Once each: a proposal names the currency it wants, and that names one rate (ADR-0026).
+    if len(set(wanted)) != len(wanted):
         raise DomainError(422, "order.wants_repeated")
-    # One rate for each wanted currency, and none for anything else (ADR-0004). The
+    # A fixed rate is one quote, between the given currency and this one (ADR-0004). The
     # market has a rate for every asset (ADR-0020).
-    if isinstance(draft.rate_spec, FixedRate):
-        for currency in set(wanted):
-            draft.rate_spec.quote_for(draft.give_currency, currency)
-        pairs = {frozenset((draft.give_currency, currency)) for currency in wanted}
-        quoted = [frozenset((quote.base, quote.quote)) for quote in draft.rate_spec.quotes]
-        if len(quoted) != len(set(quoted)) or not set(quoted) <= pairs:
-            raise DomainError(422, "rate.unused")
+    for want in draft.wants:
+        if isinstance(want.rate_spec, FixedRate):
+            want.rate_spec.quote_for(draft.give_currency, want.currency)
+            if len(want.rate_spec.quotes) != 1:
+                raise DomainError(422, "rate.unused")
     if draft.amount_min > draft.amount_max:
         raise DomainError(422, "order.amount_range")
     if draft.available_until is not None:
@@ -160,10 +161,14 @@ async def create(
         payout_methods=list(dict.fromkeys(draft.payout_methods)),
         receive_methods=list(dict.fromkeys(draft.receive_methods)),
         note=(draft.note or "").strip() or None,
-        rate_spec=draft.rate_spec.model_dump(mode="json"),
         status=OrderStatus.OPEN,
         wants=[
-            OrderWant(currency=want.currency, country=want.country, position=position)
+            OrderWant(
+                currency=want.currency,
+                country=want.country,
+                position=position,
+                rate_spec=want.rate_spec.model_dump(mode="json"),
+            )
             for position, want in enumerate(draft.wants)
         ],
     )

@@ -884,24 +884,6 @@
             "title": "Payout Methods",
             "type": "array"
           },
-          "rate_spec": {
-            "discriminator": {
-              "mapping": {
-                "fixed": "#/components/schemas/FixedRate",
-                "reference": "#/components/schemas/ReferenceRate"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FixedRate"
-              },
-              {
-                "$ref": "#/components/schemas/ReferenceRate"
-              }
-            ],
-            "title": "Rate Spec"
-          },
           "receive_methods": {
             "items": {
               "$ref": "#/components/schemas/PaymentKind"
@@ -944,7 +926,6 @@
           "payout_methods",
           "receive_methods",
           "wants",
-          "rate_spec",
           "note",
           "status",
           "created_at"
@@ -1026,24 +1007,6 @@
             "title": "Payout Methods",
             "type": "array"
           },
-          "rate_spec": {
-            "discriminator": {
-              "mapping": {
-                "fixed": "#/components/schemas/FixedRate",
-                "reference": "#/components/schemas/ReferenceRate"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/FixedRate"
-              },
-              {
-                "$ref": "#/components/schemas/ReferenceRate"
-              }
-            ],
-            "title": "Rate Spec"
-          },
           "receive_methods": {
             "items": {
               "$ref": "#/components/schemas/PaymentKind"
@@ -1087,8 +1050,7 @@
           "available_from",
           "payout_methods",
           "receive_methods",
-          "wants",
-          "rate_spec"
+          "wants"
         ],
         "title": "OrderDraft",
         "type": "object"
@@ -1607,6 +1569,7 @@
       },
       "Want": {
         "additionalProperties": false,
+        "description": "A currency the author would take, where, and at what rate (ADR-0026).",
         "properties": {
           "country": {
             "examples": [
@@ -1623,11 +1586,30 @@
             "pattern": "^[A-Z]{3,5}$",
             "title": "Currency",
             "type": "string"
+          },
+          "rate_spec": {
+            "discriminator": {
+              "mapping": {
+                "fixed": "#/components/schemas/FixedRate",
+                "reference": "#/components/schemas/ReferenceRate"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FixedRate"
+              },
+              {
+                "$ref": "#/components/schemas/ReferenceRate"
+              }
+            ],
+            "title": "Rate Spec"
           }
         },
         "required": [
           "currency",
-          "country"
+          "country",
+          "rate_spec"
         ],
         "title": "Want",
         "type": "object"

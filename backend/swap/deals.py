@@ -164,10 +164,9 @@ async def propose(
     if proposal.counter_method not in order.receive_methods:
         raise _refuse("deal.method_not_accepted", 422)
 
-    # The author's rate, or the market's of this moment, locked here (Q-B3, QUESTIONS G2).
-    spec, found = await lock(
-        parse_spec(order.rate_spec), order.give_currency, want.currency, market
-    )
+    # The wanted currency's own rate, the author's or the market's of this moment, locked
+    # here (Q-B3, QUESTIONS G2, J1).
+    spec, found = await lock(parse_spec(want.rate_spec), order.give_currency, want.currency, market)
     quote = spec.quote_for(order.give_currency, want.currency)
     counter = convert(
         proposal.amount, spec, order.give_currency, want.currency, whole=proposal.whole

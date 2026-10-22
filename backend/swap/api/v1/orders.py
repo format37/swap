@@ -15,7 +15,7 @@ from swap.api.v1.people import Person
 from swap.models import Order as OrderRow
 from swap.models import OrderStatus, PaymentKind, User
 from swap.orders import OrderDraft, Want
-from swap.rates import RateSpec, parse_spec
+from swap.rates import parse_spec
 
 router = APIRouter(prefix="/orders", tags=["orders"], responses={401: {"model": Problem}})
 
@@ -42,8 +42,8 @@ class Order(BaseModel):
     available_until: date | None
     payout_methods: list[PaymentKind]
     receive_methods: list[PaymentKind]
+    # Each with its own rate (ADR-0026).
     wants: list[Want]
-    rate_spec: RateSpec
     note: str | None
     status: OrderStatus
     created_at: datetime
@@ -65,8 +65,14 @@ class Order(BaseModel):
             available_until=order.available_until,
             payout_methods=[PaymentKind(kind) for kind in order.payout_methods],
             receive_methods=[PaymentKind(kind) for kind in order.receive_methods],
-            wants=[Want(currency=want.currency, country=want.country) for want in order.wants],
-            rate_spec=parse_spec(order.rate_spec),
+            wants=[
+                Want(
+                    currency=want.currency,
+                    country=want.country,
+                    rate_spec=parse_spec(want.rate_spec),
+                )
+                for want in order.wants
+            ],
             note=order.note,
             status=OrderStatus(order.status),
             created_at=order.created_at,
