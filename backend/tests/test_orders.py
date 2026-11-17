@@ -397,8 +397,12 @@ async def test_an_order_is_published_and_everyone_who_can_see_it_is_told(
     assert order["payout_methods"] == ["bank", "crypto"]
     # What each comes to is said in lists (QUESTIONS N1).
     assert order["wants"] == [
-        {**want("GEL", "GE", fixed("GEL", "RUB", "29.20")), "amount": None},
-        {**want("USD", "GE", fixed("USD", "RUB", "81.50"), ways=("bank",)), "amount": None},
+        {**want("GEL", "GE", fixed("GEL", "RUB", "29.20")), "details": None, "amount": None},
+        {
+            **want("USD", "GE", fixed("USD", "RUB", "81.50"), ways=("bank",)),
+            "details": None,
+            "amount": None,
+        },
     ]
     # «Мои связи и их связи» unless the author says otherwise (QUESTIONS J2).
     assert order["visibility"] == {"reach": 2, "people": []}

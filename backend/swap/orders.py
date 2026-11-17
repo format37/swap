@@ -22,6 +22,7 @@ from sqlalchemy import ColumnElement, Date, and_, cast, exists, func, literal, o
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from swap.crypto import Keys, seal_details
 from swap.deeplinks import target
 from swap.erasure import erase_deal, erase_order_if_bare
 from swap.errors import DomainError
@@ -56,6 +57,9 @@ class Want(BaseModel):
     rate_spec: RateSpec
     # How the author takes this currency (QUESTIONS L1, ADR-0037).
     receive_methods: list[PaymentKind] = Field(min_length=1, max_length=len(PaymentKind))
+    # Where the author takes it, such as a card number (QUESTIONS Q1, ADR-0043): for the
+    # author alone, until a deal they accept carries it to its other side.
+    details: str | None = Field(default=None, max_length=500)
 
 
 # How far an order is seen, in handshakes (ADR-0028): 0 is its list, None is ∞.
@@ -210,6 +214,7 @@ async def create(
     draft: OrderDraft,
     assets: Collection[str],
     *,
+    keys: Keys | None = None,
     series: tuple[uuid.UUID, date] | None = None,
 ) -> Order:
     """Publish an order and tell the author's links, or its list (FR-2.1, FR-7.1). People
@@ -249,6 +254,7 @@ async def create(
                 position=position,
                 rate_spec=want.rate_spec.model_dump(mode="json"),
                 receive_methods=list(dict.fromkeys(want.receive_methods)),
+                details=seal_details(keys, author.id, want.details),
             )
             for position, want in enumerate(draft.wants)
         ],

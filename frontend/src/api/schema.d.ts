@@ -94,7 +94,8 @@ export interface paths {
         put?: never;
         /**
          * Accept Deal
-         * @description Accept a proposal on your order: one tap, no payment details (QUESTIONS G1).
+         * @description Accept a proposal on your order: one tap (QUESTIONS G1). Your details for the
+         *     currency it pays you in, if the order has them, go on to your leg (ADR-0043).
          */
         post: operations["accept_deal"];
         delete?: never;
@@ -208,6 +209,28 @@ export interface paths {
          * @description «Проблема», with a word on what went wrong (FR-4.6).
          */
         post: operations["dispute_deal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/deals/{deal_id}/legs/{seq}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Leg Details
+         * @description Where you take this transfer, such as a card number, for the other side to pay to
+         *     (QUESTIONS Q1, ADR-0043). Its payee's alone, while the deal runs and until it is sent;
+         *     blank clears it.
+         */
+        put: operations["set_leg_details"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -833,6 +856,14 @@ export interface components {
          * @enum {string}
          */
         DealStatus: "proposed" | "accepted" | "disputed" | "settled" | "cancelled" | "expired";
+        /**
+         * Details
+         * @description Where the payee takes a transfer, in their own words (QUESTIONS Q1, ADR-0043).
+         */
+        Details: {
+            /** Details */
+            details?: string | null;
+        };
         /** Dispute */
         Dispute: {
             /** Note */
@@ -916,6 +947,8 @@ export interface components {
             country: string;
             /** Currency */
             currency: string;
+            /** Details */
+            details?: string | null;
             /** Due Date */
             due_date: string | null;
             method: components["schemas"]["PaymentKind"];
@@ -1469,6 +1502,8 @@ export interface components {
              * @example GEL
              */
             currency: string;
+            /** Details */
+            details?: string | null;
             /** Rate Spec */
             rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /** Receive Methods */
@@ -1476,7 +1511,8 @@ export interface components {
         };
         /**
          * WantShown
-         * @description A wanted currency as the api shows it.
+         * @description A wanted currency as the api shows it. Its `details` are for its author alone
+         *     (ADR-0043): None for anyone else.
          */
         WantShown: {
             /** Amount */
@@ -1491,6 +1527,8 @@ export interface components {
              * @example GEL
              */
             currency: string;
+            /** Details */
+            details?: string | null;
             /** Rate Spec */
             rate_spec: components["schemas"]["FixedRate"] | components["schemas"]["ReferenceRate"];
             /** Receive Methods */
@@ -2195,6 +2233,87 @@ export interface operations {
             };
             /** @description Unprocessable Entity */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    set_leg_details: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deal_id: string;
+                seq: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Details"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Deal"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

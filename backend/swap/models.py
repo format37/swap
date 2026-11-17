@@ -408,6 +408,9 @@ class OrderWant(Base):
     # How the author takes this currency: GEL in cash or by bank, USD by bank alone
     # (QUESTIONS L1, ADR-0037).
     receive_methods: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    # Where the author takes it, such as a card number: sealed for its author (ADR-0043).
+    # Only they see it here; it goes on to their leg of a deal once they accept one.
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class OrderVisibility(Base):
@@ -539,6 +542,9 @@ class DealLeg(Base):
     due_date: Mapped[date | None] = mapped_column(Date)
     sent_at: Mapped[datetime | None]
     received_at: Mapped[datetime | None]
+    # Where the payee takes this transfer, such as a card number, in their own words:
+    # sealed for the payee, shown to the deal's two sides (QUESTIONS Q1, ADR-0043).
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class Event(Base):

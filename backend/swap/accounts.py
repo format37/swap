@@ -22,6 +22,7 @@ from swap.links import involves
 from swap.models import (
     AuthSession,
     Deal,
+    DealLeg,
     DealStatus,
     Invite,
     Link,
@@ -29,6 +30,7 @@ from swap.models import (
     Notification,
     Order,
     OrderStatus,
+    OrderWant,
     User,
 )
 from swap.proposals import cancel_by
@@ -110,6 +112,10 @@ async def delete_account(db: AsyncSession, me: User) -> None:
     await delete_history(db, me)
     # No copy of theirs is published after they leave (QUESTIONS K7).
     await db.execute(update(Order).where(Order.author_id == me.id).values(repeat_day=None))
+    # Their payment details go, from their orders and from the legs others keep (ADR-0043).
+    mine = select(Order.id).where(Order.author_id == me.id)
+    await db.execute(update(OrderWant).where(OrderWant.order_id.in_(mine)).values(details=None))
+    await db.execute(update(DealLeg).where(DealLeg.payee_id == me.id).values(details=None))
     await db.execute(delete(Link).where(involves(me.id)))
     await db.execute(delete(Invite).where(Invite.created_by == me.id))
     await db.execute(delete(AuthSession).where(AuthSession.user_id == me.id))
