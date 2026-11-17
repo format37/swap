@@ -84,6 +84,7 @@ export const ka: Messages = {
   'order.up_to': '{max}-მდე',
   'order.exactly': 'ზუსტად {amount}',
   'order.remaining': 'დარჩენილია: {amount}',
+  'order.total': 'სულ: {amount}',
   'order.min_deal': 'მინიმუმ {amount} ერთ გარიგებაზე',
   'order.counter': 'გასცემთ {approx}{amount}',
   'order.counter_upto': 'გასცემთ {approx}მაქსიმუმ {to}',
