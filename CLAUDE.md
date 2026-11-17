@@ -20,7 +20,8 @@ Read before changing anything:
   his Sentry setup, all the same day. Part J holds the owner's notes of that evening
   (the wizard, reach by handshakes, deleting, photos, the score), part K the
   owner's priority list for the rest of phase 1, part L his notes after testing
-  them, part M his notes after testing part L, and part N his requests of 2026-10-23.
+  them, part M his notes after testing part L, part N his requests of 2026-10-23, and
+  part O his request of 2026-11-17.
 - `docs/adr/` has every decision another engineer would ask about, one page each.
   Never leave a decision only in chat.
 - `docs/plan.md` has the current phase's checklist and the estimates.
@@ -42,6 +43,7 @@ https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
   GitHub #50–#53, deployed on 2026-10-22. The owner confirmed the fixes on 2026-10-23.
 - QUESTIONS part N, the owner's requests of 2026-10-23: amounts in the order lists, PR
   1.39.
+- QUESTIONS part O, the owner's request of 2026-11-17: sharing an order, PR 1.40.
 - Phase 1 is accepted when the owner confirms (K10). The owner's open items are in
   plan.md: phone checks and the Georgian read.
 - Everything else waits in plan.md's «Потенциальные планы».

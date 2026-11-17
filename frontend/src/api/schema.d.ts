@@ -562,7 +562,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Order */
+        /**
+         * Get Order
+         * @description An order's card. Each wanted currency says what the order's amount comes to in it, as
+         *     in lists, for its author to share it in words (QUESTIONS O1).
+         */
         get: operations["get_order"];
         put?: never;
         post?: never;

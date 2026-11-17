@@ -4452,6 +4452,7 @@
         ]
       },
       "get": {
+        "description": "An order's card. Each wanted currency says what the order's amount comes to in it, as\nin lists, for its author to share it in words (QUESTIONS O1).",
         "operationId": "get_order",
         "parameters": [
           {

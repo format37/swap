@@ -702,9 +702,10 @@ async def test_a_list_says_what_each_wanted_currency_comes_to(
     # when the market has no rate (QUESTIONS N1).
     [listed] = (await client.get("/api/v1/orders", headers=nino)).json()
     assert [w["amount"] for w in listed["wants"]] == ["5136.99", "1842.98", None]
-    # The card asks for its own amounts (QUESTIONS M3).
-    card = (await client.get(f"/api/v1/orders/{order['id']}", headers=nino)).json()
-    assert [w["amount"] for w in card["wants"]] == [None, None, None]
+    # The card says the same, for its author to share it in words (QUESTIONS O1).
+    for viewer in (nino, alex):
+        card = (await client.get(f"/api/v1/orders/{order['id']}", headers=viewer)).json()
+        assert [w["amount"] for w in card["wants"]] == ["5136.99", "1842.98", None]
 
 
 @pytest.mark.parametrize(

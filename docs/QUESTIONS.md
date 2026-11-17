@@ -1195,3 +1195,35 @@ wanted currency on a line of its own, on the right, with what that amount comes 
 list, at the author's rate or the market's of the moment, from what remains while the
 order is open and from all it was for once it is over. A currency the market has no rate
 for shows alone. → PR 1.39.
+
+## O. The owner's request (2026-11-17)
+
+### O1 · Sharing an order
+
+> I've made an offer. Let's add a share button to share my exact offer in telegram chat
+> to person
+
+The author's open order gets «Поделиться заявкой» as its main button. It opens Telegram's
+share sheet with the order in words, laid out as its row is (N1), and the link to its card:
+
+```
+Отдаю 150 000 ₽ RUB · Россия
+→ 5 136,99 ₾ GEL по 1 GEL = 29,20 RUB
+→ ≈ 1 842,98 $ USD по рынку
+Заявка № 17 в Swap
+https://t.me/peertopeerswapbot?startapp=order_…
+```
+
+The note stays out, since it may say where to pay. → PR 1.40, ADR-0041.
+
+**Default:** the link opens the card only for those the order's reach includes, as the
+bot's «Открыть» does. Anyone else reads «Заявка не найдена или вам не видна». To send an
+order to someone outside your network, invite them first, or to someone farther than the
+reach, raise it. A link that showed the order to whoever holds it would be a public order
+by another door (§2).
+
+**Question:** should a shared order's link also invite whoever opens it, so that a
+stranger gets a link request and then the order in one go? It is a second flow, with the
+invite's one-time and 72-hour rules, so it waits for your word.
+
+**Answer:**
