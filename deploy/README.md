@@ -13,6 +13,14 @@ go in the session (CLAUDE.md).
 It builds on the box and dumps the database into `backups/`. Then it migrates,
 recreates api and worker, and waits until both are healthy.
 
+Since 2026-11-17, `.env` also holds `RECIPIENT_KEYS`, the key that seals payment details
+(ADR-0043). It was made on the box, so it never travelled:
+
+    key=$(sudo docker run --rm --entrypoint python swap-app:prod -m swap.tools.new_key)
+    echo "RECIPIENT_KEYS=$key" >> .env
+
+The owner keeps a copy off the server: without it, saved details can't be read back.
+
 To roll back, run `git checkout <previous> && ./deploy/vps.sh`. If a migration ran,
 also restore the newest dump:
 

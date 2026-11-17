@@ -59,6 +59,9 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
 - [x] O1's question: should the link also invite a stranger? Yes, 2026-11-17.
 - [ ] A look at «Заявки в работе» (PR 1.42): order № 9 there until its deal is settled,
       then under «Завершённые заявки».
+- [ ] A phone check of payment details (PR 1.44): «Реквизиты для GEL» in the wizard,
+      on the deal after accepting, «Указать реквизиты» on your own leg, and «Скопировать».
+      Q1's defaults stand unless you veto them.
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -361,6 +364,17 @@ in, and typing USD moves GEL.
 - [x] A card of an order no longer open says «Всего: …» instead of «Осталось: …», without
       the amount per deal.
 
+**The owner's request of the same evening.** QUESTIONS part Q.
+
+**PR 1.44 — Payment details, sealed** (Q1; ADR-0043)
+- [x] `order_wants.details` and `deal_legs.details`, AES-GCM-sealed for their owner
+      (migration 0026, `RECIPIENT_KEYS`).
+- [x] The wizard takes details per wanted currency, for the author alone; accepting a
+      deal puts them on the leg that pays the author.
+- [x] A leg's payee writes its details until it is sent; both sides read and copy them.
+- [x] Deleting an account clears them. The agreement goes to version 2, with the
+      privacy page.
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -434,14 +448,15 @@ Phase 1, PR by PR:
 | 1.41 | O1 · the shared link invites | 0.75 |
 | 1.42 | P1 · orders in progress | 0.25 |
 | 1.43 | P3 · a used-up order's total, on its card | 0.1 |
+| 1.44 | Q1 · payment details, sealed | 1 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 27.85** |
+| | **Total** | **≈ 28.85** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
 K9 into the privacy page's, because each touches the same screens. The owner's notes
 after testing them (part L) add about 3.25, those after part L (part M) 1 more, and the
-requests of parts N and O 1.5, and the notes of part P 0.35.
+requests of parts N and O 1.5, the notes of part P 0.35, and part Q 1.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 

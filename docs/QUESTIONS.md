@@ -25,6 +25,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part O** records the owner's request of 2026-11-17, sharing an order, and its answer.
 - **Part P** records the owner's note of the same day: an order whose deal runs isn't
   finished, a deal restored by hand, and «Осталось: 0» on a used-up order's card.
+- **Part Q** records the owner's request of the same evening: payment details again.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1290,3 +1291,29 @@ deal had taken all of it, so it read 0, as if nothing were coming to her. Lists 
 show the whole amount once an order is no longer open (N1). The card now does the same:
 «Всего: 10 000 ₽», and leaves out «ровно …» and the minimum per deal, which matter only
 while one can propose. → PR 1.43.
+
+## Q. The owner's request (2026-11-17, evening)
+
+### Q1 · Payment details on each transfer and each wanted currency
+
+> Сделай еще пожалуйста что бы в каждой плашке можно было оставить текстовый
+> комментарий. Я планирую вставлять туда номер счёта или номер банковской карты. Там же
+> где I've received it & I've sent it.
+> Еще можно сделать что бы можно было указать при создании сделки тоже - отдельно по
+> каждой валюте если принимаю разную валюту
+
+This reverses G3's «no payment details», for fields that nobody has to fill. → PR 1.44,
+ADR-0043.
+- Each transfer's card has «Реквизиты». Its payee writes them, both sides read them, and
+  the payer copies them in one tap. They are fixed once the transfer is marked sent.
+- The wizard asks for «Реквизиты для GEL» on each currency the order takes. They go on to
+  the transfer that pays the author once he accepts a deal.
+- They are stored encrypted, as the kickoff requires. The agreement and the privacy
+  page say so, and everyone accepts the new text once.
+
+**Defaults**, until you say otherwise:
+- «При создании сделки» is read as creating an order: each currency it takes has its
+  own details. A proposer gives theirs on the deal's card, or in the proposal's comment.
+- An order's details are yours alone until you accept a deal. Whoever merely sees the
+  order doesn't see them.
+- Only a transfer's payee writes its details.

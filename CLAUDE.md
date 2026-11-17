@@ -21,7 +21,8 @@ Read before changing anything:
   (the wizard, reach by handshakes, deleting, photos, the score), part K the
   owner's priority list for the rest of phase 1, part L his notes after testing
   them, part M his notes after testing part L, part N his requests of 2026-10-23,
-  part O his request of 2026-11-17, and part P his note of the same day.
+  part O his request of 2026-11-17, part P his note of the same day, and part Q his
+  request that evening (payment details).
 - `docs/adr/` has every decision another engineer would ask about, one page each.
   Never leave a decision only in chat.
 - `docs/plan.md` has the current phase's checklist and the estimates.
@@ -47,6 +48,8 @@ https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
 - O1's answer, a shared link that invites strangers too: PR 1.41, migration 0025.
 - So is QUESTIONS part P (an order whose deal runs is in progress, not finished; a
   used-up order's total on its card): PRs 1.42–1.43. P2 records a deal restored by hand.
+- So is QUESTIONS part Q (payment details on each transfer and wanted currency, sealed):
+  PR 1.44, migration 0026, agreement version 2.
 - Phase 1 is accepted when the owner confirms (K10). The owner's open items are in
   plan.md: phone checks and the Georgian read.
 - Everything else waits in plan.md's «Потенциальные планы».
@@ -122,9 +125,12 @@ directly.
   `Intl.NumberFormat` from the string, and let the api do the arithmetic.
 - **Deal status changes only through the state-machine service**, with an `events`
   row in the same transaction. A database trigger enforces this (ADR-0002).
-- **Swap stores no payment details** (ADR-0021). A deal says which currency, how
-  much, by when and how (cash, bank or crypto); where to pay is the parties' own
-  business, and a proposal's comment can carry it.
+- **Payment details are optional, sealed, and for a deal's two sides** (ADR-0043,
+  amending ADR-0021). A deal says which currency, how much and how (cash, bank or
+  crypto). A leg's payee may add where to pay, and an order's author may do so for each
+  currency, for themselves until they accept a deal.
+  - They are AES-GCM-sealed with `RECIPIENT_KEYS` from `.env` before the database.
+  - They never go into logs, bot messages, exports or error reports.
 - **No analytics and no third-party scripts in the frontend.** The one exception is
   Sentry's SDK, bundled, which reports errors to the owner's `swap` project when the
   build has `SENTRY_DSN` (ADR-0025). Nothing personal goes into a report. Images come
