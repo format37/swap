@@ -357,6 +357,10 @@ in, and typing USD moves GEL.
       still running. `history` leaves them out, and each order says `running`.
 - [x] Home shows them as «Заявки в работе», and a row or card says «В работе».
 
+**PR 1.43 — A used-up order's card says what it was for** (P3)
+- [x] A card of an order no longer open says «Всего: …» instead of «Осталось: …», without
+      the amount per deal.
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -429,14 +433,15 @@ Phase 1, PR by PR:
 | 1.40 | O1 · sharing an order | 0.5 |
 | 1.41 | O1 · the shared link invites | 0.75 |
 | 1.42 | P1 · orders in progress | 0.25 |
+| 1.43 | P3 · a used-up order's total, on its card | 0.1 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 27.75** |
+| | **Total** | **≈ 27.85** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
 K9 into the privacy page's, because each touches the same screens. The owner's notes
 after testing them (part L) add about 3.25, those after part L (part M) 1 more, and the
-requests of parts N and O 1.5, and the note of part P 0.25.
+requests of parts N and O 1.5, and the notes of part P 0.35.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 

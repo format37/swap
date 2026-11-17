@@ -82,6 +82,7 @@ export const ru = {
   'order.up_to': 'до {max}',
   'order.exactly': 'ровно {amount}',
   'order.remaining': 'Осталось: {amount}',
+  'order.total': 'Всего: {amount}',
   'order.min_deal': 'От {amount} за одну сделку',
   'order.counter': 'Вы отдадите {approx}{amount}',
   'order.counter_upto': 'Вы отдадите {approx}до {to}',

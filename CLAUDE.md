@@ -45,7 +45,8 @@ https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
   lists) and part O (his request of 2026-11-17: sharing an order): PRs 1.39–1.40,
   GitHub #55–#56, deployed by 2026-11-17.
 - O1's answer, a shared link that invites strangers too: PR 1.41, migration 0025.
-- So is QUESTIONS part P (an order whose deal runs is in progress, not finished): PR 1.42.
+- So is QUESTIONS part P (an order whose deal runs is in progress, not finished; a
+  used-up order's total on its card): PRs 1.42–1.43. P2 records a deal restored by hand.
 - Phase 1 is accepted when the owner confirms (K10). The owner's open items are in
   plan.md: phone checks and the Georgian read.
 - Everything else waits in plan.md's «Потенциальные планы».

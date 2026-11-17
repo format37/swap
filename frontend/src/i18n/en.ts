@@ -82,6 +82,7 @@ export const en: Messages = {
   'order.up_to': 'up to {max}',
   'order.exactly': 'exactly {amount}',
   'order.remaining': 'Left: {amount}',
+  'order.total': 'Total: {amount}',
   'order.min_deal': 'At least {amount} per deal',
   'order.counter': 'You’d give {approx}{amount}',
   'order.counter_upto': 'You’d give {approx}up to {to}',

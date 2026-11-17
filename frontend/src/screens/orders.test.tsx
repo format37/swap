@@ -978,7 +978,7 @@ describe('the order card', () => {
         [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, { ...priced, status: 'closed' }),
       })
       const { unmount } = renderScreen(<OrderCard me={me} />, { route, path })
-      await screen.findByText(/Осталось/)
+      await screen.findByText(/Всего/)
       expect(mainButton()).toBeNull()
       unmount()
       fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, { ...priced, mine: false }) })
@@ -1060,7 +1060,7 @@ describe('the order card', () => {
       'GET /api/v1/deals': () => json(200, []),
     })
     renderScreen(<OrderCard me={me} />, { route, path })
-    await screen.findByText(/Осталось/)
+    await screen.findByText(status === 'open' ? /Осталось/ : /Всего/)
     await screen.findAllByRole('button')
     const offered = ['Закрыть заявку', 'Открыть снова', 'Удалить заявку'].filter((name) =>
       screen.queryByRole('button', { name }),
@@ -1071,11 +1071,26 @@ describe('the order card', () => {
   it('says it is in progress, and offers no deletion, while a deal on it runs (J3, P1)', async () => {
     fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>
-        json(200, order({ mine: true, status: 'fulfilled', running: true })),
+        json(
+          200,
+          order({
+            mine: true,
+            status: 'fulfilled',
+            running: true,
+            amount_min: '10000.00',
+            amount_max: '10000.00',
+            amount_remaining: '0.00',
+          }),
+        ),
       'GET /api/v1/deals': () => json(200, [deal({ status: 'accepted', role: 'acceptor' })]),
     })
     renderScreen(<OrderCard me={me} />, { route, path })
     await screen.findByText(/Сделки по заявке/i)
+    // Used up, it says what it was for, not «Осталось: 0», and no longer how much one deal
+    // takes (P3).
+    expect(screen.getByText(/Всего/)).toHaveTextContent('Всего: 10 000₽RUB')
+    expect(screen.queryByText(/Осталось/)).toBeNull()
+    expect(screen.queryByText(/ровно/)).toBeNull()
     // After the author's @username, in the same line.
     expect(screen.getByText(/№ 17 · В работе$/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Удалить заявку' })).toBeNull()
@@ -1121,7 +1136,7 @@ describe('the order card', () => {
       'GET /api/v1/deals': () => json(200, theirs),
     })
     renderScreen(<OrderCard me={me} />, { route, path })
-    await screen.findByText(/Осталось/)
+    await screen.findByText(/Всего/)
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: 'Удалить у себя' })).toBeNull()
     })

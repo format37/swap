@@ -223,6 +223,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
   const give = order.give_currency
   const money = (amount: string) => <Money locale={locale} amount={amount} code={give} />
   const exact = order.amount_min === order.amount_max
+  const open = order.status === 'open'
 
   return (
     <Screen>
@@ -245,14 +246,19 @@ function Shown({ order, me }: { order: Order; me: Me }) {
 
       <Section title={order.mine ? t('order.i_give') : t('order.gives')}>
         <div className="flex flex-col gap-1 px-4 py-3">
+          {/* What remains while it is open; once over, what it was for, as its row says:
+              «Осталось: 0» read as nothing for whoever took it all (QUESTIONS P3). */}
           <p className="flex flex-wrap items-center gap-x-1.5 text-lg">
-            {tn('order.remaining', { amount: money(order.amount_remaining) })}
+            {open
+              ? tn('order.remaining', { amount: money(order.amount_remaining) })
+              : tn('order.total', { amount: money(order.amount_max) })}
           </p>
           <p className="text-sm text-hint">
             {countryName(locale, order.give_country)}
-            {exact && <> · {tn('order.exactly', { amount: money(order.amount_max) })}</>}
+            {/* What one deal may take matters only while one can be proposed. */}
+            {open && exact && <> · {tn('order.exactly', { amount: money(order.amount_max) })}</>}
             {/* A minimum of 0 is any amount, which goes without saying (F4). */}
-            {!exact && !isZero(order.amount_min) && (
+            {open && !exact && !isZero(order.amount_min) && (
               <> · {tn('order.min_deal', { amount: money(order.amount_min) })}</>
             )}
           </p>

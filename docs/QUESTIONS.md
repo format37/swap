@@ -24,7 +24,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part N** records the owner's requests of 2026-10-23.
 - **Part O** records the owner's request of 2026-11-17, sharing an order, and its answer.
 - **Part P** records the owner's note of the same day: an order whose deal runs isn't
-  finished, and a deal restored by hand.
+  finished, a deal restored by hand, and «Осталось: 0» on a used-up order's card.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1278,3 +1278,15 @@ notification went out, and the owner told the other side himself.
 
 This is a one-off. The app has no way back from a cancelled deal; the usual way is a new
 proposal, at the rate of its moment.
+
+### P3 · «Осталось: 0» on a used-up order's card
+
+The deal's proposer then asked, through the owner:
+
+> А почему он пишет осталось 0 рублей?
+
+The card's first line was the order's remainder, what others may still propose on. Her
+deal had taken all of it, so it read 0, as if nothing were coming to her. Lists already
+show the whole amount once an order is no longer open (N1). The card now does the same:
+«Всего: 10 000 ₽», and leaves out «ровно …» and the minimum per deal, which matter only
+while one can propose. → PR 1.43.
