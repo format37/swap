@@ -10,8 +10,9 @@ from swap.config import Settings
 from swap.db import Sessionmaker
 from swap.deeplinks import INVITE_PREFIX, startapp_url, target
 from swap.i18n import Locale, resolve_locale, t
-from swap.links import Opened, OpenedInvite, open_invite
+from swap.links import Opened, OpenedInvite
 from swap.models import User
+from swap.sharing import open_invite
 from swap.users import person_label, upsert_user
 
 
@@ -31,7 +32,18 @@ def open_card_keyboard(locale: Locale, bot_username: str, card: str) -> InlineKe
 def invite_reply(
     opened: OpenedInvite, locale: Locale, settings: Settings
 ) -> tuple[str, InlineKeyboardMarkup]:
-    """What the bot says when someone presses /start with an invite (ADR-0012)."""
+    """What the bot says when someone presses /start with an invite (ADR-0012). One that
+    carries an order opens it once the invitee sees it, else the request (ADR-0041)."""
+    bot = settings.telegram_bot_username
+    if opened.inviter is not None and opened.order is not None:
+        name = person_label(opened.inviter)
+        number = str(opened.order.number)
+        if opened.sees_order:
+            text = t(locale, "invite.order_shared", name=name, number=number)
+            return text, open_card_keyboard(locale, bot, target("order", opened.order.id))
+        if opened.outcome is Opened.REQUESTED and opened.link is not None:
+            text = t(locale, "invite.order_requested", name=name, number=number)
+            return text, open_card_keyboard(locale, bot, target("link", opened.link.id))
     if opened.inviter is None or opened.link is None:
         key = "invite.own" if opened.outcome is Opened.OWN else "invite.invalid"
         return t(locale, key), open_app_keyboard(locale, settings.webapp_url)
@@ -41,8 +53,7 @@ def invite_reply(
         Opened.ALREADY_LINKED: "invite.already_linked",
     }[opened.outcome]
     text = t(locale, key, name=person_label(opened.inviter))
-    card = target("link", opened.link.id)
-    return text, open_card_keyboard(locale, settings.telegram_bot_username, card)
+    return text, open_card_keyboard(locale, bot, target("link", opened.link.id))
 
 
 def build_router() -> Router:

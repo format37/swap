@@ -1,7 +1,7 @@
 """Orders (ADR-0016): the wizard publishes one, the feeds list them, the card shows one."""
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal, Self
 
@@ -9,10 +9,12 @@ from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from swap import deals, orders
+from swap import deals, orders, sharing
 from swap.api.deps import AppSettings, CurrentUser, Db, MarketRates
 from swap.api.errors import Problem
+from swap.api.v1.links import NewInvite
 from swap.api.v1.people import Person
+from swap.deeplinks import invite_url
 from swap.errors import DomainError
 from swap.market import Market, lock
 from swap.models import Order as OrderRow
@@ -164,6 +166,24 @@ async def get_order(order_id: uuid.UUID, user: CurrentUser, db: Db, market: Mark
     in lists, for its author to share it in words (QUESTIONS O1)."""
     order, author = await orders.get(db, user.id, order_id)
     return await _priced(await _with_visibility(db, order, author, user.id), market)
+
+
+@router.post(
+    "/{order_id}/share",
+    status_code=201,
+    responses={404: {"model": Problem}, 409: {"model": Problem}, 429: {"model": Problem}},
+)
+async def share_order(
+    order_id: uuid.UUID, user: CurrentUser, db: Db, settings: AppSettings
+) -> NewInvite:
+    """A one-time invite carrying the author's open order, to share in a chat (QUESTIONS
+    O1, ADR-0041). Whoever opens it sees the order, after linking up if they must. It
+    counts against the same cap as other invites."""
+    invite, token = await sharing.share(
+        db, user, order_id, timedelta(seconds=settings.invite_ttl_s)
+    )
+    await db.commit()
+    return NewInvite.of_new(invite, invite_url(settings.telegram_bot_username, token))
 
 
 @router.post("/{order_id}/close", responses={404: {"model": Problem}, 409: {"model": Problem}})

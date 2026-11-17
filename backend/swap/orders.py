@@ -106,6 +106,16 @@ def _authors_today() -> ColumnElement[date]:
     return cast(func.timezone(tz.scalar_subquery(), func.now()), Date)
 
 
+def current() -> ColumnElement[bool]:
+    """Open, not deleted, and not past its last day: an order one may still propose on."""
+    return and_(
+        Order.deleted_at.is_(None),
+        Order.status == OrderStatus.OPEN,
+        # Until the expiry sweep (slice 5) marks it, an order past its dates is over.
+        or_(Order.available_until.is_(None), Order.available_until >= _authors_today()),
+    )
+
+
 def open_to(viewer: uuid.UUID, within: Within = None) -> ColumnElement[bool]:
     """Whether `viewer` may see an order and propose on it: the trust boundary of §3, as
     QUESTIONS J2 moved it. `within` is the viewer's own filter, at most so many handshakes.
@@ -123,9 +133,7 @@ def open_to(viewer: uuid.UUID, within: Within = None) -> ColumnElement[bool]:
         or_(
             Order.author_id == viewer,
             and_(
-                Order.status == OrderStatus.OPEN,
-                # Until the expiry sweep (slice 5) marks it, an order past its dates is over.
-                or_(Order.available_until.is_(None), Order.available_until >= _authors_today()),
+                current(),
                 or_(
                     # «Только выбранным»: on its list, and still linked to the author.
                     and_(Order.reach == 0, listed, near(literal(1))),

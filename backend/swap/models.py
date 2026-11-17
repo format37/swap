@@ -216,7 +216,8 @@ class Mute(Base):
 
 
 class Invite(Base):
-    """A one-time bot link, t.me/<bot>?start=inv_<token> (ADR-0012).
+    """A one-time bot link, t.me/<bot>?start=inv_<token> (ADR-0012), on its own or carrying
+    an order (ADR-0041).
 
     Only the token's SHA-256 is kept, so a database read hands out no working invite.
     """
@@ -235,6 +236,10 @@ class Invite(Base):
     )
     used_at: Mapped[datetime | None]
     revoked_at: Mapped[datetime | None]
+    # The order its author shared with it: whoever opens it also sees that (ADR-0041).
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
 
 
 class NotificationStatus(StrEnum):

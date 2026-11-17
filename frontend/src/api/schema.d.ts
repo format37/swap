@@ -639,6 +639,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders/{order_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share Order
+         * @description A one-time invite carrying the author's open order, to share in a chat (QUESTIONS
+         *     O1, ADR-0041). Whoever opens it sees the order, after linking up if they must. It
+         *     counts against the same cap as other invites.
+         */
+        post: operations["share_order"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/{order_id}/stop-repeating": {
         parameters: {
             query?: never;
@@ -882,6 +904,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Order Number */
+            order_number?: number | null;
         };
         /** Leg */
         Leg: {
@@ -949,6 +973,7 @@ export interface components {
              * Format: date-time
              */
             requested_at: string;
+            shared_order?: components["schemas"]["SharedOrder"] | null;
             status: components["schemas"]["LinkStatus"];
         };
         /** LinkRequest */
@@ -1063,6 +1088,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Order Number */
+            order_number?: number | null;
             /** Url */
             url: string;
         };
@@ -1374,6 +1401,16 @@ export interface components {
             distance: number;
             /** People */
             people: components["schemas"]["Person"][];
+        };
+        /** SharedOrder */
+        SharedOrder: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Number */
+            number: number;
         };
         /** SignedIn */
         SignedIn: {
@@ -3561,6 +3598,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    share_order: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewInvite"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
         };
