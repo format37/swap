@@ -72,6 +72,19 @@ export function useStopRepeating() {
   )
 }
 
+/**
+ * A fresh one-time link that carries this open order, for its author to share in a chat
+ * (QUESTIONS O1, ADR-0041). It is an invite too, so the «Связи» tab's list changes.
+ */
+export function useShareOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      unwrap(api.POST('/api/v1/orders/{order_id}/share', { params: { path: { order_id: id } } })),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['links'] }),
+  })
+}
+
 /** Gone for everyone, its author included; its deals carry on (QUESTIONS F6). */
 /**
  * Deletes an order for oneself (QUESTIONS J3, L4), and so the deals that go with it. Its

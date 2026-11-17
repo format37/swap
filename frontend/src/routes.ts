@@ -16,11 +16,3 @@ export function startRoute(param: string | undefined): string | null {
   if (!match?.[1] || !match[2]) return null
   return BY_KIND[match[1]]?.(match[2]) ?? null
 }
-
-/**
- * A t.me link that opens a card, for those the api lets see it (ADR-0013): the bot's
- * buttons are built the same way, and an author shares an order's (ADR-0041).
- */
-export function startappUrl(kind: 'link' | 'order' | 'deal', id: string): string {
-  return `${BOT_URL}?startapp=${kind}_${id}`
-}
