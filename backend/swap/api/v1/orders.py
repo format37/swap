@@ -38,7 +38,8 @@ class WantShown(Want):
 
     # What the order's amount comes to in this currency: all that remains while it is
     # open, all it was for once over. At the author's rate, or the market's of the moment
-    # (QUESTIONS N1). Set in lists; None there when the market has no rate.
+    # (QUESTIONS N1). Set in lists and on a card, where its author shares it in words
+    # (QUESTIONS O1); None when the market has no rate.
     amount: Decimal | None = None
 
 
@@ -158,9 +159,11 @@ async def list_orders(
 
 
 @router.get("/{order_id}", responses={404: {"model": Problem}})
-async def get_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
+async def get_order(order_id: uuid.UUID, user: CurrentUser, db: Db, market: MarketRates) -> Order:
+    """An order's card. Each wanted currency says what the order's amount comes to in it, as
+    in lists, for its author to share it in words (QUESTIONS O1)."""
     order, author = await orders.get(db, user.id, order_id)
-    return await _with_visibility(db, order, author, user.id)
+    return await _priced(await _with_visibility(db, order, author, user.id), market)
 
 
 @router.post("/{order_id}/close", responses={404: {"model": Problem}, 409: {"model": Problem}})
