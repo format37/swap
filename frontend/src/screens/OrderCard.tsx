@@ -9,7 +9,7 @@ import {
   Trash2,
   Waypoints,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { fullName } from '../api/links'
@@ -37,8 +37,17 @@ import { Asset, Money } from '../money/Asset'
 import { formatAmount, formatRate, isZero } from '../money/format'
 import { KINDS } from '../money/kinds'
 import { readsAs } from '../orders/form'
+import { shareText } from '../orders/share'
 import { orderDates } from '../orders/words'
-import { confirmAction, hapticNotify, useMainButton } from '../telegram'
+import { startappUrl } from '../routes'
+import {
+  confirmAction,
+  copyText,
+  hapticNotify,
+  shareLink,
+  useMainButton,
+  type MainAction,
+} from '../telegram'
 import { Button } from '../ui/Button'
 import { Loading } from '../ui/Loading'
 import { Person } from '../ui/Person'
@@ -146,6 +155,37 @@ function Methods({ kinds, inset = true }: { kinds: PaymentKind[]; inset?: boolea
   )
 }
 
+/**
+ * «Поделиться заявкой»: Telegram's share sheet with the order in words and its link, which
+ * opens its card for those it reaches and for no one else (QUESTIONS O1, ADR-0041). Where
+ * there is no share sheet, the same goes to the clipboard.
+ */
+function useShare(order: Order): MainAction {
+  const i18n = useI18n()
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const timer = setTimeout(() => {
+      setCopied(false)
+    }, 2000)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [copied])
+  return {
+    text: i18n.t(copied ? 'order.share_copied' : 'order.share'),
+    onClick: () => {
+      const url = startappUrl('order', order.id)
+      const text = shareText(i18n, order)
+      if (shareLink(url, text)) return
+      void copyText(`${text}\n${url}`).then((ok) => {
+        hapticNotify(ok ? 'success' : 'error')
+        setCopied(ok)
+      })
+    },
+  }
+}
+
 function running(deal: Deal): boolean {
   return ['proposed', 'accepted', 'disputed'].includes(deal.status)
 }
@@ -160,12 +200,16 @@ function Shown({ order, me }: { order: Order; me: Me }) {
   const stop = useStopRepeating()
   // Finished deals too: the order's card is its history (QUESTIONS H4).
   const deals = useDeals('all', order.id)
+  const share = useShare(order)
 
-  // Someone else's open order: the main action is a proposal (§11).
+  // An open order's main action: its author shares it (QUESTIONS O1), anyone else
+  // proposes on it (§11).
   useMainButton(
-    !order.mine && order.status === 'open'
-      ? { text: t('order.propose'), onClick: () => void navigate(`/orders/${order.id}/propose`) }
-      : null,
+    order.status !== 'open'
+      ? null
+      : order.mine
+        ? share
+        : { text: t('order.propose'), onClick: () => void navigate(`/orders/${order.id}/propose`) },
   )
   const give = order.give_currency
   const money = (amount: string) => <Money locale={locale} amount={amount} code={give} />

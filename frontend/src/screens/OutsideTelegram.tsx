@@ -2,8 +2,7 @@ import { Send } from 'lucide-react'
 
 import { resolveLocale } from '../i18n/locale'
 import { translate } from '../i18n/translate'
-
-const BOT_URL = 'https://t.me/peertopeerswapbot'
+import { BOT_URL } from '../routes'
 
 /** Swap needs Telegram; a plain browser gets this and a way there (§1, v1 adds more). */
 export function OutsideTelegram() {

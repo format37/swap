@@ -5,7 +5,7 @@ import type { Me } from '../api/client'
 import type { Deal } from '../api/deals'
 import type { Order, QuoteRequest, RateSpec } from '../api/orders'
 import { backOverride } from '../back'
-import { confirmAction, useMainButton, type MainAction } from '../telegram'
+import { confirmAction, copyText, shareLink, useMainButton, type MainAction } from '../telegram'
 import { fakeApi, json, problem } from '../test/api'
 import { deal } from '../test/deals'
 import { renderScreen } from '../test/render'
@@ -18,6 +18,8 @@ vi.mock('../telegram', () => ({
   confirmAction: vi.fn(() => Promise.resolve(true)),
   hapticNotify: vi.fn(),
   hapticSelect: vi.fn(),
+  shareLink: vi.fn(() => true),
+  copyText: vi.fn(() => Promise.resolve(true)),
 }))
 
 function mainButton(): MainAction | null {
@@ -849,6 +851,91 @@ describe('the order card', () => {
     })
   })
 
+  describe('shared by its author (O1)', () => {
+    const LINK = `https://t.me/peertopeerswapbot?startapp=order_${ORDER_ID}`
+    // What each currency comes to is the api's (N1): no arithmetic here.
+    const priced = order({
+      mine: true,
+      amount_remaining: '120000.00',
+      wants: [
+        {
+          currency: 'GEL',
+          country: 'GE',
+          rate_spec: fixed('GEL', 'RUB', '29.20'),
+          receive_methods: ['cash'],
+          amount: '4109.59',
+        },
+        {
+          currency: 'USD',
+          country: 'GE',
+          rate_spec: MARKET,
+          receive_methods: ['bank'],
+          amount: '1475.40',
+        },
+        // The market has no rate for it now.
+        {
+          currency: 'KZT',
+          country: 'KZ',
+          rate_spec: MARKET,
+          receive_methods: ['cash'],
+          amount: null,
+        },
+      ],
+    })
+    // Intl spaces thousands with a no-break space.
+    const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ')
+
+    it('in words, with the link to its card, through Telegram’s share sheet', async () => {
+      fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced) })
+      renderScreen(<OrderCard me={me} />, { route, path })
+      await screen.findByText(/Осталось/)
+      expect(mainButton()?.text).toBe('Поделиться заявкой')
+      press()
+      expect(shareLink).toHaveBeenCalledTimes(1)
+      const [url, text] = vi.mocked(shareLink).mock.lastCall ?? []
+      expect(url).toBe(LINK)
+      expect(plain(text ?? '')).toBe(
+        [
+          'Отдаю 120 000 ₽ RUB · Россия',
+          '→ 4 109,59 ₾ GEL по 1 GEL = 29,20 RUB',
+          '→ ≈ 1 475,40 $ USD по рынку',
+          '→ ₸ KZT по рынку',
+          'Заявка № 17 в Swap',
+        ].join('\n'),
+      )
+      // Nothing of its note, which may say where to pay.
+      expect(text).not.toContain('метро')
+    })
+
+    it('to the clipboard where there is no share sheet', async () => {
+      vi.mocked(shareLink).mockReturnValueOnce(false)
+      fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced) })
+      renderScreen(<OrderCard me={me} />, { route, path })
+      await screen.findByText(/Осталось/)
+      press()
+      await waitFor(() => {
+        expect(mainButton()?.text).toBe('Скопировано')
+      })
+      const copied = vi.mocked(copyText).mock.lastCall?.[0] ?? ''
+      expect(copied.startsWith('Отдаю')).toBe(true)
+      expect(copied.endsWith(`\n${LINK}`)).toBe(true)
+    })
+
+    it('only while it is open, and only by its author', async () => {
+      fakeApi({
+        [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, { ...priced, status: 'closed' }),
+      })
+      const { unmount } = renderScreen(<OrderCard me={me} />, { route, path })
+      await screen.findByText(/Осталось/)
+      expect(mainButton()).toBeNull()
+      unmount()
+      fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, { ...priced, mine: false }) })
+      renderScreen(<OrderCard me={me} />, { route, path })
+      await screen.findByText(/Осталось/)
+      expect(mainButton()?.text).toBe('Предложить сделку')
+    })
+  })
+
   it('says nothing of a minimum of 0, and that there is no last day', async () => {
     fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>
@@ -956,7 +1043,7 @@ describe('the order card', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Удалить у себя' }))
     // Home, and never «Заявка не найдена» on the way (QUESTIONS M1).
     expect(await screen.findByTestId('elsewhere')).toHaveTextContent(/^\/$/)
-    expect(screen.queryByText('Заявка не найдена.')).toBeNull()
+    expect(screen.queryByText('Заявка не найдена или вам не видна.')).toBeNull()
     expect(served.filter((asked) => asked === `GET /api/v1/orders/${ORDER_ID}`)).toHaveLength(1)
     expect(confirmAction).toHaveBeenCalledWith(
       'Удалить у себя ваши сделки по этой заявке? У автора они останутся. Вернуть их нельзя.',
@@ -1065,10 +1152,10 @@ describe('the order card', () => {
     })
   })
 
-  it('tells a stranger only that there is no such order', async () => {
+  it('tells a stranger only that there is no such order, or none they may see', async () => {
     fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => problem(404, 'order.not_found') })
     renderScreen(<OrderCard me={me} />, { route, path })
-    expect(await screen.findByText('Заявка не найдена.')).toBeInTheDocument()
+    expect(await screen.findByText('Заявка не найдена или вам не видна.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull()
   })
 })
