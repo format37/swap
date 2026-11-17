@@ -540,10 +540,11 @@ export interface paths {
         };
         /**
          * List Orders
-         * @description «Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
-         *     are mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to
-         *     authors at most so many handshakes away (QUESTIONS J2). Each wanted currency says what
-         *     the order's amount comes to in it (QUESTIONS N1).
+         * @description «Открытые мне» (`visible`), «Мои» (`mine`, the open ones), those no longer open
+         *     whose deal of mine still runs (`running`, QUESTIONS P1), or the finished ones that are
+         *     mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to authors at
+         *     most so many handshakes away (QUESTIONS J2). Each wanted currency says what the order's
+         *     amount comes to in it (QUESTIONS N1).
          */
         get: operations["list_orders"];
         put?: never;
@@ -1141,6 +1142,8 @@ export interface components {
             payout_methods: components["schemas"]["PaymentKind"][];
             /** Repeat Day */
             repeat_day: number | null;
+            /** Running */
+            running: boolean;
             status: components["schemas"]["OrderStatus"];
             visibility?: components["schemas"]["Visibility"] | null;
             /** Wants */
@@ -3230,7 +3233,7 @@ export interface operations {
     list_orders: {
         parameters: {
             query?: {
-                scope?: "visible" | "mine" | "history";
+                scope?: "visible" | "mine" | "running" | "history";
                 within?: number | null;
             };
             header?: never;

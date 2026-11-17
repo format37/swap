@@ -6,7 +6,8 @@ nobody once it is deleted; the author always until then; anyone else only while 
 open and its last day, if it has one, hasn't passed, and while they are within its reach:
 on its list and still linked at 0, or at most that many handshakes away, or joined by any
 chain at ∞ (QUESTIONS J2). `seen_by` adds the order's history: whoever had a deal on it
-may still open it, but not take it up again (QUESTIONS H4).
+may still open it, but not take it up again (QUESTIONS H4). `running_for` tells an order
+no longer open whose deal still runs from one that is over (QUESTIONS P1).
 """
 
 import uuid
@@ -158,6 +159,26 @@ def seen_by(viewer: uuid.UUID) -> ColumnElement[bool]:
     return or_(open_to(viewer), dealt)
 
 
+def running_for(viewer: uuid.UUID) -> ColumnElement[bool]:
+    """Whether a deal on the order that `viewer` is a side of still runs: for its author
+    any deal on it, for anyone else their own (QUESTIONS P1, ADR-0042)."""
+    return exists().where(
+        Deal.order_id == Order.id,
+        Deal.status.not_in(TERMINAL),
+        or_(Deal.proposer_id == viewer, Deal.acceptor_id == viewer),
+    )
+
+
+async def running(
+    db: AsyncSession, viewer: uuid.UUID, order_ids: Collection[uuid.UUID]
+) -> set[uuid.UUID]:
+    """Which of these orders have a deal running for `viewer`, in one query."""
+    if not order_ids:
+        return set()
+    found = await db.scalars(select(Order.id).where(Order.id.in_(order_ids), running_for(viewer)))
+    return set(found)
+
+
 def _check(draft: OrderDraft, author: User, assets: Collection[str]) -> None:
     wanted = [want.currency for want in draft.wants]
     if any(currency not in assets for currency in [draft.give_currency, *wanted]):
@@ -266,21 +287,26 @@ async def create(
 async def feed(
     db: AsyncSession,
     viewer: uuid.UUID,
-    scope: Literal["visible", "mine", "history"],
+    scope: Literal["visible", "mine", "running", "history"],
     within: Within = None,
 ) -> list[tuple[Order, User]]:
     """«Открытые мне», earliest available first (FR-2.4), from authors at most `within`
-    handshakes away; «Мои», the open ones, newest first; or the history: orders no longer
-    open that are mine or that I had a deal on, latest change first (QUESTIONS H4)."""
+    handshakes away; «Мои», the open ones, newest first; those no longer open with a deal
+    still running, mine or mine to settle (QUESTIONS P1); or the history: the rest of
+    those no longer open that are mine or that I had a deal on, latest change first
+    (QUESTIONS H4)."""
     query = select(Order, User).join(User, User.id == Order.author_id)
     if scope == "mine":
         query = query.where(
             Order.author_id == viewer, Order.status == OrderStatus.OPEN, seen_by(viewer)
         ).order_by(Order.created_at.desc())
-    elif scope == "history":
-        query = query.where(Order.status != OrderStatus.OPEN, seen_by(viewer)).order_by(
-            Order.updated_at.desc()
-        )
+    elif scope in ("running", "history"):
+        runs = running_for(viewer)
+        query = query.where(
+            Order.status != OrderStatus.OPEN,
+            seen_by(viewer),
+            runs if scope == "running" else ~runs,
+        ).order_by(Order.updated_at.desc())
     else:
         query = query.where(Order.author_id != viewer, open_to(viewer, within)).order_by(
             Order.available_from, Order.created_at

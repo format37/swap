@@ -65,6 +65,9 @@ class Order(BaseModel):
     wants: list[WantShown]
     note: str | None
     status: OrderStatus
+    # A deal on it that the signed-in user is a side of still runs: an order no longer
+    # open is then in progress, not over (QUESTIONS P1, ADR-0042).
+    running: bool
     # «Повторять каждый месяц, N-го числа», None once it doesn't (QUESTIONS K7).
     repeat_day: int | None
     created_at: datetime
@@ -76,7 +79,7 @@ class Order(BaseModel):
     chain: list[Person] | None = None
 
     @classmethod
-    def of(cls, order: OrderRow, author: User, viewer: uuid.UUID) -> Self:
+    def of(cls, order: OrderRow, author: User, viewer: uuid.UUID, *, running: bool) -> Self:
         return cls(
             id=order.id,
             number=order.number,
@@ -101,6 +104,7 @@ class Order(BaseModel):
             ],
             note=order.note,
             status=OrderStatus(order.status),
+            running=running,
             repeat_day=order.repeat_day,
             created_at=order.created_at,
         )
@@ -121,7 +125,8 @@ async def _priced(shown: Order, market: Market) -> Order:
 
 
 async def _with_visibility(db: Db, order: OrderRow, author: User, viewer: uuid.UUID) -> Order:
-    shown = Order.of(order, author, viewer)
+    running = order.id in await orders.running(db, viewer, [order.id])
+    shown = Order.of(order, author, viewer, running=running)
     if shown.mine:
         people = await orders.chosen_viewers(db, order.id)
         shown.visibility = Visibility(
@@ -149,15 +154,20 @@ async def list_orders(
     user: CurrentUser,
     db: Db,
     market: MarketRates,
-    scope: Literal["visible", "mine", "history"] = "visible",
+    scope: Literal["visible", "mine", "running", "history"] = "visible",
     within: Annotated[int | None, Query(ge=1, le=3)] = None,
 ) -> list[Order]:
-    """«Открытые мне» (`visible`), «Мои» (`mine`, the open ones) or the finished ones that
-    are mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to
-    authors at most so many handshakes away (QUESTIONS J2). Each wanted currency says what
-    the order's amount comes to in it (QUESTIONS N1)."""
+    """«Открытые мне» (`visible`), «Мои» (`mine`, the open ones), those no longer open
+    whose deal of mine still runs (`running`, QUESTIONS P1), or the finished ones that are
+    mine or that I had a deal on (`history`). `within` narrows «Открытые мне» to authors at
+    most so many handshakes away (QUESTIONS J2). Each wanted currency says what the order's
+    amount comes to in it (QUESTIONS N1)."""
     found = await orders.feed(db, user.id, scope, within)
-    return [await _priced(Order.of(order, author, user.id), market) for order, author in found]
+    runs = await orders.running(db, user.id, [order.id for order, _ in found])
+    return [
+        await _priced(Order.of(order, author, user.id, running=order.id in runs), market)
+        for order, author in found
+    ]
 
 
 @router.get("/{order_id}", responses={404: {"model": Problem}})
