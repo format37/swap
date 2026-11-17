@@ -10,10 +10,11 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from swap import deals, orders, sharing
-from swap.api.deps import AppSettings, CurrentUser, Db, MarketRates
+from swap.api.deps import AppSettings, CurrentUser, Db, MarketRates, SealKeys
 from swap.api.errors import Problem
 from swap.api.v1.links import NewInvite
 from swap.api.v1.people import Person
+from swap.crypto import Keys, open_details
 from swap.deeplinks import invite_url
 from swap.errors import DomainError
 from swap.market import Market, lock
@@ -36,7 +37,8 @@ class Visibility(BaseModel):
 
 
 class WantShown(Want):
-    """A wanted currency as the api shows it."""
+    """A wanted currency as the api shows it. Its `details` are for its author alone
+    (ADR-0043): None for anyone else."""
 
     # What the order's amount comes to in this currency: all that remains while it is
     # open, all it was for once over. At the author's rate, or the market's of the moment
@@ -79,12 +81,21 @@ class Order(BaseModel):
     chain: list[Person] | None = None
 
     @classmethod
-    def of(cls, order: OrderRow, author: User, viewer: uuid.UUID, *, running: bool) -> Self:
+    def of(
+        cls,
+        order: OrderRow,
+        author: User,
+        viewer: uuid.UUID,
+        *,
+        running: bool,
+        keys: Keys | None,
+    ) -> Self:
+        mine = order.author_id == viewer
         return cls(
             id=order.id,
             number=order.number,
             author=Person.of(author),
-            mine=order.author_id == viewer,
+            mine=mine,
             give_currency=order.give_currency,
             give_country=order.give_country,
             amount_min=order.amount_min,
@@ -99,6 +110,7 @@ class Order(BaseModel):
                     country=want.country,
                     rate_spec=parse_spec(want.rate_spec),
                     receive_methods=[PaymentKind(kind) for kind in want.receive_methods],
+                    details=open_details(keys, order.author_id, want.details) if mine else None,
                 )
                 for want in order.wants
             ],
@@ -124,9 +136,11 @@ async def _priced(shown: Order, market: Market) -> Order:
     return shown
 
 
-async def _with_visibility(db: Db, order: OrderRow, author: User, viewer: uuid.UUID) -> Order:
+async def _with_visibility(
+    db: Db, order: OrderRow, author: User, viewer: uuid.UUID, keys: Keys | None
+) -> Order:
     running = order.id in await orders.running(db, viewer, [order.id])
-    shown = Order.of(order, author, viewer, running=running)
+    shown = Order.of(order, author, viewer, running=running, keys=keys)
     if shown.mine:
         people = await orders.chosen_viewers(db, order.id)
         shown.visibility = Visibility(
@@ -143,17 +157,21 @@ async def _with_visibility(db: Db, order: OrderRow, author: User, viewer: uuid.U
 
 
 @router.post("", status_code=201, responses={422: {"model": Problem}})
-async def create_order(body: OrderDraft, user: CurrentUser, db: Db, settings: AppSettings) -> Order:
-    order = await orders.create(db, user, body, settings.assets)
+async def create_order(
+    body: OrderDraft, user: CurrentUser, db: Db, settings: AppSettings, keys: SealKeys
+) -> Order:
+    order = await orders.create(db, user, body, settings.assets, keys=keys)
     await db.commit()
-    return await _with_visibility(db, order, user, user.id)
+    return await _with_visibility(db, order, user, user.id, keys)
 
 
 @router.get("")
 async def list_orders(
+    *,
     user: CurrentUser,
     db: Db,
     market: MarketRates,
+    keys: SealKeys,
     scope: Literal["visible", "mine", "running", "history"] = "visible",
     within: Annotated[int | None, Query(ge=1, le=3)] = None,
 ) -> list[Order]:
@@ -165,17 +183,19 @@ async def list_orders(
     found = await orders.feed(db, user.id, scope, within)
     runs = await orders.running(db, user.id, [order.id for order, _ in found])
     return [
-        await _priced(Order.of(order, author, user.id, running=order.id in runs), market)
+        await _priced(Order.of(order, author, user.id, running=order.id in runs, keys=keys), market)
         for order, author in found
     ]
 
 
 @router.get("/{order_id}", responses={404: {"model": Problem}})
-async def get_order(order_id: uuid.UUID, user: CurrentUser, db: Db, market: MarketRates) -> Order:
+async def get_order(
+    order_id: uuid.UUID, user: CurrentUser, db: Db, market: MarketRates, keys: SealKeys
+) -> Order:
     """An order's card. Each wanted currency says what the order's amount comes to in it, as
     in lists, for its author to share it in words (QUESTIONS O1)."""
     order, author = await orders.get(db, user.id, order_id)
-    return await _priced(await _with_visibility(db, order, author, user.id), market)
+    return await _priced(await _with_visibility(db, order, author, user.id, keys), market)
 
 
 @router.post(
@@ -197,28 +217,28 @@ async def share_order(
 
 
 @router.post("/{order_id}/close", responses={404: {"model": Problem}, 409: {"model": Problem}})
-async def close_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
+async def close_order(order_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Order:
     order = await orders.close(db, user.id, order_id)
     await db.commit()
-    return await _with_visibility(db, order, user, user.id)
+    return await _with_visibility(db, order, user, user.id, keys)
 
 
 @router.post("/{order_id}/reopen", responses={404: {"model": Problem}, 409: {"model": Problem}})
-async def reopen_order(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
+async def reopen_order(order_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Order:
     """A closed order, open again as it was (QUESTIONS F7)."""
     order = await orders.reopen(db, user, order_id)
     await db.commit()
-    return await _with_visibility(db, order, user, user.id)
+    return await _with_visibility(db, order, user, user.id, keys)
 
 
 @router.post(
     "/{order_id}/stop-repeating", responses={404: {"model": Problem}, 409: {"model": Problem}}
 )
-async def stop_repeating(order_id: uuid.UUID, user: CurrentUser, db: Db) -> Order:
+async def stop_repeating(order_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Order:
     """«Больше не повторять»: no more monthly copies of this series (QUESTIONS K7)."""
     order = await orders.stop_repeating(db, user.id, order_id)
     await db.commit()
-    return await _with_visibility(db, order, user, user.id)
+    return await _with_visibility(db, order, user, user.id, keys)
 
 
 @router.delete(

@@ -474,6 +474,20 @@ function WantGroup({ form, change }: StepProps) {
               }))
             }}
           />
+          {/* Where the author takes it, for whoever they deal with alone (QUESTIONS Q1). */}
+          <label className="block px-4 pt-3 pb-1 text-sm text-hint">
+            {want.currency ? t('wizard.details', { currency: want.currency }) : t('details.title')}
+            <textarea
+              className="mt-1 block min-h-16 w-full resize-none bg-transparent text-base text-text outline-none placeholder:text-hint"
+              maxLength={500}
+              placeholder={t('details.placeholder')}
+              value={want.details}
+              onChange={(event) => {
+                update(index, { details: event.target.value })
+              }}
+            />
+          </label>
+          <p className="px-4 pb-3 text-xs text-hint">{t('details.private')}</p>
           {form.wants.length > 1 && (
             <button
               type="button"

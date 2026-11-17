@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router'
 import type { Me } from '../api/client'
 import {
   useAccept,
+  useSetDetails,
   useDeal,
   useDeleteDeal,
   useStep,
@@ -54,10 +55,11 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
   const navigate = useNavigate()
   const step = useStep(deal.id)
   const accept = useAccept(deal.id)
+  const details = useSetDetails(deal.id)
   const remove = useDeleteDeal()
   const next = nextFor(deal, me.id)
   const other = deal.role === 'proposer' ? deal.acceptor : deal.proposer
-  const failure = step.error ?? accept.error ?? remove.error
+  const failure = step.error ?? accept.error ?? remove.error ?? details.error
   // Its proposer deletes a finished deal for themselves; its author, the whole order (J3).
   const deletable = deal.role === 'proposer' && FINISHED.includes(deal.status)
 
@@ -126,6 +128,12 @@ function Shown({ deal, me }: { deal: Deal; me: Me }) {
           mark={next.marks[one.seq]}
           busy={step.isPending}
           onMark={markOn(one)}
+          onDetails={
+            // Its payee's, while the deal runs and until it is sent (QUESTIONS Q1).
+            one.payee.id === me.id && ['proposed', 'accepted'].includes(deal.status) && !one.sent_at
+              ? (text) => details.mutateAsync({ seq: one.seq, details: text })
+              : undefined
+          }
         />
       ))}
 

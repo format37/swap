@@ -298,6 +298,14 @@ function Shown({ order, me }: { order: Order; me: Me }) {
               {!order.mine && order.status === 'open' && <Counter order={order} want={want} />}
               {/* How the author takes this currency (QUESTIONS L1). */}
               <Methods kinds={want.receive_methods} inset={false} />
+              {/* Where: its author's alone, until a deal they accept (QUESTIONS Q1). */}
+              {want.details && (
+                <div className="mt-1 flex flex-col gap-0.5">
+                  <p className="text-sm text-hint">{t('details.title')}</p>
+                  <p className="break-words whitespace-pre-line">{want.details}</p>
+                  <p className="text-xs text-hint">{t('details.private')}</p>
+                </div>
+              )}
             </div>
           )
         })}

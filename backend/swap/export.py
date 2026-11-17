@@ -11,12 +11,12 @@ import io
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap.deals import kept_by
 from swap.i18n import Locale, t
-from swap.models import Deal, DealLeg, Order, User
+from swap.models import Deal, DealLeg, Event, Order, User
 from swap.rates import FixedRate
 from swap.users import person_label
 
@@ -34,7 +34,11 @@ def _leg(leg: DealLeg | None, locale: Locale) -> list[str]:
 async def deals_csv(db: AsyncSession, user: User, locale: Locale) -> tuple[bytes, int]:
     """The CSV of `user`'s deals, and how many rows it has."""
     zone = ZoneInfo(user.tz or "UTC")
-    deals = list(await db.scalars(select(Deal).where(kept_by(user.id)).order_by(Deal.created_at)))
+    # The journal's first line breaks a tie: deals proposed in one transaction share now().
+    first = select(func.min(Event.id)).where(Event.deal_id == Deal.id).scalar_subquery()
+    deals = list(
+        await db.scalars(select(Deal).where(kept_by(user.id)).order_by(Deal.created_at, first))
+    )
     numbers = dict(
         (
             await db.execute(

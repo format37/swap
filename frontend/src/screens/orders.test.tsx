@@ -389,6 +389,13 @@ describe('the wizard', () => {
     expect(served).toContain('POST /api/v1/quote')
     const payIn = screen.getByRole('group', { name: 'Как получать' })
     fireEvent.click(within(payIn).getByRole('button', { name: 'Наличные' }))
+    // Where the author takes GEL, for whoever they deal with alone (QUESTIONS Q1).
+    fireEvent.change(screen.getByRole('textbox', { name: 'Реквизиты для GEL' }), {
+      target: { value: 'TBC 4276 1234 5678 9012' },
+    })
+    expect(
+      screen.getByText('Видны только вам. Когда вы примете сделку, их увидит её вторая сторона.'),
+    ).toBeInTheDocument()
     press()
 
     // Step 2 opens with step 1 in a line.
@@ -431,6 +438,7 @@ describe('the wizard', () => {
           country: 'GE',
           rate_spec: fixed('GEL', 'RUB', '29.20'),
           receive_methods: ['cash'],
+          details: 'TBC 4276 1234 5678 9012',
         },
       ],
       reach: 2,
@@ -986,6 +994,23 @@ describe('the order card', () => {
       await screen.findByText(/Осталось/)
       expect(mainButton()?.text).toBe('Предложить сделку')
     })
+  })
+
+  it('shows its author where they take a currency, for them alone (Q1)', async () => {
+    const wants = order().wants.map((want, at) =>
+      at === 0 ? { ...want, details: 'TBC 4276 1234' } : want,
+    )
+    fakeApi({
+      [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, order({ mine: true, wants })),
+      'GET /api/v1/deals': () => json(200, []),
+    })
+    renderScreen(<OrderCard me={me} />, { route, path })
+    expect(await screen.findByText('TBC 4276 1234')).toBeInTheDocument()
+    expect(
+      screen.getAllByText(
+        'Видны только вам. Когда вы примете сделку, их увидит её вторая сторона.',
+      ),
+    ).toHaveLength(1)
   })
 
   it('says nothing of a minimum of 0, and that there is no last day', async () => {

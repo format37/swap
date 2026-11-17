@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap.api.errors import ApiError
 from swap.config import Settings
+from swap.crypto import Keys
 from swap.db import Sessionmaker
 from swap.market import Market
 from swap.models import AuthSession, User
@@ -30,9 +31,15 @@ def get_market(request: Request) -> Market:
     return cast(Market, request.app.state.market)
 
 
+def get_keys(request: Request) -> Keys | None:
+    return cast(Keys | None, request.app.state.keys)
+
+
 Db = Annotated[AsyncSession, Depends(get_db)]
 AppSettings = Annotated[Settings, Depends(get_app_settings)]
 MarketRates = Annotated[Market, Depends(get_market)]
+# What seals payment details (ADR-0043); None where the server has no key.
+SealKeys = Annotated[Keys | None, Depends(get_keys)]
 
 # auto_error=False: a missing header is our own 401 problem, not FastAPI's 403.
 _bearer = HTTPBearer(auto_error=False)

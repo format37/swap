@@ -280,6 +280,26 @@
         "title": "DealStatus",
         "type": "string"
       },
+      "Details": {
+        "additionalProperties": false,
+        "description": "Where the payee takes a transfer, in their own words (QUESTIONS Q1, ADR-0043).",
+        "properties": {
+          "details": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "title": "Details",
+        "type": "object"
+      },
       "Dispute": {
         "additionalProperties": false,
         "properties": {
@@ -443,6 +463,17 @@
           "currency": {
             "title": "Currency",
             "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           },
           "due_date": {
             "anyOf": [
@@ -1874,6 +1905,18 @@
             "title": "Currency",
             "type": "string"
           },
+          "details": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
           "rate_spec": {
             "discriminator": {
               "mapping": {
@@ -1913,7 +1956,7 @@
       },
       "WantShown": {
         "additionalProperties": false,
-        "description": "A wanted currency as the api shows it.",
+        "description": "A wanted currency as the api shows it. Its `details` are for its author alone\n(ADR-0043): None for anyone else.",
         "properties": {
           "amount": {
             "anyOf": [
@@ -1942,6 +1985,18 @@
             "pattern": "^[A-Z]{3,5}$",
             "title": "Currency",
             "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           },
           "rate_spec": {
             "discriminator": {
@@ -2321,7 +2376,7 @@
     },
     "/api/v1/deals/{deal_id}/accept": {
       "post": {
-        "description": "Accept a proposal on your order: one tap, no payment details (QUESTIONS G1).",
+        "description": "Accept a proposal on your order: one tap (QUESTIONS G1). Your details for the\ncurrency it pays you in, if the order has them, go on to your leg (ADR-0043).",
         "operationId": "accept_deal",
         "parameters": [
           {
@@ -2944,6 +2999,126 @@
           }
         ],
         "summary": "Dispute Deal",
+        "tags": [
+          "deals"
+        ]
+      }
+    },
+    "/api/v1/deals/{deal_id}/legs/{seq}/details": {
+      "put": {
+        "description": "Where you take this transfer, such as a card number, for the other side to pay to\n(QUESTIONS Q1, ADR-0043). Its payee's alone, while the deal runs and until it is sent;\nblank clears it.",
+        "operationId": "set_leg_details",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deal_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Deal Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "seq",
+            "required": true,
+            "schema": {
+              "maximum": 2,
+              "minimum": 1,
+              "title": "Seq",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Details"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deal"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Leg Details",
         "tags": [
           "deals"
         ]

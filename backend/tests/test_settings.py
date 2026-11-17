@@ -10,6 +10,7 @@ from httpx import AsyncClient
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from swap.api.v1.me import TERMS_VERSION
 from swap.config import Settings
 from swap.i18n import MESSAGES
 from swap.models import Notification, NotificationStatus, User
@@ -162,6 +163,6 @@ async def test_the_agreement_is_accepted_once_per_version(
     assert accepted.status_code == 200
     assert accepted.json()["terms_accepted"] is True
     # A new text asks everyone again (QUESTIONS K3).
-    monkeypatch.setattr("swap.api.v1.me.TERMS_VERSION", 2)
+    monkeypatch.setattr("swap.api.v1.me.TERMS_VERSION", TERMS_VERSION + 1)
     assert (await client.get("/api/v1/me", headers=alex)).json()["terms_accepted"] is False
     assert (await client.post("/api/v1/me/terms")).status_code == 401

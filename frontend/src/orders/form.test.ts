@@ -89,12 +89,14 @@ it('turns a filled wizard into exactly what the api takes', () => {
         country: 'GE',
         rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'GEL', quote: 'RUB', value: '29.20' }] },
         receive_methods: ['cash'],
+        details: null,
       },
       {
         currency: 'USD',
         country: 'GE',
         rate_spec: { v: 1, type: 'fixed', quotes: [{ base: 'USD', quote: 'RUB', value: '81.5' }] },
         receive_methods: ['cash'],
+        details: null,
       },
     ],
     reach: 2,
@@ -102,6 +104,18 @@ it('turns a filled wizard into exactly what the api takes', () => {
     repeat_day: null,
     note: 'наличные',
   })
+})
+
+it('sends each currency its own details, trimmed, and none for a blank one (Q1)', () => {
+  const form = filled()
+  const draft = toDraft({
+    ...form,
+    wants: form.wants.map((want, at) => ({
+      ...want,
+      details: at === 0 ? '  TBC 4276 1234 5678 9012\n' : '   ',
+    })),
+  })
+  expect(draft.wants.map((want) => want.details)).toEqual(['TBC 4276 1234 5678 9012', null])
 })
 
 it('sends the last day only once it is asked for (F3)', () => {

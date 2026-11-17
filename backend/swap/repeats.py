@@ -89,7 +89,12 @@ async def _copy(
         note=template.note,
     )
     series = (template.series_id or template.id, today.replace(day=1))
-    return await orders.create(db, author, draft, assets, series=series)
+    order = await orders.create(db, author, draft, assets, series=series)
+    # Its details as they were, sealed for the same author (ADR-0043).
+    sealed = {(w.currency, w.country): w.details for w in template.wants}
+    for want in order.wants:
+        want.details = sealed.get((want.currency, want.country))
+    return order
 
 
 async def repeat_due(db: AsyncSession, assets: Collection[str], now: datetime) -> int:

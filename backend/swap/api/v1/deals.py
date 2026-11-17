@@ -10,10 +10,11 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from swap import deals
-from swap.api.deps import CurrentUser, Db, MarketRates
+from swap.api.deps import CurrentUser, Db, MarketRates, SealKeys
 from swap.api.errors import Problem
 from swap.api.v1.people import Person
-from swap.deals import Dispute, Proposal
+from swap.crypto import Keys, open_details
+from swap.deals import Details, Dispute, Proposal
 from swap.models import Deal as DealRow
 from swap.models import DealStatus, Event, PaymentKind, User
 from swap.models import Order as OrderRow
@@ -41,6 +42,9 @@ class Leg(BaseModel):
     due_date: date | None
     sent_at: datetime | None
     received_at: datetime | None
+    # Where the payee takes it, such as a card number, in their words (ADR-0043). Only the
+    # deal's two sides ever see a deal; the payee may change it until it is sent.
+    details: str | None = None
 
 
 class Rate(BaseModel):
@@ -105,6 +109,8 @@ class Deal(BaseModel):
         journal: list[Event],
         viewer: uuid.UUID,
         order_number: int,
+        *,
+        keys: Keys | None,
     ) -> Self:
         def person(user_id: uuid.UUID) -> Person:
             return Person.of(people[user_id])
@@ -141,6 +147,7 @@ class Deal(BaseModel):
                     due_date=leg.due_date,
                     sent_at=leg.sent_at,
                     received_at=leg.received_at,
+                    details=open_details(keys, leg.payee_id, leg.details),
                 )
                 for leg in deal.legs
             ],
@@ -174,7 +181,7 @@ def _event(event: Event) -> DealEvent:
     )
 
 
-async def _shown(db: Db, rows: list[DealRow], viewer: uuid.UUID) -> list[Deal]:
+async def _shown(db: Db, rows: list[DealRow], viewer: uuid.UUID, keys: Keys | None) -> list[Deal]:
     ids = {user for row in rows for user in (row.proposer_id, row.acceptor_id)}
     # Read afresh: a deal that just settled has changed both scores (ADR-0029).
     fresh = select(User).where(User.id.in_(ids)).execution_options(populate_existing=True)
@@ -189,18 +196,18 @@ async def _shown(db: Db, rows: list[DealRow], viewer: uuid.UUID) -> list[Deal]:
         ).all()
     )
     return [
-        Deal.of(row, people, await deals.journal(db, row), viewer, numbers[row.order_id])
+        Deal.of(row, people, await deals.journal(db, row), viewer, numbers[row.order_id], keys=keys)
         for row in rows
     ]
 
 
-async def _done(db: Db, row: DealRow, viewer: uuid.UUID) -> Deal:
+async def _done(db: Db, row: DealRow, viewer: uuid.UUID, keys: Keys | None) -> Deal:
     await db.commit()
     # Read back what was stored, so a response looks like any later read of the same deal.
     fresh = await db.scalar(
         select(DealRow).where(DealRow.id == row.id).execution_options(populate_existing=True)
     )
-    [shown] = await _shown(db, [fresh or row], viewer)
+    [shown] = await _shown(db, [fresh or row], viewer, keys)
     return shown
 
 
@@ -210,29 +217,36 @@ async def _done(db: Db, row: DealRow, viewer: uuid.UUID) -> Deal:
     responses={**REFUSALS, 422: {"model": Problem}},
 )
 async def propose_deal(
-    order_id: uuid.UUID, body: Proposal, user: CurrentUser, db: Db, market: MarketRates
+    order_id: uuid.UUID,
+    *,
+    body: Proposal,
+    user: CurrentUser,
+    db: Db,
+    market: MarketRates,
+    keys: SealKeys,
 ) -> Deal:
     """Propose a deal on an order open to you (FR-4.1), at its rate of this moment."""
     row = await deals.propose(db, user, order_id, body, market)
-    return await _done(db, row, user.id)
+    return await _done(db, row, user.id, keys)
 
 
 @router.get("/deals")
 async def list_deals(
     user: CurrentUser,
     db: Db,
+    keys: SealKeys,
     scope: Literal["active", "history", "all"] = "active",
     order_id: uuid.UUID | None = None,
 ) -> list[Deal]:
     """Your deals: open ones, closed ones, or all; on one order, if you name it."""
     rows = await deals.mine(db, user.id, scope, order_id)
-    return await _shown(db, rows, user.id)
+    return await _shown(db, rows, user.id, keys)
 
 
 @router.get("/deals/{deal_id}", responses={404: {"model": Problem}})
-async def get_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
+async def get_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
     row = await deals.get(db, user.id, deal_id)
-    [shown] = await _shown(db, [row], user.id)
+    [shown] = await _shown(db, [row], user.id, keys)
     return shown
 
 
@@ -246,59 +260,78 @@ async def delete_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Response
 
 
 @router.post("/deals/{deal_id}/accept", responses=REFUSALS)
-async def accept_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
-    """Accept a proposal on your order: one tap, no payment details (QUESTIONS G1)."""
-    return await _done(db, await deals.accept(db, user, deal_id), user.id)
+async def accept_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
+    """Accept a proposal on your order: one tap (QUESTIONS G1). Your details for the
+    currency it pays you in, if the order has them, go on to your leg (ADR-0043)."""
+    return await _done(db, await deals.accept(db, user, deal_id), user.id, keys)
 
 
 @router.post("/deals/{deal_id}/decline", responses=REFUSALS)
-async def decline_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
-    return await _done(db, await deals.decline(db, user, deal_id), user.id)
+async def decline_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
+    return await _done(db, await deals.decline(db, user, deal_id), user.id, keys)
 
 
 @router.post("/deals/{deal_id}/withdraw", responses=REFUSALS)
-async def withdraw_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
-    return await _done(db, await deals.withdraw(db, user, deal_id), user.id)
+async def withdraw_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
+    return await _done(db, await deals.withdraw(db, user, deal_id), user.id, keys)
 
 
 @router.post("/deals/{deal_id}/cancel", responses=REFUSALS)
-async def cancel_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
+async def cancel_deal(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
     """Before the first «Отправлено», either side cancels alone (FR-4.5)."""
-    return await _done(db, await deals.cancel(db, user, deal_id), user.id)
+    return await _done(db, await deals.cancel(db, user, deal_id), user.id, keys)
 
 
 @router.post("/deals/{deal_id}/legs/{seq}/sent", responses=REFUSALS)
-async def mark_sent(deal_id: uuid.UUID, seq: Seq, user: CurrentUser, db: Db) -> Deal:
-    return await _done(db, await deals.mark_sent(db, user, deal_id, seq), user.id)
+async def mark_sent(
+    deal_id: uuid.UUID, seq: Seq, user: CurrentUser, db: Db, keys: SealKeys
+) -> Deal:
+    return await _done(db, await deals.mark_sent(db, user, deal_id, seq), user.id, keys)
 
 
 @router.post("/deals/{deal_id}/legs/{seq}/received", responses=REFUSALS)
-async def mark_received(deal_id: uuid.UUID, seq: Seq, user: CurrentUser, db: Db) -> Deal:
-    return await _done(db, await deals.mark_received(db, user, deal_id, seq), user.id)
+async def mark_received(
+    deal_id: uuid.UUID, seq: Seq, user: CurrentUser, db: Db, keys: SealKeys
+) -> Deal:
+    return await _done(db, await deals.mark_received(db, user, deal_id, seq), user.id, keys)
+
+
+@router.put("/deals/{deal_id}/legs/{seq}/details", responses={**REFUSALS, 503: {"model": Problem}})
+async def set_leg_details(
+    deal_id: uuid.UUID, seq: Seq, *, body: Details, user: CurrentUser, db: Db, keys: SealKeys
+) -> Deal:
+    """Where you take this transfer, such as a card number, for the other side to pay to
+    (QUESTIONS Q1, ADR-0043). Its payee's alone, while the deal runs and until it is sent;
+    blank clears it."""
+    return await _done(
+        db, await deals.set_details(db, user, deal_id, seq, body, keys=keys), user.id, keys
+    )
 
 
 @router.post("/deals/{deal_id}/cancel-request", responses=REFUSALS)
-async def request_cancel(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
+async def request_cancel(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
     """After the first «Отправлено», ask the other side to cancel (FR-4.5)."""
-    return await _done(db, await deals.request_cancel(db, user, deal_id), user.id)
+    return await _done(db, await deals.request_cancel(db, user, deal_id), user.id, keys)
 
 
 @router.post("/deals/{deal_id}/cancel-request/approve", responses=REFUSALS)
-async def approve_cancel(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
+async def approve_cancel(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
     row = await deals.answer_cancel(db, user, deal_id, approve=True)
-    return await _done(db, row, user.id)
+    return await _done(db, row, user.id, keys)
 
 
 @router.post("/deals/{deal_id}/cancel-request/reject", responses=REFUSALS)
-async def reject_cancel(deal_id: uuid.UUID, user: CurrentUser, db: Db) -> Deal:
+async def reject_cancel(deal_id: uuid.UUID, user: CurrentUser, db: Db, keys: SealKeys) -> Deal:
     row = await deals.answer_cancel(db, user, deal_id, approve=False)
-    return await _done(db, row, user.id)
+    return await _done(db, row, user.id, keys)
 
 
 @router.post("/deals/{deal_id}/dispute", responses={**REFUSALS, 422: {"model": Problem}})
-async def dispute_deal(deal_id: uuid.UUID, body: Dispute, user: CurrentUser, db: Db) -> Deal:
+async def dispute_deal(
+    deal_id: uuid.UUID, body: Dispute, user: CurrentUser, db: Db, keys: SealKeys
+) -> Deal:
     """«Проблема», with a word on what went wrong (FR-4.6)."""
-    return await _done(db, await deals.dispute(db, user, deal_id, body.note), user.id)
+    return await _done(db, await deals.dispute(db, user, deal_id, body.note), user.id, keys)
 
 
 class Resolution(BaseModel):
@@ -308,7 +341,9 @@ class Resolution(BaseModel):
 
 
 @router.post("/deals/{deal_id}/resolve", responses={**REFUSALS, 422: {"model": Problem}})
-async def resolve_deal(deal_id: uuid.UUID, body: Resolution, user: CurrentUser, db: Db) -> Deal:
+async def resolve_deal(
+    deal_id: uuid.UUID, body: Resolution, user: CurrentUser, db: Db, keys: SealKeys
+) -> Deal:
     """Propose how a dispute ended; the same outcome from the other side settles it."""
     row = await deals.resolve(db, user, deal_id, body.outcome)
-    return await _done(db, row, user.id)
+    return await _done(db, row, user.id, keys)

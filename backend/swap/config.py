@@ -39,11 +39,17 @@ class Settings(BaseSettings):
     # same DSN, and the api lets the browser reach its host.
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = 0.1
+    # Payment details are sealed with these keys (ADR-0043): "k1:<base64url>,k2:…", from
+    # `python -m swap.tools.new_key`. Without them, saving payment details is off.
+    recipient_keys: SecretStr | None = None
+    recipient_key_id: str = "k1"
 
     def secrets(self) -> tuple[str, ...]:
-        """What the log redactor must never print: the token and its secret half."""
+        """What the log redactor must never print: the token, its secret half, the keys."""
         token = self.telegram_bot_token.get_secret_value()
-        return (token, token.partition(":")[2])
+        keys = self.recipient_keys.get_secret_value() if self.recipient_keys else ""
+        materials = [part.partition(":")[2] for part in keys.split(",") if part]
+        return (token, token.partition(":")[2], *materials)
 
 
 @lru_cache

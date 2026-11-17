@@ -25,6 +25,7 @@ from sqlalchemy import ColumnElement, and_, exists, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap import orders
+from swap.crypto import Keys, seal_details
 from swap.deeplinks import target
 from swap.erasure import erase_deal, erase_order_if_bare
 from swap.errors import DomainError
@@ -263,6 +264,12 @@ async def accept(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
     # Used up once no deal fits: below the minimum, or nothing left at all (Q-B5, F4).
     if order.amount_remaining < orders.smallest_deal(order):
         order.status = OrderStatus.FULFILLED
+    # Where the author takes this currency goes on to their leg, for the other side to pay
+    # to (ADR-0043). Sealed for the author both times, so it moves as it is.
+    wanted = {(want.currency, want.country): want.details for want in order.wants}
+    for leg in deal.legs:
+        if leg.payee_id == deal.acceptor_id and leg.details is None:
+            leg.details = wanted.get((leg.currency, leg.country))
 
     deal.accepted_at = datetime.now(UTC)
     await record(db, deal, actor.id, "accepted", DealStatus.ACCEPTED)
@@ -289,6 +296,32 @@ async def withdraw(db: AsyncSession, actor: User, deal_id: uuid.UUID) -> Deal:
     _mine(actor.id == deal.proposer_id)
     await record(db, deal, actor.id, "withdrawn", DealStatus.CANCELLED)
     _tell(db, deal, deal.acceptor_id, "deal.withdrawn", actor)
+    return deal
+
+
+class Details(BaseModel):
+    """Where the payee takes a transfer, in their own words (QUESTIONS Q1, ADR-0043)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # A card or account number, a wallet, a place to meet; None or blank clears it.
+    details: str | None = Field(default=None, max_length=500)
+
+
+async def set_details(
+    db: AsyncSession, actor: User, deal_id: uuid.UUID, seq: int, body: Details, *, keys: Keys | None
+) -> Deal:
+    """The payee says where they take a transfer, while the deal runs and until it is sent.
+
+    No journal line: it moves nothing, and once the payer has sent it, it is fixed.
+    """
+    deal = await _lock(db, actor.id, deal_id)
+    leg = _leg(deal, seq)
+    _require(deal, DealStatus.PROPOSED, DealStatus.ACCEPTED)
+    _mine(actor.id == leg.payee_id)
+    if leg.sent_at is not None:
+        raise _refuse("deal.invalid_transition")
+    leg.details = seal_details(keys, actor.id, body.details)
     return deal
 
 
