@@ -15,11 +15,15 @@ export type MarketQuote = components['schemas']['MarketQuote']
 const ORDERS = ['orders'] as const
 
 /**
- * «Открытые мне» (`visible`), «Мои» (`mine`, the open ones), or the finished ones that are
- * mine or that I had a deal on (`history`, QUESTIONS H4). `within` narrows «Открытые мне»
- * to authors at most so many handshakes away; null is the whole network (J2).
+ * «Открытые мне» (`visible`), «Мои» (`mine`, the open ones), those no longer open whose
+ * deal of mine still runs (`running`, QUESTIONS P1), or the finished ones that are mine or
+ * that I had a deal on (`history`, QUESTIONS H4). `within` narrows «Открытые мне» to
+ * authors at most so many handshakes away; null is the whole network (J2).
  */
-export function useOrders(scope: 'visible' | 'mine' | 'history', within: number | null = null) {
+export function useOrders(
+  scope: 'visible' | 'mine' | 'running' | 'history',
+  within: number | null = null,
+) {
   return useQuery({
     queryKey: [...ORDERS, scope, within],
     queryFn: () => unwrap(api.GET('/api/v1/orders', { params: { query: { scope, within } } })),

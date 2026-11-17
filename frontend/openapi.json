@@ -1077,6 +1077,10 @@
             ],
             "title": "Repeat Day"
           },
+          "running": {
+            "title": "Running",
+            "type": "boolean"
+          },
           "status": {
             "$ref": "#/components/schemas/OrderStatus"
           },
@@ -1114,6 +1118,7 @@
           "wants",
           "note",
           "status",
+          "running",
           "repeat_day",
           "created_at"
         ],
@@ -4293,7 +4298,7 @@
     },
     "/api/v1/orders": {
       "get": {
-        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones) or the finished ones that\nare mine or that I had a deal on (`history`). `within` narrows \u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb to\nauthors at most so many handshakes away (QUESTIONS J2). Each wanted currency says what\nthe order's amount comes to in it (QUESTIONS N1).",
+        "description": "\u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb (`visible`), \u00ab\u041c\u043e\u0438\u00bb (`mine`, the open ones), those no longer open\nwhose deal of mine still runs (`running`, QUESTIONS P1), or the finished ones that are\nmine or that I had a deal on (`history`). `within` narrows \u00ab\u041e\u0442\u043a\u0440\u044b\u0442\u044b\u0435 \u043c\u043d\u0435\u00bb to authors at\nmost so many handshakes away (QUESTIONS J2). Each wanted currency says what the order's\namount comes to in it (QUESTIONS N1).",
         "operationId": "list_orders",
         "parameters": [
           {
@@ -4305,6 +4310,7 @@
               "enum": [
                 "visible",
                 "mine",
+                "running",
                 "history"
               ],
               "title": "Scope",

@@ -96,6 +96,7 @@ function order(changes: Partial<Order> = {}): Order {
     ],
     note: 'наличные у метро',
     status: 'open',
+    running: false,
     repeat_day: null,
     created_at: '2026-10-22T10:00:00Z',
     visibility: null,
@@ -181,6 +182,19 @@ describe('Home', () => {
         const scope = new URL(request.url).searchParams.get('scope')
         if (scope === 'mine')
           return json(200, [order({ id: 'mine', mine: true, author: NINO, give_currency: 'GEL' })])
+        // Used up by a deal that still runs (QUESTIONS P1).
+        if (scope === 'running')
+          return json(200, [
+            order({
+              id: 'busy',
+              number: 9,
+              mine: true,
+              author: NINO,
+              status: 'fulfilled',
+              running: true,
+              amount_remaining: '0.00',
+            }),
+          ])
         if (scope === 'history')
           return json(200, [
             order({
@@ -207,6 +221,10 @@ describe('Home', () => {
     expect(open).toHaveTextContent('150 000₽RUB₾GEL$USD№ 17 · Alex · 25 окт. – 8 нояб.')
     const mine = screen.getByRole('heading', { name: 'Мои заявки' }).parentElement
     expect(mine).toHaveTextContent('Открыта')
+    // No longer open, but its deal runs: in progress, not finished (P1).
+    const running = screen.getByRole('heading', { name: 'Заявки в работе' }).parentElement
+    expect(running).toHaveTextContent('№ 9 · В работе · 25 окт. – 8 нояб.')
+    expect(running).not.toHaveTextContent('Исполнена')
     // Finished orders wait folded under one line, mine and those I dealt on (H4).
     const past = screen.getByRole('button', { name: 'Завершённые заявки (2)' })
     expect(past).toHaveAttribute('aria-expanded', 'false')
@@ -1050,14 +1068,16 @@ describe('the order card', () => {
     expect(offered).toEqual(actions)
   })
 
-  it('offers its author no deletion while a deal on it runs (J3)', async () => {
+  it('says it is in progress, and offers no deletion, while a deal on it runs (J3, P1)', async () => {
     fakeApi({
       [`GET /api/v1/orders/${ORDER_ID}`]: () =>
-        json(200, order({ mine: true, status: 'fulfilled' })),
+        json(200, order({ mine: true, status: 'fulfilled', running: true })),
       'GET /api/v1/deals': () => json(200, [deal({ status: 'accepted', role: 'acceptor' })]),
     })
     renderScreen(<OrderCard me={me} />, { route, path })
     await screen.findByText(/Сделки по заявке/i)
+    // After the author's @username, in the same line.
+    expect(screen.getByText(/№ 17 · В работе$/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Удалить заявку' })).toBeNull()
   })
 

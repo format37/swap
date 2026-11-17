@@ -31,7 +31,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0020](0020-market-rate-from-coinbase.md) | The wizard's rate starts at the market's: Coinbase's public rates | Accepted |
 | [0021](0021-deals-plan-the-exchange-only.md) | Deals plan the exchange only: no payment details, three ways to pay | Accepted |
 | [0022](0022-market-rate-by-default.md) | An order follows the market unless its author fixes the rate | Accepted; per wanted currency since 0026 |
-| [0023](0023-an-orders-history.md) | An order's history stays open to whoever dealt on it | Accepted; amended by 0028 and 0030 |
+| [0023](0023-an-orders-history.md) | An order's history stays open to whoever dealt on it | Accepted; amended by 0028, 0030 and 0042 |
 | [0024](0024-both-legs-at-once.md) | A deal's two transfers run at once, with no order and no dates | Accepted |
 | [0025](0025-error-reports-to-sentry.md) | Errors go to one Sentry project, with nothing personal in them | Accepted |
 | [0026](0026-two-step-wizard-and-a-rate-per-currency.md) | The wizard in two steps, and a rate for each wanted currency | Accepted |
@@ -50,6 +50,7 @@ Status is one of **Proposed** (written, waiting for the owner's review),
 | [0039](0039-a-settings-tab-and-the-language-telegram-has.md) | A settings tab, and the language Telegram has | Accepted |
 | [0040](0040-amounts-typed-in-any-languages-way.md) | Amount fields read every language's way of writing a number | Accepted |
 | [0041](0041-sharing-an-order.md) | Sharing an order: the order in words, and a one-time invite that carries it | Accepted |
+| [0042](0042-orders-in-progress.md) | An order no longer open whose deal runs is in progress, not finished | Accepted |
 
 Rows 0001–0007 are the developer decisions of SPEC §13, one record each. The
 owner accepted them on 2026-10-21; the amendments made on acceptance are in the

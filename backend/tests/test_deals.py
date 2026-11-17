@@ -426,33 +426,108 @@ async def test_without_a_market_rate_there_is_no_proposal(
     assert response.json()["code"] == "rate.unavailable"
 
 
-async def test_an_order_stays_in_the_history_of_both_sides_once_it_is_over(
+async def orders_in(world: World, headers: Headers, scope: str) -> list[str]:
+    listed = await world.client.get("/api/v1/orders", params={"scope": scope}, headers=headers)
+    assert listed.status_code == 200
+    return [order["id"] for order in listed.json()]
+
+
+async def settle(world: World, deal: dict[str, Any], proposer: Headers | None = None) -> None:
+    """Both transfers sent and received: the proposer's first, then Alex's."""
+    proposer = proposer or world.nino
+    for headers, path in (
+        (proposer, "legs/1/sent"),
+        (world.alex, "legs/1/received"),
+        (world.alex, "legs/2/sent"),
+        (proposer, "legs/2/received"),
+    ):
+        await world.ok(headers, deal, path)
+
+
+async def test_an_order_whose_deal_runs_is_in_progress_for_its_sides_alone(
     world: World,
 ) -> None:
     deal = await world.propose(amount="145000.00")
     await world.ok(world.alex, deal, "accept")
     assert await world.remaining() == "5000.00:fulfilled"
     order_id = world.order["id"]
+    # Gio, who had no part in it, has it nowhere (QUESTIONS P1).
+    for scope in ("running", "history"):
+        assert await orders_in(world, world.gio, scope) == []
+    # Used up, but its deal runs: in progress for both sides, not finished.
+    for headers in (world.alex, world.nino):
+        assert await orders_in(world, headers, "running") == [order_id]
+        assert await orders_in(world, headers, "history") == []
+        card = (await world.client.get(f"/api/v1/orders/{order_id}", headers=headers)).json()
+        assert (card["status"], card["running"]) == ("fulfilled", True)
+    # «Мои» holds the open ones only.
+    assert await orders_in(world, world.alex, "mine") == []
+
+
+async def test_an_order_stays_in_the_history_of_both_sides_once_it_is_over(
+    world: World,
+) -> None:
+    deal = await world.propose(amount="145000.00")
+    await world.ok(world.alex, deal, "accept")
+    await settle(world, deal)
+    order_id = world.order["id"]
     # Nino can still open the order she dealt on, though it is no longer open to anyone
     # (QUESTIONS H4); Gio, who had no part in it, can't.
     seen = await world.client.get(f"/api/v1/orders/{order_id}", headers=world.nino)
-    assert (seen.status_code, seen.json()["status"]) == (200, "fulfilled")
+    assert (seen.status_code, seen.json()["status"], seen.json()["running"]) == (
+        200,
+        "fulfilled",
+        False,
+    )
     hidden = await world.client.get(f"/api/v1/orders/{order_id}", headers=world.gio)
     assert hidden.status_code == 404
     for headers in (world.alex, world.nino):
-        past = await world.client.get(
-            "/api/v1/orders", params={"scope": "history"}, headers=headers
-        )
-        assert [order["id"] for order in past.json()] == [order_id]
+        assert await orders_in(world, headers, "history") == [order_id]
+        assert await orders_in(world, headers, "running") == []
     # «Мои» holds the open ones only; the finished one went to the history.
-    mine = await world.client.get("/api/v1/orders", params={"scope": "mine"}, headers=world.alex)
-    assert mine.json() == []
+    assert await orders_in(world, world.alex, "mine") == []
     # Its card lists the deals on it, the finished ones as well.
-    await world.ok(world.nino, deal, "cancel")
     listed = await world.client.get(
         "/api/v1/deals", params={"scope": "all", "order_id": order_id}, headers=world.alex
     )
-    assert [(d["id"], d["status"]) for d in listed.json()] == [(deal["id"], "cancelled")]
+    assert [(d["id"], d["status"]) for d in listed.json()] == [(deal["id"], "settled")]
+
+
+async def test_only_ones_own_running_deal_keeps_an_order_in_progress(
+    client: AsyncClient, sessionmaker: Sessions
+) -> None:
+    world = await World(client, sessionmaker).build()
+    await linked(world.client, world.sessions, world.alex, GIO)
+    # Gio's deal ends; then Nino's takes the rest, and runs.
+    first = await world.propose(world.gio, amount="50000.00")
+    await world.ok(world.alex, first, "accept")
+    await settle(world, first, world.gio)
+    second = await world.propose(amount="100000.00")
+    await world.ok(world.alex, second, "accept")
+    assert await world.remaining() == "0.00:fulfilled"
+    order_id = world.order["id"]
+    # For Gio the order is over; for Alex and Nino it is in progress.
+    assert await orders_in(world, world.gio, "running") == []
+    assert await orders_in(world, world.gio, "history") == [order_id]
+    card = (await world.client.get(f"/api/v1/orders/{order_id}", headers=world.gio)).json()
+    assert card["running"] is False
+    for headers in (world.alex, world.nino):
+        assert await orders_in(world, headers, "running") == [order_id]
+        assert await orders_in(world, headers, "history") == []
+
+
+async def test_a_closed_order_is_in_progress_while_an_accepted_deal_runs(world: World) -> None:
+    deal = await world.propose()
+    await world.ok(world.alex, deal, "accept")
+    closed = await world.client.post(
+        f"/api/v1/orders/{world.order['id']}/close", headers=world.alex
+    )
+    assert (closed.json()["status"], closed.json()["running"]) == ("closed", True)
+    assert await orders_in(world, world.alex, "running") == [world.order["id"]]
+    # Cancelled before anything was sent, the deal ends, and the closed order is over.
+    await world.ok(world.nino, deal, "cancel")
+    assert await orders_in(world, world.alex, "running") == []
+    assert await orders_in(world, world.alex, "history") == [world.order["id"]]
 
 
 async def test_a_proposal_alone_keeps_a_closed_order_in_sight_for_its_proposer(

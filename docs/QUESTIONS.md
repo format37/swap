@@ -22,6 +22,9 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part L** records the owner's notes after testing parts J and K, the same evening.
 - **Part M** records the owner's notes after testing part L, the same evening.
 - **Part N** records the owner's requests of 2026-10-23.
+- **Part O** records the owner's request of 2026-11-17, sharing an order, and its answer.
+- **Part P** records the owner's note of the same day: an order whose deal runs isn't
+  finished.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1239,3 +1242,22 @@ The shared link is now a one-time invite that carries the order:
   invitations and lasts 72 hours. The «Связи» tab lists it as «Заявка № N».
 
 The default above no longer holds. → PR 1.41, ADR-0041 as amended.
+
+## P. The owner's note (2026-11-17)
+
+### P1 · An order whose deal runs is in progress, not finished
+
+> Please check why order 9 comes to finished. It is not finished - it is in procesing so
+> far
+
+> Maybe we need a group named Processing or something like this
+
+Order № 9 was for exactly 10 000 RUB, its minimum too. Accepting the one deal on it took
+all of it, so the order was used up («Исполнена»), and Home put every order no longer open
+under «Завершённые заявки». Its deal had only just been accepted: nothing was sent yet.
+
+Home now has a group «Заявки в работе» between «Мои заявки» and the finished ones. An
+order that takes no more proposals (used up, closed or past its dates) waits there while
+a deal of yours on it runs, and says «В работе» in its row and on its card. Once the
+deal is settled or cancelled, the order moves to «Завершённые заявки». For whoever dealt
+on it, only their own deal counts. → PR 1.42, ADR-0042.

@@ -57,6 +57,8 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
       order, a chat picked, and the link opened by someone who sees the order and by
       someone new to Swap. Does the share sheet open on your phone?
 - [x] O1's question: should the link also invite a stranger? Yes, 2026-11-17.
+- [ ] A look at «Заявки в работе» (PR 1.42): order № 9 there until its deal is settled,
+      then under «Завершённые заявки».
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -348,6 +350,13 @@ in, and typing USD moves GEL.
 - [x] The request screen names the order and leads to it once accepted. The «Связи» tab
       lists such an invite as «Заявка № N».
 
+**The owner's note of 2026-11-17.** QUESTIONS part P.
+
+**PR 1.42 — Orders in progress** (P1; ADR-0042)
+- [x] `GET /orders?scope=running`: orders no longer open with a deal of the viewer's
+      still running. `history` leaves them out, and each order says `running`.
+- [x] Home shows them as «Заявки в работе», and a row or card says «В работе».
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -419,14 +428,15 @@ Phase 1, PR by PR:
 | 1.39 | N1 · amounts in the order lists | 0.25 |
 | 1.40 | O1 · sharing an order | 0.5 |
 | 1.41 | O1 · the shared link invites | 0.75 |
+| 1.42 | P1 · orders in progress | 0.25 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 27.5** |
+| | **Total** | **≈ 27.75** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
 K9 into the privacy page's, because each touches the same screens. The owner's notes
 after testing them (part L) add about 3.25, those after part L (part M) 1 more, and the
-requests of parts N and O 1.5.
+requests of parts N and O 1.5, and the note of part P 0.25.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
