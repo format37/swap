@@ -97,6 +97,13 @@ describe('the «Связи» tab', () => {
           outgoing: [link({ person: GIO, status: 'pending', accepted_at: null })],
           invites: [
             { id: 'c1', created_at: '2026-10-22T10:00:00Z', expires_at: '2026-10-25T10:00:00Z' },
+            // One that carries an order says which (ADR-0041).
+            {
+              id: 'c2',
+              created_at: '2026-10-22T10:00:00Z',
+              expires_at: '2026-10-25T10:00:00Z',
+              order_number: 17,
+            },
           ],
         } satisfies LinksBody),
     })
@@ -110,6 +117,7 @@ describe('the «Связи» tab', () => {
       'Gio0ждёт ответа',
     )
     expect(screen.getByText('Ссылка действует до 25 окт.')).toBeInTheDocument()
+    expect(screen.getByText('Заявка № 17: ссылка действует до 25 окт.')).toBeInTheDocument()
   })
 
   it('creates an invitation from the main button and opens it', async () => {
@@ -252,6 +260,41 @@ describe('the request screen', () => {
     expect(mainButton()?.text).toBe('На главную')
     pressMainButton()
     expect(await screen.findByTestId('elsewhere')).toHaveTextContent('/')
+  })
+
+  it('names an order shared with it, and goes to the order once accepted (ADR-0041)', async () => {
+    const ORDER = { id: 'd0000000-0000-4000-8000-000000000001', number: 17 }
+    const { served } = fakeApi({
+      [`GET /api/v1/links/${LINK_ID}`]: () =>
+        json(200, {
+          ...link({ person: ALEX, status: 'pending', direction: 'incoming', accepted_at: null }),
+          mutual_links: 0,
+          shared_order: ORDER,
+        }),
+      [`POST /api/v1/links/${LINK_ID}/accept`]: () =>
+        json(200, link({ person: ALEX, direction: 'incoming' })),
+    })
+    renderScreen(<LinkScreen />, { route, path })
+    expect(
+      await screen.findByText('Делится с вами заявкой № 17. Установите связь, чтобы её увидеть.'),
+    ).toBeInTheDocument()
+    pressMainButton()
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent(`/orders/${ORDER.id}`)
+    expect(served).toContain(`POST /api/v1/links/${LINK_ID}/accept`)
+  })
+
+  it('leads to the shared order rather than Home once linked', async () => {
+    const ORDER = { id: 'd0000000-0000-4000-8000-000000000001', number: 17 }
+    fakeApi({
+      [`GET /api/v1/links/${LINK_ID}`]: () =>
+        json(200, { ...link({ direction: 'incoming' }), mutual_links: 0, shared_order: ORDER }),
+    })
+    renderScreen(<LinkScreen />, { route, path })
+    await screen.findByText(/Связь установлена/)
+    expect(screen.queryByText(/Делится с вами/)).toBeNull()
+    expect(mainButton()?.text).toBe('Открыть заявку № 17')
+    pressMainButton()
+    expect(await screen.findByTestId('elsewhere')).toHaveTextContent(`/orders/${ORDER.id}`)
   })
 
   it('declines after confirmation and goes back to the tab', async () => {

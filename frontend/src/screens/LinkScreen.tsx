@@ -38,11 +38,21 @@ export function LinkScreen() {
   const incoming = link.data?.status === 'pending' && link.data.direction === 'incoming'
 
   const { t } = useI18n()
+  // An order its author shared by this invite opens once they are linked (ADR-0041).
+  const shared = link.data?.shared_order
+  const toOrder = () => {
+    if (shared) void navigate(`/orders/${shared.id}`, { replace: true })
+  }
   useMainButton(
     !link.data
       ? null
       : !incoming
-        ? { text: t('link.home'), onClick: () => void navigate('/', { replace: true }) }
+        ? shared && link.data.status === 'active'
+          ? {
+              text: t('link.open_order', { number: t('order.number', { n: shared.number }) }),
+              onClick: toOrder,
+            }
+          : { text: t('link.home'), onClick: () => void navigate('/', { replace: true }) }
         : {
             text: t('link.accept'),
             busy: answer.isPending,
@@ -52,6 +62,7 @@ export function LinkScreen() {
                 {
                   onSuccess: () => {
                     hapticNotify('success')
+                    toOrder()
                   },
                   onError: () => {
                     hapticNotify('error')
@@ -171,6 +182,11 @@ function Shown({ link, answer }: { link: LinkDetail; answer: ReturnType<typeof u
         </Section>
       )}
       {failure && <p className="px-6 text-destructive">{t(errorMessage(failure))}</p>}
+      {link.status === 'pending' && link.direction === 'incoming' && link.shared_order && (
+        <p className="px-6">
+          {t('link.shared_order', { number: t('order.number', { n: link.shared_order.number }) })}
+        </p>
+      )}
       {link.status === 'pending' && link.direction === 'incoming' && (
         <p className="px-6 text-sm text-hint">{t('links.how')}</p>
       )}

@@ -54,6 +54,16 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "{name} — новая заявка № {number}. Отдаёт: до {amount} {currency}. "
             "Взамен хочет: {wants}."
         ),
+        "invite.order_requested": (
+            "{name} приглашает вас в Swap и делится заявкой № {number}.\n\n"
+            "Swap помогает знакомым договариваться об обмене денег между странами: каждый "
+            "платит получателю другого у себя. Сам Swap деньги не хранит и не переводит, "
+            "он только планирует и записывает.\n\n"
+            "Откройте приглашение и установите связь, чтобы увидеть заявку."
+        ),
+        "invite.order_shared": (
+            "{name} делится с вами заявкой № {number}. Откройте её, чтобы предложить сделку."
+        ),
         "invite.already_linked": "Связь уже есть: {name}.",
         "invite.own": (
             "Это ваша собственная ссылка-приглашение. Отправьте её тому, кого хотите пригласить."
@@ -142,6 +152,16 @@ MESSAGES: dict[Locale, dict[str, str]] = {
             "{name} — new offer No. {number}. Gives: up to {amount} {currency}. "
             "Wants in return: {wants}."
         ),
+        "invite.order_requested": (
+            "{name} invites you to Swap and shares offer No. {number} with you.\n\n"
+            "Swap helps people who know each other arrange money swaps across countries: "
+            "each pays the other's recipient at home. Swap itself never holds or moves "
+            "money; it only plans and records.\n\n"
+            "Open the invitation and link up to see the offer."
+        ),
+        "invite.order_shared": (
+            "{name} shares offer No. {number} with you. Open it to propose a deal."
+        ),
         "invite.already_linked": "You are already linked: {name}.",
         "invite.own": (
             "This is your own invitation link. Send it to the person you want to invite."
@@ -229,6 +249,16 @@ MESSAGES: dict[Locale, dict[str, str]] = {
         "order.opened": (
             "{name} — ახალი განცხადება № {number}. გასცემს: მაქსიმუმ {amount} {currency}. "
             "სანაცვლოდ სურს: {wants}."
+        ),
+        "invite.order_requested": (
+            "{name} გიწვევთ Swap-ში და გიზიარებთ განცხადებას № {number}.\n\n"
+            "Swap ეხმარება ნაცნობებს, შეთანხმდნენ ფულის გაცვლაზე ქვეყნებს შორის: "
+            "თითოეული უხდის მეორის მიმღებს საკუთარ ქვეყანაში. თავად Swap ფულს არ ინახავს "
+            "და არ გადარიცხავს, ის მხოლოდ გეგმავს და აღრიცხავს.\n\n"
+            "გახსენით მოწვევა და დაუკავშირდით, რომ განცხადება ნახოთ."
+        ),
+        "invite.order_shared": (
+            "{name} გიზიარებთ განცხადებას № {number}. გახსენით, რომ გარიგება შესთავაზოთ."
         ),
         "invite.already_linked": "კავშირი უკვე არსებობს: {name}.",
         "invite.own": (

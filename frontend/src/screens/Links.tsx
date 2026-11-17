@@ -119,7 +119,13 @@ function InviteRow({ invite }: { invite: Invite }) {
     <div className="flex min-h-12 items-center gap-3 px-4 py-2">
       <Link2 aria-hidden className="size-6 shrink-0 text-accent" />
       <span className="min-w-0 flex-1 truncate">
-        {t('links.invite_until', { date: formatDate(locale, invite.expires_at) })}
+        {/* One that carries an order says which (ADR-0041). */}
+        {invite.order_number
+          ? t('links.invite_order_until', {
+              number: t('order.number', { n: invite.order_number }),
+              date: formatDate(locale, invite.expires_at),
+            })
+          : t('links.invite_until', { date: formatDate(locale, invite.expires_at) })}
       </span>
       <button
         type="button"

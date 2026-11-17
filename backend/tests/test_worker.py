@@ -23,13 +23,16 @@ from starlette.applications import Starlette
 from swap.bot.setup import configure_bot
 from swap.config import Settings
 from swap.i18n import t
-from swap.links import create_invite
+from swap.links import ask, create_invite
 from swap.models import Link, LinkStatus, ServiceHeartbeat, User
+from swap.orders import OrderDraft
+from swap.orders import create as create_order
 from swap.users import upsert_user
 from swap.worker.app import create_app
 from swap.worker.jobs import beat
 from tests.conftest import TEST_BOT_TOKEN
 from tests.telegram import RecordingSession
+from tests.test_orders import draft
 
 Sessions = async_sessionmaker[AsyncSession]
 RELAY = {"Authorization": f"Bearer {TEST_BOT_TOKEN}"}
@@ -210,6 +213,70 @@ async def test_an_invite_names_the_inviter_and_opens_the_request(
     [[button]] = sent.reply_markup.inline_keyboard  # type: ignore[union-attr]
     assert button.text == "Открыть"
     assert button.url == f"https://t.me/peertopeerswapbot?startapp=link_{link.id}"
+
+
+async def shared_by(sessions: Sessions, settings: Settings, telegram_id: int, name: str) -> Any:
+    """An order by someone who has pressed /start before, and a link that shares it."""
+    profile = SimpleNamespace(
+        id=telegram_id, first_name=name, last_name=None, username=name.lower(), language_code="ru"
+    )
+    async with sessions() as db:
+        author = await upsert_user(db, profile, can_message=True)
+        order = await create_order(db, author, OrderDraft.model_validate(draft()), settings.assets)
+        _, token = await create_invite(db, author.id, timedelta(hours=72), order_id=order.id)
+        await db.commit()
+    return SimpleNamespace(order=order, token=token)
+
+
+async def test_a_shared_order_invites_a_stranger_and_names_the_order(
+    worker: tuple[AsyncClient, Starlette],
+    telegram: RecordingSession,
+    sessionmaker: Sessions,
+    settings: Settings,
+) -> None:
+    client, app = worker
+    shared = await shared_by(sessionmaker, settings, 1001, "Alex")
+    await client.post("/message", json=message(f"/start inv_{shared.token}"), headers=RELAY)
+    await settle(app)
+    [sent] = telegram.calls
+    assert isinstance(sent, SendMessage)
+    number = shared.order.number
+    assert sent.text.startswith(f"Alex (@alex) приглашает вас в Swap и делится заявкой № {number}.")
+    async with sessionmaker() as db:
+        link = await db.scalar(select(Link))
+    assert link is not None
+    assert link.status == LinkStatus.PENDING
+    # The request first: the order shows once Nino accepts it (ADR-0041).
+    [[button]] = sent.reply_markup.inline_keyboard  # type: ignore[union-attr]
+    assert button.url == f"https://t.me/peertopeerswapbot?startapp=link_{link.id}"
+
+
+async def test_a_shared_order_opens_for_someone_who_sees_it(
+    worker: tuple[AsyncClient, Starlette],
+    telegram: RecordingSession,
+    sessionmaker: Sessions,
+    settings: Settings,
+) -> None:
+    client, app = worker
+    shared = await shared_by(sessionmaker, settings, 1001, "Alex")
+    # Nino accepted Alex's link earlier.
+    await client.post("/message", json=message("/start"), headers=RELAY)
+    await settle(app)
+    async with sessionmaker() as db:
+        users = {user.telegram_id: user for user in await db.scalars(select(User))}
+        await ask(db, users[1001].id, users[2001].id)
+        await ask(db, users[2001].id, users[1001].id)
+        await db.commit()
+    telegram.calls.clear()
+    await client.post("/message", json=message(f"/start inv_{shared.token}"), headers=RELAY)
+    await settle(app)
+    [sent] = telegram.calls
+    assert isinstance(sent, SendMessage)
+    assert sent.text == t(
+        "ru", "invite.order_shared", name="Alex (@alex)", number=str(shared.order.number)
+    )
+    [[button]] = sent.reply_markup.inline_keyboard  # type: ignore[union-attr]
+    assert button.url == f"https://t.me/peertopeerswapbot?startapp=order_{shared.order.id}"
 
 
 @pytest.mark.parametrize(

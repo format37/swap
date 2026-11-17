@@ -53,9 +53,10 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
       Home after «Удалить у себя», and «You'd give» on someone else's order. «Все
       исправлено», 2026-10-23.
 - [ ] A look at the order lists' amounts (PR 1.39).
-- [ ] A phone check of sharing an order (PR 1.40): «Поделиться заявкой» on your open order,
-      a chat picked, and the link opened by someone your order reaches. And O1's question:
-      should the link also invite a stranger?
+- [ ] A phone check of sharing an order (PRs 1.40–1.41): «Поделиться заявкой» on your open
+      order, a chat picked, and the link opened by someone who sees the order and by
+      someone new to Swap. Does the share sheet open on your phone?
+- [x] O1's question: should the link also invite a stranger? Yes, 2026-11-17.
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -340,6 +341,13 @@ in, and typing USD moves GEL.
       order in words and its `startapp` link, or the clipboard where there is none.
 - [x] An order one can't see reads «не найдена или вам не видна».
 
+**PR 1.41 — The shared link invites strangers too** (O1's answer; ADR-0041 as amended)
+- [x] An invite may carry an order (migration 0025), made by `POST /orders/{id}/share`.
+- [x] /start with it shows the order to whoever sees it, and to anyone else after a link
+      request they accept. At reach 0 they join the order's list.
+- [x] The request screen names the order and leads to it once accepted. The «Связи» tab
+      lists such an invite as «Заявка № N».
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -410,14 +418,15 @@ Phase 1, PR by PR:
 | 1.38 | M3 · what the other side gives, on the card | 0.5 |
 | 1.39 | N1 · amounts in the order lists | 0.25 |
 | 1.40 | O1 · sharing an order | 0.5 |
+| 1.41 | O1 · the shared link invites | 0.75 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 26.75** |
+| | **Total** | **≈ 27.5** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
 K9 into the privacy page's, because each touches the same screens. The owner's notes
 after testing them (part L) add about 3.25, those after part L (part M) 1 more, and the
-requests of parts N and O 0.75.
+requests of parts N and O 1.5.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 

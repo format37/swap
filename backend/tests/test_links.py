@@ -9,9 +9,10 @@ from httpx import AsyncClient
 from sqlalchemy import func, literal_column, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swap.links import MAX_OUTSTANDING_INVITES, Opened, OpenedInvite, open_invite
+from swap.links import MAX_OUTSTANDING_INVITES, Opened, OpenedInvite
 from swap.models import Invite, Link, LinkStatus, Notification, User
 from swap.sessions import hash_token
+from swap.sharing import open_invite
 from tests.test_auth import bearer, sign_in
 
 Sessions = async_sessionmaker[AsyncSession]

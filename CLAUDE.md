@@ -43,8 +43,8 @@ https://swap.latentstate.dev. Phase 1 (MVP) started the same day.
   GitHub #50–#53, deployed on 2026-10-22. The owner confirmed the fixes on 2026-10-23.
 - So are QUESTIONS part N (the owner's requests of 2026-10-23: amounts in the order
   lists) and part O (his request of 2026-11-17: sharing an order): PRs 1.39–1.40,
-  GitHub #55–#56, deployed by 2026-11-17. O1 asks him whether a shared link should also
-  invite.
+  GitHub #55–#56, deployed by 2026-11-17.
+- O1's answer, a shared link that invites strangers too: PR 1.41, migration 0025.
 - Phase 1 is accepted when the owner confirms (K10). The owner's open items are in
   plan.md: phone checks and the Georgian read.
 - Everything else waits in plan.md's «Потенциальные планы».

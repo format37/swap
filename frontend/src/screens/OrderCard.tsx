@@ -22,6 +22,7 @@ import {
   useOrder,
   useQuote,
   useReopenOrder,
+  useShareOrder,
   useStopRepeating,
   type Order,
   type PaymentKind,
@@ -39,7 +40,6 @@ import { KINDS } from '../money/kinds'
 import { readsAs } from '../orders/form'
 import { shareText } from '../orders/share'
 import { orderDates } from '../orders/words'
-import { startappUrl } from '../routes'
 import {
   confirmAction,
   copyText,
@@ -156,11 +156,12 @@ function Methods({ kinds, inset = true }: { kinds: PaymentKind[]; inset?: boolea
 }
 
 /**
- * «Поделиться заявкой»: Telegram's share sheet with the order in words and its link, which
- * opens its card for those it reaches and for no one else (QUESTIONS O1, ADR-0041). Where
- * there is no share sheet, the same goes to the clipboard.
+ * «Поделиться заявкой»: a fresh one-time link that carries the order, then Telegram's share
+ * sheet with the order in words and that link (QUESTIONS O1, ADR-0041). Whoever opens it
+ * sees the order, linking up with its author first if they must. Where there is no share
+ * sheet, the same goes to the clipboard.
  */
-function useShare(order: Order): MainAction {
+function useShare(order: Order, mint: ReturnType<typeof useShareOrder>): MainAction {
   const i18n = useI18n()
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -174,13 +175,20 @@ function useShare(order: Order): MainAction {
   }, [copied])
   return {
     text: i18n.t(copied ? 'order.share_copied' : 'order.share'),
+    busy: mint.isPending,
     onClick: () => {
-      const url = startappUrl('order', order.id)
-      const text = shareText(i18n, order)
-      if (shareLink(url, text)) return
-      void copyText(`${text}\n${url}`).then((ok) => {
-        hapticNotify(ok ? 'success' : 'error')
-        setCopied(ok)
+      mint.mutate(order.id, {
+        onSuccess: ({ url }) => {
+          const text = shareText(i18n, order)
+          if (shareLink(url, text)) return
+          void copyText(`${text}\n${url}`).then((ok) => {
+            hapticNotify(ok ? 'success' : 'error')
+            setCopied(ok)
+          })
+        },
+        onError: () => {
+          hapticNotify('error')
+        },
       })
     },
   }
@@ -200,7 +208,8 @@ function Shown({ order, me }: { order: Order; me: Me }) {
   const stop = useStopRepeating()
   // Finished deals too: the order's card is its history (QUESTIONS H4).
   const deals = useDeals('all', order.id)
-  const share = useShare(order)
+  const mint = useShareOrder()
+  const share = useShare(order, mint)
 
   // An open order's main action: its author shares it (QUESTIONS O1), anyone else
   // proposes on it (§11).
@@ -421,7 +430,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           </Button>
         </div>
       )}
-      {[close, reopen, remove, stop].map(
+      {[close, reopen, remove, stop, mint].map(
         (action, index) =>
           action.isError && (
             <p key={index} className="px-6 text-destructive">

@@ -852,7 +852,16 @@ describe('the order card', () => {
   })
 
   describe('shared by its author (O1)', () => {
-    const LINK = `https://t.me/peertopeerswapbot?startapp=order_${ORDER_ID}`
+    // A fresh one-time link that carries the order (ADR-0041).
+    const LINK = 'https://t.me/peertopeerswapbot?start=inv_abc'
+    const minted = () =>
+      json(201, {
+        id: 'c1',
+        created_at: '2026-11-17T10:00:00Z',
+        expires_at: '2026-11-20T10:00:00Z',
+        order_number: 17,
+        url: LINK,
+      })
     // What each currency comes to is the api's (N1): no arithmetic here.
     const priced = order({
       mine: true,
@@ -885,13 +894,19 @@ describe('the order card', () => {
     // Intl spaces thousands with a no-break space.
     const plain = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ')
 
-    it('in words, with the link to its card, through Telegram’s share sheet', async () => {
-      fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced) })
+    it('in words, with a link that invites, through Telegram’s share sheet', async () => {
+      const { served } = fakeApi({
+        [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced),
+        [`POST /api/v1/orders/${ORDER_ID}/share`]: minted,
+      })
       renderScreen(<OrderCard me={me} />, { route, path })
       await screen.findByText(/Осталось/)
       expect(mainButton()?.text).toBe('Поделиться заявкой')
       press()
-      expect(shareLink).toHaveBeenCalledTimes(1)
+      await waitFor(() => {
+        expect(shareLink).toHaveBeenCalledTimes(1)
+      })
+      expect(served).toContain(`POST /api/v1/orders/${ORDER_ID}/share`)
       const [url, text] = vi.mocked(shareLink).mock.lastCall ?? []
       expect(url).toBe(LINK)
       expect(plain(text ?? '')).toBe(
@@ -909,7 +924,10 @@ describe('the order card', () => {
 
     it('to the clipboard where there is no share sheet', async () => {
       vi.mocked(shareLink).mockReturnValueOnce(false)
-      fakeApi({ [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced) })
+      fakeApi({
+        [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced),
+        [`POST /api/v1/orders/${ORDER_ID}/share`]: minted,
+      })
       renderScreen(<OrderCard me={me} />, { route, path })
       await screen.findByText(/Осталось/)
       press()
@@ -919,6 +937,22 @@ describe('the order card', () => {
       const copied = vi.mocked(copyText).mock.lastCall?.[0] ?? ''
       expect(copied.startsWith('Отдаю')).toBe(true)
       expect(copied.endsWith(`\n${LINK}`)).toBe(true)
+    })
+
+    it('says why when there are too many unused invitations', async () => {
+      fakeApi({
+        [`GET /api/v1/orders/${ORDER_ID}`]: () => json(200, priced),
+        [`POST /api/v1/orders/${ORDER_ID}/share`]: () => problem(429, 'invite.limit'),
+      })
+      renderScreen(<OrderCard me={me} />, { route, path })
+      await screen.findByText(/Осталось/)
+      press()
+      expect(
+        await screen.findByText(
+          'Слишком много неиспользованных приглашений. Сначала отзовите старые.',
+        ),
+      ).toBeInTheDocument()
+      expect(shareLink).not.toHaveBeenCalled()
     })
 
     it('only while it is open, and only by its author', async () => {

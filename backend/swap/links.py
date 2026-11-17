@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from swap.deeplinks import target
 from swap.errors import DomainError
-from swap.models import Invite, Link, LinkStatus, Mute, User
+from swap.models import Invite, Link, LinkStatus, Mute, Order, User
 from swap.notifications import notify
 from swap.proposals import cancel_between
 from swap.sessions import hash_token
@@ -288,8 +288,11 @@ def _outstanding_invites(me: uuid.UUID) -> Select[Invite]:
     )
 
 
-async def create_invite(db: AsyncSession, me: uuid.UUID, ttl: timedelta) -> tuple[Invite, str]:
-    """A new one-time invite and its token. The token is never stored, only its hash."""
+async def create_invite(
+    db: AsyncSession, me: uuid.UUID, ttl: timedelta, *, order_id: uuid.UUID | None = None
+) -> tuple[Invite, str]:
+    """A new one-time invite and its token. The token is never stored, only its hash. One
+    that carries an order counts against the same cap (ADR-0041)."""
     outstanding = await db.scalar(
         select(func.count()).select_from(_outstanding_invites(me).subquery())
     )
@@ -302,6 +305,7 @@ async def create_invite(db: AsyncSession, me: uuid.UUID, ttl: timedelta) -> tupl
         created_by=me,
         token_hash=hash_token(token),
         expires_at=datetime.now(UTC) + ttl,
+        order_id=order_id,
     )
     db.add(invite)
     await db.flush()
@@ -326,6 +330,8 @@ class Opened(StrEnum):
     REQUESTED = "requested"
     LINKED = "linked"
     ALREADY_LINKED = "already_linked"
+    # The invitee already sees the order the invite carries: nothing to link (ADR-0041).
+    SHARED = "shared"
     # The inviter opened their own link. It stays unspent.
     OWN = "own"
     # Unknown, revoked, expired, or spent by someone else.
@@ -337,35 +343,53 @@ class OpenedInvite:
     outcome: Opened
     inviter: User | None = None
     link: Link | None = None
+    # The open order the invite carries (ADR-0041), and whether the invitee now sees it.
+    order: Order | None = None
+    sees_order: bool = False
 
 
-async def open_invite(db: AsyncSession, invitee: User, token: str) -> OpenedInvite:
-    """The invitee pressed /start with an invite: it becomes a request from the inviter.
+async def claim_invite(db: AsyncSession, invitee: User, token: str) -> tuple[Invite, User] | Opened:
+    """The invite behind a token, locked, with its inviter; or why it leads nowhere.
 
-    The invite is spent unless the two are already linked. Opening a spent invite
-    again, as the person who spent it, shows where it led.
+    A spent invite still works for the person who spent it: opening it again shows where
+    it led.
     """
     invite = await db.scalar(
         select(Invite).where(Invite.token_hash == hash_token(token)).with_for_update()
     )
     if invite is None or invite.revoked_at is not None:
-        return OpenedInvite(Opened.INVALID)
+        return Opened.INVALID
     if invite.created_by == invitee.id:
-        return OpenedInvite(Opened.OWN)
+        return Opened.OWN
     if invite.used_by is None:
         if invite.expires_at <= datetime.now(UTC):
-            return OpenedInvite(Opened.INVALID)
+            return Opened.INVALID
     elif invite.used_by != invitee.id:
-        return OpenedInvite(Opened.INVALID)
-
+        return Opened.INVALID
     inviter = await db.get(User, invite.created_by)
     if inviter is None:  # pragma: no cover - the foreign key guarantees the row
-        return OpenedInvite(Opened.INVALID)
-    # Opening it is the invitee's own doing, so the cooldown doesn't apply (Q-E1).
-    link, asked = await ask(db, inviter.id, invitee.id)
-    if invite.used_by is None and asked is not Asked.ALREADY_LINKED:
+        return Opened.INVALID
+    return invite, inviter
+
+
+def spend(invite: Invite, invitee: User) -> None:
+    if invite.used_by is None:
         invite.used_by = invitee.id
         invite.used_at = datetime.now(UTC)
+
+
+async def link_by_invite(
+    db: AsyncSession, invite: Invite, inviter: User, invitee: User
+) -> OpenedInvite:
+    """The invitee pressed /start with an invite: it becomes a request from the inviter.
+
+    A plain invite is spent unless the two are already linked. One that carries an order
+    is spent either way: it has done its work (ADR-0041).
+    """
+    # Opening it is the invitee's own doing, so the cooldown doesn't apply (Q-E1).
+    link, asked = await ask(db, inviter.id, invitee.id)
+    if asked is not Asked.ALREADY_LINKED or invite.order_id is not None:
+        spend(invite, invitee)
     if asked is Asked.LINKED:
         # The invitee had asked first. The bot answers them; the inviter learns here.
         _established(db, link, tell=inviter.id, about=invitee)

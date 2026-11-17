@@ -1226,4 +1226,16 @@ by another door (§2).
 stranger gets a link request and then the order in one go? It is a second flow, with the
 invite's one-time and 72-hour rules, so it waits for your word.
 
-**Answer:**
+**Answer (2026-11-17):**
+
+> Yes, make the link invite strangers too
+
+The shared link is now a one-time invite that carries the order:
+- Someone who already sees the order is taken to it.
+- Anyone else gets a link request from you, and the order once they accept.
+- At «Только выбранным», whoever opens the link also joins the order's list, by name on
+  your card.
+- Each press of «Поделиться заявкой» makes a new link, which counts among your 10
+  invitations and lasts 72 hours. The «Связи» tab lists it as «Заявка № N».
+
+The default above no longer holds. → PR 1.41, ADR-0041 as amended.
