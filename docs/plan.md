@@ -53,6 +53,9 @@ Swap's stack on the VPS and go on to the next PR (the owner's standing go, CLAUD
       Home after «Удалить у себя», and «You'd give» on someone else's order. «Все
       исправлено», 2026-10-23.
 - [ ] A look at the order lists' amounts (PR 1.39).
+- [ ] A phone check of sharing an order (PR 1.40): «Поделиться заявкой» on your open order,
+      a chat picked, and the link opened by someone your order reaches. And O1's question:
+      should the link also invite a stranger?
 - [x] Turn on «Prevent Storing of IP Addresses» in Sentry (ADR-0025). Done on
       2026-10-22, for the whole organization, the only place it could be set.
 - [ ] Before acceptance: a native speaker's read of the Georgian strings, the device
@@ -329,6 +332,14 @@ in, and typing USD moves GEL.
 - [x] A row puts what is given on the left, and each wanted currency with its amount on
       the right, a line each.
 
+**The owner's request of 2026-11-17.** QUESTIONS part O.
+
+**PR 1.40 — Sharing an order** (O1; ADR-0041)
+- [x] `GET /orders/{id}` says what the order comes to in each wanted currency, as lists do.
+- [x] «Поделиться заявкой» on the author's open order: Telegram's share sheet with the
+      order in words and its `startapp` link, or the clipboard where there is none.
+- [x] An order one can't see reads «не найдена или вам не видна».
+
 ### Потенциальные планы: not now
 
 The owner moved everything below off the plan on 2026-10-22 (QUESTIONS K). None of it is
@@ -398,13 +409,15 @@ Phase 1, PR by PR:
 | 1.37 | M1 · after deleting, Home | 0.25 |
 | 1.38 | M3 · what the other side gives, on the card | 0.5 |
 | 1.39 | N1 · amounts in the order lists | 0.25 |
+| 1.40 | O1 · sharing an order | 0.5 |
 | | Georgian review, acceptance fixes | 1 |
-| | **Total** | **≈ 26.25** |
+| | **Total** | **≈ 26.75** |
 
 On 2026-10-22 the owner's notes and priority list replaced slices 2–7: their 8.5
 sessions gave way to about 9 for parts J and K. K6 is folded into the settings PR, and
 K9 into the privacy page's, because each touches the same screens. The owner's notes
-after testing them (part L) add about 3.25, and those after part L (part M) 1 more.
+after testing them (part L) add about 3.25, those after part L (part M) 1 more, and the
+requests of parts N and O 0.75.
 
 ## Phase 0 — skeleton (accepted 2026-10-22)
 
