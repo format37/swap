@@ -5,7 +5,7 @@ import type { Order } from '../api/orders'
 import { useI18n } from '../i18n/useI18n'
 import { Asset, Money } from '../money/Asset'
 import { Avatar } from '../ui/Avatar'
-import { orderDates } from './words'
+import { orderDates, orderStatus } from './words'
 
 /**
  * One order in a feed (QUESTIONS N1): what is given, on the left, then each wanted currency
@@ -15,7 +15,7 @@ export function OrderRow({ order, onOpen }: { order: Order; onOpen: () => void }
   const i18n = useI18n()
   const { t, locale } = i18n
   const name = fullName(order.author)
-  const status = t(`order.status.${order.status}`)
+  const status = t(orderStatus(order))
   // Someone else's order says whose it is, and how it ended once it has (QUESTIONS H4).
   const second = order.mine ? status : order.status === 'open' ? name : `${name} · ${status}`
   return (

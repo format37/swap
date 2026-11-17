@@ -18,8 +18,9 @@ import { Screen } from '../ui/Screen'
 import { Section } from '../ui/Section'
 
 /**
- * «Главная» (§11): link requests waiting for me, then orders open to me, then mine. With
- * nothing at all, the three steps that explain Swap.
+ * «Главная» (§11): link requests waiting for me, then orders open to me, then mine, then
+ * those in progress and the finished ones. With nothing at all, the three steps that
+ * explain Swap.
  */
 export function Home({ me }: { me: Me }) {
   const { t } = useI18n()
@@ -29,6 +30,7 @@ export function Home({ me }: { me: Me }) {
   const [within, setWithin] = useState<number | null>(null)
   const open = useOrders('visible', within)
   const mine = useOrders('mine')
+  const running = useOrders('running')
   const past = useOrders('history')
   const deals = useDeals('active')
 
@@ -40,13 +42,19 @@ export function Home({ me }: { me: Me }) {
   const incoming = links.data?.incoming ?? []
   const linked = (links.data?.active.length ?? 0) > 0
   const loaded =
-    links.isSuccess && open.isSuccess && mine.isSuccess && past.isSuccess && deals.isSuccess
+    links.isSuccess &&
+    open.isSuccess &&
+    mine.isSuccess &&
+    running.isSuccess &&
+    past.isSuccess &&
+    deals.isSuccess
   const nothing =
     loaded &&
     !linked &&
     !incoming.length &&
     !open.data.length &&
     !mine.data.length &&
+    !running.data.length &&
     !past.data.length &&
     !deals.data.length
 
@@ -126,6 +134,18 @@ export function Home({ me }: { me: Me }) {
           {mine.data && mine.data.length > 0 && (
             <Section title={t('home.mine')}>
               {mine.data.map((order) => (
+                <OrderRow
+                  key={order.id}
+                  order={order}
+                  onOpen={() => void navigate(`/orders/${order.id}`)}
+                />
+              ))}
+            </Section>
+          )}
+          {/* No longer open, but a deal on it runs: not finished yet (QUESTIONS P1). */}
+          {running.data && running.data.length > 0 && (
+            <Section title={t('home.running')}>
+              {running.data.map((order) => (
                 <OrderRow
                   key={order.id}
                   order={order}

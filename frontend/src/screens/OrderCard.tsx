@@ -39,7 +39,7 @@ import { formatAmount, formatRate, isZero } from '../money/format'
 import { KINDS } from '../money/kinds'
 import { readsAs } from '../orders/form'
 import { shareText } from '../orders/share'
-import { orderDates } from '../orders/words'
+import { orderDates, orderStatus } from '../orders/words'
 import {
   confirmAction,
   copyText,
@@ -231,7 +231,7 @@ function Shown({ order, me }: { order: Order; me: Me }) {
           person={order.author}
           size="lg"
           heading
-          detail={`${t('order.number', { n: order.number })} · ${t(`order.status.${order.status}`)}`}
+          detail={`${t('order.number', { n: order.number })} · ${t(orderStatus(order))}`}
         />
       </header>
 

@@ -36,6 +36,7 @@ const ORDER: Order = {
   ],
   note: null,
   status: 'open',
+  running: false,
   repeat_day: null,
   created_at: '2026-10-22T10:00:00Z',
 }
