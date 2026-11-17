@@ -21,7 +21,8 @@ router = APIRouter(tags=["me"], responses={401: {"model": Problem}})
 
 # The agreement's version (Q-B15, QUESTIONS K3). A new text bumps it, and everyone accepts
 # it again at their next launch.
-TERMS_VERSION = 1
+# 2 since payment details are stored again (ADR-0043).
+TERMS_VERSION = 2
 
 
 class Me(BaseModel):
