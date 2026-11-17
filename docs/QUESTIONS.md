@@ -24,7 +24,7 @@ into an ADR (or the code) and marked here with the date. Nothing is deleted.
 - **Part N** records the owner's requests of 2026-10-23.
 - **Part O** records the owner's request of 2026-11-17, sharing an order, and its answer.
 - **Part P** records the owner's note of the same day: an order whose deal runs isn't
-  finished.
+  finished, and a deal restored by hand.
 - Items marked §13 are the spec's own owner questions.
 
 ## A. Before phase 0
@@ -1261,3 +1261,20 @@ order that takes no more proposals (used up, closed or past its dates) waits the
 a deal of yours on it runs, and says «В работе» in its row and on its card. Once the
 deal is settled or cancelled, the order moves to «Завершённые заявки». For whoever dealt
 on it, only their own deal counts. → PR 1.42, ADR-0042.
+
+### P2 · The deal on order № 9, restored by hand
+
+The deal's proposer read the order as finished, before PR 1.42 was live, and cancelled
+the accepted deal, which either side may do alone while nothing is sent (Q-B1). Both
+sides still wanted it. The owner asked:
+
+> deal still cancelled. Can you make it uncancelled using dev force?
+
+Done on 2026-11-17, in production, by one transaction after a dump. A new journal line
+moves the deal from cancelled back to accepted, by the owner and marked `restored` in its
+payload, so the deals trigger (ADR-0018) passed and nothing was disabled. The order is
+used up again (0 left). The deal keeps its locked rate and both legs as proposed; no
+notification went out, and the owner told the other side himself.
+
+This is a one-off. The app has no way back from a cancelled deal; the usual way is a new
+proposal, at the rate of its moment.
