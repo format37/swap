@@ -29,6 +29,7 @@ const BY_CODE: Partial<Record<string, MessageKey>> = {
   'account.deals_running': 'error.account_deals_running',
   'export.no_chat': 'error.export_no_chat',
   'export.too_soon': 'error.export_too_soon',
+  'details.off': 'error.details_off',
 }
 
 // Whatever else an order's or a deal's refusal says, its form checked before sending.

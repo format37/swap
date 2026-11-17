@@ -18,6 +18,9 @@ export interface WantForm {
   receiveMethods: PaymentKind[]
   /** «Получите», as the author typed it; it counts while this currency leads (L2). */
   get: string
+  /** Where the author takes it, such as a card number: theirs alone until they accept a
+   * deal, which carries it to the other side (QUESTIONS Q1). */
+  details: string
 }
 
 /** The wizard's state: strings as typed, until «Опубликовать» (Q-B17: no server drafts). */
@@ -81,6 +84,7 @@ export function newWant(giveCurrency: string, currency = '', country = ''): Want
     fixed: false,
     receiveMethods: [],
     get: '',
+    details: '',
   }
 }
 
@@ -199,6 +203,7 @@ export function toDraft(form: OrderForm): OrderDraft {
       country: want.country,
       rate_spec: specOf(form.giveCurrency, want),
       receive_methods: want.receiveMethods,
+      details: want.details.trim() || null,
     })),
     reach: form.reach,
     visible_to: form.reach === 0 ? form.chosen : null,

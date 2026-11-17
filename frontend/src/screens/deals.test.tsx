@@ -217,6 +217,54 @@ describe('the deal card', () => {
     expect(screen.queryByText('Сделка не найдена.')).toBeNull()
   })
 
+  it('lets the payee say where to pay, and the payer copy it (Q1)', async () => {
+    const card = 'TBC 4276 1234 5678 9012, Alex'
+    const legs = (details: string | null) =>
+      deal().legs.map((one) => ({ ...one, details: one.seq === 1 ? card : details }))
+    let sent: unknown = null
+    const { served } = fakeApi({
+      [`GET /api/v1/deals/${DEAL_ID}`]: () =>
+        json(200, deal({ status: 'accepted', legs: legs(sent ? 'Сбер 2202 2003' : null) })),
+      [`PUT /api/v1/deals/${DEAL_ID}/legs/2/details`]: async (request) => {
+        sent = await request.json()
+        return json(200, deal({ status: 'accepted', legs: legs('Сбер 2202 2003') }))
+      },
+    })
+    renderScreen(<DealCard me={meOf(NINO)} />, { route, path })
+    // Alex's card, on the leg Nino pays: hers to copy, not to change.
+    expect(await screen.findByText(card)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Изменить' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Скопировать' }))
+    expect(await screen.findByRole('button', { name: 'Скопировано' })).toBeInTheDocument()
+    const { copyText } = await import('../telegram')
+    expect(copyText).toHaveBeenCalledWith(card)
+    // On the leg that pays her, she says where.
+    fireEvent.click(screen.getByRole('button', { name: 'Указать реквизиты' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Реквизиты' }), {
+      target: { value: ' Сбер 2202 2003 ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
+    await waitFor(() => {
+      expect(served).toContain(`PUT /api/v1/deals/${DEAL_ID}/legs/2/details`)
+    })
+    expect(sent).toEqual({ details: 'Сбер 2202 2003' })
+    expect(await screen.findByText('Сбер 2202 2003')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeInTheDocument()
+  })
+
+  it('fixes the details once the transfer is sent (Q1)', async () => {
+    const legs = deal().legs.map((one) =>
+      one.seq === 2 ? { ...one, sent_at: '2026-10-22T11:00:00Z', details: 'Сбер 2202' } : one,
+    )
+    fakeApi({
+      [`GET /api/v1/deals/${DEAL_ID}`]: () => json(200, deal({ status: 'accepted', legs })),
+    })
+    renderScreen(<DealCard me={meOf(NINO)} />, { route, path })
+    expect(await screen.findByText('Сбер 2202')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Изменить' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Указать реквизиты' })).toBeNull()
+  })
+
   it('tells a stranger only that there is no such deal', async () => {
     fakeApi({ [`GET /api/v1/deals/${DEAL_ID}`]: () => problem(404, 'deal.not_found') })
     renderScreen(<DealCard me={meOf(NINO)} />, { route, path })

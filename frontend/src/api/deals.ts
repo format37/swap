@@ -90,6 +90,21 @@ export function useAccept(dealId: string) {
   )
 }
 
+/**
+ * Where its payee takes a transfer, such as a card number (QUESTIONS Q1, ADR-0043);
+ * blank clears it.
+ */
+export function useSetDetails(dealId: string) {
+  return useDealsMutation(({ seq, details }: { seq: number; details: string }) =>
+    unwrap(
+      api.PUT('/api/v1/deals/{deal_id}/legs/{seq}/details', {
+        params: { path: { deal_id: dealId, seq } },
+        body: { details: details.trim() || null },
+      }),
+    ),
+  )
+}
+
 /** The state machine's steps that take no body (ADR-0018). */
 export type Step =
   { kind: 'decline' | 'withdraw' | 'cancel' } | { kind: 'sent' | 'received'; seq: number }
